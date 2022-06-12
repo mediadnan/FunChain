@@ -186,7 +186,7 @@ validation system such as ``pydantic``*
 none ``chainable(lambda x: x*2)``, but using none is the same as passing ``lambda x: x*2`` itself.  
 
 ---
-### *funchain.funfact(function_factory) -> ((...) -> FunConfig)*
+### *funchain.funfact(function_factory) -> ((...) -> FunWrapper)*
 ``funfact`` stands for **function factory**, it is a decorator, and it has the same purpose as ``funchain.chainable()``
 but it decorates higher order functions *(or function factories)* and those are functions that produce functions.
 this is useful when you need to prepare some settings then output a function...
@@ -208,8 +208,8 @@ def my_func(*args, **kwargs):
 ``my_func`` now takes **args* and ***kwargs* and two extra keyword arguments 
 ***title_*** and ***default_*** like ``chainable()``
 
-Calling ``my_func`` now acts like calling ``chainable`` they both return a FunConfig
-that's used by the ``chain`` to create the right component.
+Calling ``my_func`` now acts like calling ``chainable`` they both return a ``FunWrapper``
+object that's used by the ``chain`` to create the right component.
 
 This
 ````python
