@@ -86,6 +86,8 @@ def pretty_annotation(annotation) -> str:
         return pretty_annotation(annotation.__origin__)
     elif isinstance(annotation, typing._SpecialForm):  # Type: ignore
         return annotation._name
+    elif isinstance(annotation, typing.ForwardRef):
+        return annotation.__forward_arg__
     elif isinstance(annotation, type):
         return annotation.__name__
     return str(annotation)
