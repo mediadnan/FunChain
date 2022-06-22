@@ -131,3 +131,7 @@ dmypy.json
 
 #IDE config
 .idea/
+
+
+# experimentation files
+experiment*.py
