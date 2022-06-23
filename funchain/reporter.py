@@ -73,7 +73,7 @@ class Report:
         return self.__total
 
     @property
-    def rate(self) -> Optional[float]:
+    def rate(self) -> float:
         """gets the raw ratio of completed components over total components - read-only"""
         try:
             return self.completed_components / self.__total
