@@ -129,10 +129,10 @@ class ChainableNode(ABC):
         return *self.previous.previous_all, self.previous
 
     @property
-    def origin(self) -> 'ChainableNode':
+    def origin(self) -> Optional['ChainCollection']:
         """gets the first root of this component - read-only"""
         if not self.root:
-            return self
+            return self if isinstance(self, ChainCollection) else None
         return self.root.origin
 
     @property
@@ -190,14 +190,14 @@ class ChainableNode(ABC):
 
     def _call_next(self, result: Any, reporter: Reporter = None, log: Logger = None) -> Tuple[bool, Any]:
         """calls the next node with the result"""
-        return self.next(result, reporter)
+        return self.next(result, reporter, log)
 
     def __call__(self, arg: Any, reporter: Reporter = None, log: Logger = None) -> Tuple[bool, Any]:
         """takes an input value and returns the success indicator and the result or default"""
-        state, result = self._context(arg, reporter)
-        if not (state and self.next):
+        state, result = self._context(arg, reporter, log)
+        if not (state and self.next is not None):
             return state, result
-        return self._call_next(result, reporter)
+        return self._call_next(result, reporter, log)
 
 
 class ChainCollection(ChainableNode, ABC):
@@ -253,7 +253,7 @@ class ChainMapOption(ChainOption):
         return True, args
 
     def _call_next(self, results: Iterable, reporter: Reporter = None, log: Logger = None) -> Tuple[bool, Any]:
-        flags, results = zip(*(self.next(result) for result in results))
+        flags, results = zip(*(self.next(result, reporter, log) for result in results))
         return all(flags), results
 
 
@@ -388,7 +388,7 @@ class ChainModel(ChainCollection):
         states = set()
         results = dict()
         for name, component in self.model.items():
-            state, result = component(arg)
+            state, result = component(arg, reporter, log)
             states.add(state)
             results[name] = result
         return any(states), results

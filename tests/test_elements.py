@@ -5,7 +5,7 @@ from typing import Any, Tuple
 
 from funchain.wrapper import Wrapper
 from funchain.elements import ChainGroup, ChainableNode, ChainMapOption, ChainFunc, ChainModel
-from funchain.reporter import Reporter
+from funchain.reporter import Reporter, Report
 
 
 class Chainable(ChainableNode):
@@ -14,6 +14,8 @@ class Chainable(ChainableNode):
         super(Chainable, self).__init__("test-group", f"test{'' if i is None else f'-{i}'}")
 
     def _context(self, arg: int, reporter: Reporter = None, log: Logger = None) -> Tuple[bool, Any]:
+        if reporter:
+            reporter.success(self)
         return True, arg + 1
 
     def __repr__(self):
@@ -68,21 +70,27 @@ class TestChainMapOption(unittest.TestCase):
         self.mapper = ChainMapOption('test-group')
         self.mapper.chain(Chainable())
 
+    def check_reports(
+            self,
+            report: Report,
+            completed_components: int,
+            completed_operations: int,
+            failed_components: int,
+            failed_operations: int,
+    ):
+        self.assertEqual(completed_components, report.completed_components, "unexpected completed_components value")
+        self.assertEqual(completed_operations, report.completed_operations, "unexpected completed_operations value")
+        self.assertEqual(failed_components, report.failed_components, "unexpected failed_components value")
+        self.assertEqual(failed_operations, report.failed_operations, "unexpected failed_operations value")
+
     def test_mapping(self):
         self.assertEqual((True, (2, 3, 4, 5)), self.mapper((1, 2, 3, 4)))
 
-    @unittest.expectedFailure
     def test_reporting(self):
         reporter = Reporter('test', 2)
-        self.assertEqual(0, reporter.report().completed_components)
-        self.assertEqual(0, reporter.report().completed_operations)
-        self.assertEqual(0, reporter.report().failed_components)
-        self.assertEqual(0, reporter.report().failed_operations)
+        self.check_reports(reporter.report(), 0, 0, 0, 0)
         self.assertEqual((True, (2, 3, 4)), self.mapper((1, 2, 3), reporter))
-        self.assertEqual(1, reporter.report().completed_components)
-        self.assertEqual(3, reporter.report().completed_operations)
-        self.assertEqual(0, reporter.report().failed_components)
-        self.assertEqual(0, reporter.report().failed_operations)
+        self.check_reports(reporter.report(), 2, 4, 0, 0)
 
 
 class TestChainFunc(unittest.TestCase):
