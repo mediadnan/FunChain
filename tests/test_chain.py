@@ -4,7 +4,7 @@ from typing import Iterable
 from funchain.chain import parse, Chain, SUPPORTED_CHAINABLE_OBJECTS
 from funchain.elements import ChainGroup, ChainFunc, ChainableNode, ChainModel, ChainMapOption
 from funchain.wrapper import Wrapper, chainable, funfact
-from funchain.monitoring import Report
+from funchain.reporter import Report
 
 
 class TestParse(unittest.TestCase):

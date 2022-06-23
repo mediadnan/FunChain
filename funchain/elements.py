@@ -11,7 +11,7 @@ from typing import (
 )
 
 from .wrapper import Wrapper
-from .monitoring import Reporter
+from .reporter import Reporter
 from .tools import validate
 
 

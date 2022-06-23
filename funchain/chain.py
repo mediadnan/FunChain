@@ -15,7 +15,7 @@ from typing import (
 
 from .elements import ChainableNode, ChainOption, ChainMapOption, ChainFunc, ChainGroup, ChainModel
 from .wrapper import Wrapper, CHAINABLE_FUNC
-from .monitoring import Reporter, REPORT_CALLBACK
+from .reporter import Reporter, REPORT_CALLBACK
 from .tools import validate
 
 SUPPORTED_CHAINABLE_COLLECTIONS: TypeAlias = Union['CHAIN_GROUP_TUPLE', 'CHAIN_MODEL_DICT']

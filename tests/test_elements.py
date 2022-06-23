@@ -5,7 +5,7 @@ from typing import Any, Tuple
 
 from funchain.wrapper import Wrapper
 from funchain.elements import ChainGroup, ChainableNode, ChainMapOption, ChainFunc, ChainModel
-from funchain.monitoring import Reporter
+from funchain.reporter import Reporter
 
 
 class Chainable(ChainableNode):
