@@ -1,6 +1,6 @@
 import unittest
 import warnings
-from typing import Iterable
+from typing import Iterable, Type
 
 from funchain.chain import parse, Chain, SUPPORTED_CHAINABLE_OBJECTS
 from funchain.elements import ChainGroup, ChainFunc, ChainableNode, ChainModel, ChainMapOption
@@ -20,7 +20,7 @@ class TestParse(unittest.TestCase):
     def check_output(
             self,
             obj,
-            tp: type(ChainableNode),
+            tp: Type[ChainableNode],
             ln: int = ...,
     ):
         self.assertIsInstance(obj, tp)
