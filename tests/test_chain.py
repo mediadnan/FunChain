@@ -1,4 +1,5 @@
 import unittest
+import warnings
 from typing import Iterable
 
 from funchain.chain import parse, Chain, SUPPORTED_CHAINABLE_OBJECTS
@@ -77,6 +78,20 @@ class TestChain(unittest.TestCase):
         if in_failures is not None:
             for identity in in_failures:
                 self.assertIn(identity, self.report.failures)
+
+    def test_chain_with_empty_structure(self):
+        self.assertRaises(ValueError, Chain, title="test")
+
+    def test_title_duplication_warning(self):
+        with warnings.catch_warnings(record=True) as cm:
+            chain = Chain(int, title='test')
+            self.assertEqual(0, len(cm))
+        with self.assertWarns(UserWarning):
+            Chain(str, title='test')
+        del chain
+        with warnings.catch_warnings(record=True) as cm:
+            Chain(int, title='test')
+            self.assertEqual(0, len(cm))
 
     def test_chain_creation(self):
         title = 'abs_str_num'

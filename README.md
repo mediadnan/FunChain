@@ -83,28 +83,32 @@ This package contains some funny names that you'll get used to, but when you rea
 that means a functions that takes exactly one positional argument *(or one positional first argument and optional others)*
 and returns a value, that value will be the input for the next ***chainable function*** and so on...
 
-### *funchain.chain(\*chainables, title: str, callback: (Report) -> None = None) -> Chain*
-The main function that you'll be using is ``chain``, 
-and it takes the following arguments:
+### *funchain.Chain*
+The main objects that you'll be using are ``Chain`` instances, 
+the constructor takes the following arguments:
   + ****chainables*** are positional arguments that define the structure of your workflow, this is where
     you'll be passing your *chainable functions* and other supported types that will be shown in the examples bellow,
     passing no chainable will raise a ``ValueError``.
   + ***title*** is a required keyword argument, it must be a non-empty string, 
     and it should be unique in your program. this string is what identifies your chain in reports, logs ...
-  + ***callback*** is an optional keyword argument, and it should be a function *(or any callable)* that 
+    the chain will warn you if you duplicate names.
+  + ***callback*** is an optional keyword argument default to None, and it should be a function that 
     will be called back when the chain call ends, it must take the Report object as the only (positional) argument
     and return nothing. Even as it's optional it is highly recommended to pass it because this is a major 
     benefit of this package.
+  + ***log*** is an optional keyword argument default to False, if set to true; the errors will be
+    logged using the standard logging module.
 
-And returns a **Chain** object that can be called with an input value and return the last output result.
+A **chain** can be called with an input value and return the last output result.
 
 ##### Example
 Let say that we want to calculate the rounded square root of a number given as a string,
+
 ````python
 from math import sqrt
-from funchain import chain
+from funchain import Chain
 
-rounded_square_root = chain(float, sqrt, round, title='rounded_square_root')
+rounded_square_root = Chain(float, sqrt, round, title='rounded_square_root', callback=print)
 
 if __name__ == '__main__':
     result = rounded_square_root("   17  ")
@@ -119,15 +123,45 @@ The result will be an integer 4, this simple sequence works like this:
 
 The chain will also report that ```3``` operations succeeded and ```0``` failed.
 
+In fact, we passed the builtin ``print`` function as callback,
+the report will be printed to the standard output like this:
+````
+================================================================================
+REPORT: 'rounded_square_root'
+SUMMARY: all components have succeeded
+    3 completed components (3 completed operations)
+    0 failed components (0 failed operations)
+================================================================================
+````
+
 Now if we call ``square_root`` with an invalid string like ``"a34"`` the chain will fail at the first function :
 
     "a34" -> [float] !! "ValueError: could not convert string to float: 'a34'" -> None
 
 This time the chain will report ```0``` operations succeeded and ```1``` failed, the Report object will contain
 all the information in case of failure such as the exception object itself (*Exception type, exception message and traceback ...*) , 
-the full title of the failing component *(function)* in this case it will be ```'rounded_square_root :: float (0, )'```,
-it follows this pattern ``[chain's name] :: [component's name] [absolute position]`` and ```(0, )``` means the first component
-on the main sequence, a tuple of previous successful components, and more ...
+the full title of the failing component *(function)* in this case it will be ```'rounded_square_root :: float (0, 0)'```,
+it follows this pattern ``[chain's name] :: [component's name] [absolute position]`` and ```(0, 0)``` means the first component
+on the main sequence, the given input, the returned output, the root and the previous components.
+
+The string aspect of the report will be as this:
+
+````
+================================================================================
+REPORT: 'rounded_square_root'
+SUMMARY: no component has succeeded
+    0 completed components (0 completed operations)
+    1 failed components (1 failed operations)
+--------------------------------------------------------------------------------
+FAILURES:
+  rounded_square_root :: float (0, 0):
+    - input: 'a34'
+      output: None
+      error: ValueError("could not convert string to float: 'a34'")
+      root: '([float(?) -> ?] => [sqrt(?) -> ?] => [round(?) -> ?])'
+      previous: 'None'
+================================================================================
+````
 
 There might be other failing scenarios for example if we pass ```"-5"``` to ``square_root`` :
     
@@ -137,12 +171,11 @@ And that will report ```1``` operations succeeded and ```1``` failed ...
 
 ---
 
-### *funchain.chainable(\*, title: str = None, default: Any = None) -> (((Any)-> Any) -> FunConfig)*
-### *funchain.chainable(func: (Any) -> Any, \*, title: str = None, default: Any = None) -> FunConfig*
-This is a helper function lets you pass some additional metadata together with the functions,
- it takes a function as a positional argument and these two optional keyword arguments:
+### *funchain.chainable*
+This is a wrapper function that lets you pass some additional metadata together with the functions,
+it takes a function as a positional argument and these two optional keyword arguments:
 
-+ **title** is optional, and it must be a valid ``str``, this will override the name of the decorated function. 
++ **title** is optional, and it must be a non-empty ``str``, this will override the name of the decorated function. 
  if no title is passed the default will be the function's ``__qualname__``.
 + **default** is optional, it specifies the default value to be returned in case of failure, the default is ``None``.
 
@@ -152,30 +185,32 @@ This is a helper function lets you pass some additional metadata together with t
 from funchain import chainable
 
 def func(number: int) -> int:
-    ...
+    return 2 * number
 
-new_func = chainable(func, title='new_func')
+new_func = chainable(func, title='double')
 ````
 
 or as a decorator
 ````python
-@chainable(title='new_func')
+from funchain import chainable
+
+@chainable(title='double')
 def func(number: int) -> int:
-    ...
+    return number * 2
 ````
 
 And this is useful in cases like the following :
 
 + **Use case 1: renaming a function such as lambda functions to be more informative** : 
 ````python
-chain( ..., chainable(lambda x: x*2, title='double'), ..., title=... )
+Chain( ..., chainable(lambda x: x*2, title='double'), ..., title=... )
 ````
 *Now if the function fails at this function the reported name will be ``'double'`` instead of ``'<lambda>'``* 
 
 *It is bad practice to pass a raw lambda function, naming them makes it easy to identify.*
 + **Use case 2: setting the default value if the function fails** :
 ````python
-chain( ..., chainable(int, default=0), ..., title=... )
+Chain( ..., chainable(int, default=0), ..., title=... )
 ````
 *If the function fails here the returned value will be ``0`` instead of ``None``*
 
@@ -186,7 +221,7 @@ validation system such as ``pydantic``*
 none ``chainable(lambda x: x*2)``, but using none is the same as passing ``lambda x: x*2`` itself.  
 
 ---
-### *funchain.funfact(function_factory) -> ((...) -> FunWrapper)*
+### *funchain.funfact*
 ``funfact`` stands for **function factory**, it is a decorator, and it has the same purpose as ``funchain.chainable()``
 but it decorates higher order functions *(or function factories)* and those are functions that produce functions.
 this is useful when you need to prepare some settings then output a function...
@@ -206,10 +241,10 @@ def my_func(*args, **kwargs):
     return func
 ````
 ``my_func`` now takes **args* and ***kwargs* and two extra keyword arguments 
-***title_*** and ***default_*** like ``chainable()``
+***title*** and ***default*** like ``chainable()``
 
-Calling ``my_func`` now acts like calling ``chainable`` they both return a ``FunWrapper``
-object that's used by the ``chain`` to create the right component.
+Calling ``my_func`` now acts like calling ``chainable`` they both return a ``Wrapper``
+object that's used by ``Chain`` to create the right component.
 
 This
 ````python
@@ -220,7 +255,7 @@ def function_factory(*args, **kwargs):
     # some code here
     return func
 
-fun_config = function_factory(..., default_=False)
+fun_config = function_factory(..., default=False)
 ````
 
 Is similar to this
@@ -238,9 +273,6 @@ fun_config = chainable(function_factory(...), default=False)
 *The only difference here as we didn't specify the **title**, the first one will be ``'function_factory'``
 and the second one will be ``'function_factory.<locals>.func'``*
 
-*Please note that the keyword arguments in ``funfact`` are **title_** and **default_** with underscore, 
-so that they don't interfere with your keyword arguments*
-
 + **Use case 2: need to slightly modify the behaviour of the function**
 ````python
 @funfact
@@ -249,7 +281,7 @@ def power(exponent: int):
         return base ** exponent
     return func
 
-main_chain = chain(..., power(2, title_='square'), ..., power(3, title_='cube'))
+main_chain = Chain(..., power(2, title='square'), ..., power(3, title='cube'))
 ````
 + **Use case 3: need to output a different functions for different a configurations**
 ````python
@@ -273,7 +305,7 @@ class MyCallable:
         ...
 ````
 
-*It is **not recommended** to use this approach, but if you feel like you need it, you definitely **must** implement
+*If you want to use the class approach, you definitely **must** implement
 the ``__call__`` dunder method, otherwise an exception will be raised.*
 
 *And if you call MyCallable without specifying the title, the default title will be **``MyCallable instance``***
@@ -291,7 +323,7 @@ Let's do some arithmetics again, consider that we have this string ``"-134.76, 1
 and we need to extract the rounded absolute value of each number.
 
 ````python
-from funchain import chain, funfact
+from funchain import Chain, funfact
 
 @funfact
 def str_split(sep: str = None):
@@ -301,8 +333,14 @@ def str_split(sep: str = None):
         raise ValueError('sep must be a string')
     return split
 
-split = str_split(',', title_='split_by_commas', default_=[])
-abs_rounded_values = chain(split, '*', float, abs, round, title="abs_rounded_values")
+abs_rounded_values = Chain(
+    str_split(',', title='split_by_commas', default=[]),
+    '*',
+    float,
+    abs, 
+    round, 
+    title="abs_rounded_values"
+)
 
 if __name__ == '__main__':
     result = abs_rounded_values("-134.76, 103.4 , -89.34")
@@ -316,7 +354,7 @@ It works like this:
                                                                       | " -89.34" -> (float) -...-> (round) -> 89  |
 
 *Again this is overly simplified, the ``ChainMapperOption`` produces a generator, it gets evaluated **lazily**
-when we applied ``list()``. This optimizes memory and CPU usage*
+when we applied ``list()``. and this is an optimization detail*
 
 *And yes, we can choose the type of collection (e.g ``list``, ``tuple``, ``set``, ...) right inside the chain,
 refer to the next examples down bellow...*
@@ -341,7 +379,7 @@ convert ``'abc'`` into a ``float``, or you need to refactor your functions and a
 blocks and manually then add specific handlers for each step then attach some callback, maybe add some loggings...,
 and you see that gets uglier quickly, and it's far less scalable and more error-prone...
 
-By using the fist approach (``funchain.chain``), this is handled by default, in case of failures like this,
+By using the fist approach (``funchain.Chain``), this is handled by default, in case of failures like this,
 it will return a default value without breaking your code,
 and calling your report callback with all the details,
 the report callback can be a function that you create, it should get the report object and perform some logic on it,
@@ -351,7 +389,7 @@ like analysing it, and then dispatching some kind of event *such as sending noti
 
 ## Grouping option
 This is used for grouping a sequence of chainable functions, by default there is only one group, and it's the main 
-sequence you provide to ``funchain.chain``, but in some cases you might need to use subgroups, and you do that by
+sequence you provide to ``funchain.Chain``, but in some cases you might need to use subgroups, and you do that by
 surrounding the chainable functions by ``()``.
 
 This is mostly needed to mark an end for a mapped sequence.
@@ -374,7 +412,7 @@ And we want it to be like this :
 The code can be like that :
 
 ````python
-from funchain import chain, funfact, chainable
+from funchain import Chain, funfact, chainable
 
 
 @funfact
@@ -384,15 +422,15 @@ def add_tag(tag_name: str,):
     return tag_func
 
 
-pipeline = chain(
+pipeline = Chain(
     (
         chainable(lambda x: x.split(','), title='split_articles'),
         '*',
         str.strip,
-        add_tag('div', title_='add_div_tag'),
+        add_tag('div', title='add_div_tag'),
     ),
-    chainable(lambda x: ''.join, title='join_articles'),
-    add_tag('main', title_='add_main_tag'),
+    chainable(lambda x: ''.join(x), title='join_articles'),
+    add_tag('main', title='add_main_tag'),
     title='str_to_html_pipeline'
 )
 ````
@@ -418,7 +456,7 @@ Without grouping the fist part, the results wouldn't be reunited, here's two cas
 
 *Grouping is also required when creating a sub-chain, the example bellow makes use of that*
 
-*Elements between ```()``` get converted into a ``ChainGroup`` object.*
+*Elements between ```()``` get packed into a ``ChainGroup`` object.*
 
 *``ChainGroup`` objects fails if **ANY** of it elements fail.*
 
@@ -438,11 +476,11 @@ and we want to perform some statistics on them.
 
 ````python
 from statistics import mode, mean, median
-from funchain import chain, chainable
+from funchain import Chain, chainable
 
-analyze_numbers = chain(
+analyze_numbers = Chain(
     (
-        chainable(lambda x: x.split(','), 'split_by_commas'),
+        chainable(lambda x: x.split(','), title='split_by_commas'),
         '*',
         int
     ),
@@ -465,14 +503,8 @@ if __name__ == '__main__':
 
 The result will be like that:
 
-`````python
-{
-    'max': 9,
-    'mean': 2.71,
-    'median': 2,
-    'min': 0,
-    'mode': 1,
-}
+`````
+{'max': 9, 'min': 0, 'mode': 1, 'mean': 2.71, 'median': 2}
 `````
 
 If everything goes without failing, the process will be like that :
@@ -483,12 +515,12 @@ If everything goes without failing, the process will be like that :
                                         |    ...    |    analyze_numbers / median: (1, 2, ...) -> 2                          |
                                                          analyze_numbers / mean  : (1, 2, ...) -> 2.7142857142857144 -> 2,71 |
 
-If a failure occurs in the third step ``(int)``, the error will be reported under the title ``analyze_numbers :: int (0, 2)``
-with ``analyze_numbers`` being the title of the chain ``int`` being the name of the function and ``(0, 2)`` being its
-position *(0 indicates the first subgroup and 2 indicates the third item in it)*
+If a failure occurs in the third step ``(int)``, the error will be reported under the title ``analyze_numbers :: int (0, 0, 2)``
+with ``analyze_numbers`` being the title of the chain ``int`` being the name of the node and ``(0, 0, 2)`` being its
+absolute position *(second 0 indicates the first subgroup and 2 indicates the third item in it)*
 
 But if a failure occurs inside the model, say in ``round`` function, the error will be reported under the title
-``analyze_numbers / mean :: round_2d (1, )`` giving you the branch information, the component's name and the position, 
+``analyze_numbers / mean :: round_2d (0, 1, 1)`` giving you the branch information, the component's name and the position, 
 as it is the second in its main chain.
 
 *The ``dict`` gets converted into a ``ChainModel`` object*
@@ -499,7 +531,7 @@ as it is the second in its main chain.
 ## More
 This is just an introduction, ``funchain`` documentation is intended to be created later and that will cover in depth
 usage and more example, it will also cover object documentation ``ChainModel``, ``ChainGroup``, ``ChainFunc``, and 
-``ChainHelper`` objects, and ``Report`` object which is pretty useful.
+``Report`` objects.
 
 Meanwhile, if you're an early user, those objects support ``help()`` method and can be represented with ``repr()``,
 and everything is *typed* and has it own *docstring*.

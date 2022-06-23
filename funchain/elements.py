@@ -280,7 +280,7 @@ class ChainFunc(ChainableNode):
         return self._func.default
 
     def __repr__(self) -> str:
-        return repr(self._func)
+        return f'[{self._func!r}]'
 
     def _context(self, arg, reporter: Reporter = None, log: Logger = None) -> Tuple[bool, Any]:
         try:
@@ -328,7 +328,7 @@ class ChainGroup(ChainCollection):
         return len(self.entry)
 
     def __repr__(self) -> str:
-        return f"({' -> '.join(map(repr, self.entry.sequence))})"
+        return f"({' => '.join(map(repr, self.entry.sequence))})"
 
     def __getitem__(self, item: int) -> ChainableNode:
         sequence = self.entry.sequence

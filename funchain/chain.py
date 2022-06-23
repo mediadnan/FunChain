@@ -103,6 +103,10 @@ class Chain:
         """gets the chain structure object - read-only"""
         return self.__core
 
+    @classmethod
+    def chains(cls) -> WeakValueDictionary:
+        return cls.__chains
+
     def __repr__(self) -> str:
         return f'<Chain {self.title!r}: {self.core!r}>'
 
