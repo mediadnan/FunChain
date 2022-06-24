@@ -62,8 +62,11 @@ class TestChain(unittest.TestCase):
     def set_report(self, report: Report) -> None:
         self.report = report
 
-    def chain(self, *chainables: SUPPORTED_CHAINABLE_OBJECTS) -> Chain:
-        return Chain(*chainables, title="test_chain", callback=self.set_report)
+    def chain(self, *chainables: SUPPORTED_CHAINABLE_OBJECTS, number: int = None) -> Chain:
+        from random import randint
+        if number is None:
+            number = randint(10, 99)
+        return Chain(*chainables, title=f"test_chain{number}", callback=self.set_report)
 
     def check_report(
             self,
@@ -109,15 +112,15 @@ class TestChain(unittest.TestCase):
 
     def test_reporter_unsuccessful_1(self):
         from math import sqrt
-        chain = self.chain(float, sqrt, round)
+        chain = self.chain(float, sqrt, round, number=0)
         self.assertEqual(None, chain("a34"))
-        self.check_report(0, 1, in_failures=(f'test_chain :: float {(0, 0)}', ))
+        self.check_report(0, 1, in_failures=(f'test_chain0 :: float {(0, 0)}', ))
 
     def test_reporter_unsuccessful_2(self):
         from math import sqrt
-        chain = self.chain(float, sqrt, round)
+        chain = self.chain(float, sqrt, round, number=1)
         self.assertEqual(None, chain("-5"))
-        self.check_report(1, 1, in_failures=(f'test_chain :: sqrt {(0, 1)}', ))
+        self.check_report(1, 1, in_failures=(f'test_chain1 :: sqrt {(0, 1)}', ))
 
 
 if __name__ == '__main__':
