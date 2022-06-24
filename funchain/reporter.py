@@ -82,8 +82,7 @@ class Report:
 
     @property
     def summary(self) -> str:
-        ttl, rt, cmo, cmc, flo, flc = (
-            self.__total,
+        rt, cmo, cmc, flo, flc = (
             self.rate,
             self.completed_operations,
             self.completed_components,
