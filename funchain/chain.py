@@ -18,15 +18,18 @@ from .wrapper import Wrapper, CHAINABLE_FUNC
 from .reporter import Reporter, REPORT_CALLBACK
 from .tools import validate
 
-SUPPORTED_CHAINABLE_COLLECTIONS: TypeAlias = Union['CHAIN_GROUP_TUPLE', 'CHAIN_MODEL_DICT']
+# type aliases
+SUPPORTED_OPTIONS: TypeAlias = Literal['*']
+CHAIN_MODEL_DICT: TypeAlias = Dict[str, 'SUPPORTED_CHAINABLE_OBJECTS']
+CHAIN_GROUP_TUPLE: TypeAlias = Tuple['SUPPORTED_CHAINABLE_OBJECTS', ...]
 SUPPORTED_CHAINABLE_OBJECTS: TypeAlias = Union[
     Wrapper,
     CHAINABLE_FUNC,
-    Literal['*'],
-    SUPPORTED_CHAINABLE_COLLECTIONS,
+    SUPPORTED_OPTIONS,
+    CHAIN_MODEL_DICT,
+    CHAIN_GROUP_TUPLE,
 ]
-CHAIN_MODEL_DICT: TypeAlias = Dict[str, SUPPORTED_CHAINABLE_OBJECTS]
-CHAIN_GROUP_TUPLE: TypeAlias = Tuple[SUPPORTED_CHAINABLE_OBJECTS, ...]
+
 
 CHAIN_OPTIONS: Dict[str, Type[ChainOption]] = {
     '*': ChainMapOption,
@@ -37,13 +40,13 @@ class Chain:
     __doc__ = """
     Chain objects are callables that take a single argument and pass it to the internal
     structure initially parsed then returns the value or default in case of failure.
-    
+
     if a callback function is passed when initializing, this callback will be called
     at the end of the execution with the report object holding information about
     the execution and failures.
-    
+
     if log is True, the errors will be logged with the standard logging module.
-    
+
     the title of each chain should be unique to avoid confusion when receiving reports.
     """
 
@@ -52,9 +55,9 @@ class Chain:
     __len: int
     __logger: Optional[logging.Logger] = None
     __callback: Optional[REPORT_CALLBACK] = None
-    __reporter: Optional[Reporter] = None
+    __reporter: Reporter
 
-    __chains = WeakValueDictionary()
+    __chains: WeakValueDictionary = WeakValueDictionary()
 
     def __new__(
             cls,
@@ -87,9 +90,9 @@ class Chain:
         self.__core = parse(title, chainables)
         self.__title = title
         self.__len = len(self.__core)
+        self.__reporter = Reporter(title, len(self.__core))
         if callback:
             self.__callback = callback
-            self.__reporter = Reporter(title, len(self.__core))
         if log:
             self.__logger = logging.getLogger(self.title)
 
@@ -128,7 +131,7 @@ def parse(title: str, obj: CHAIN_GROUP_TUPLE) -> ChainGroup: ...
 @overload
 def parse(title: str, obj: Union[CHAINABLE_FUNC, Wrapper, Tuple[Union[CHAINABLE_FUNC, Wrapper]]]) -> ChainFunc: ...
 @overload
-def parse(title: str, obj: str) -> ChainOption: ...
+def parse(title: str, obj: SUPPORTED_OPTIONS) -> ChainOption: ...
 
 
 def parse(title: str, structure: SUPPORTED_CHAINABLE_OBJECTS) -> ChainableNode:
