@@ -55,7 +55,8 @@ class TestGetFunctionSignature(unittest.TestCase):
         self.assertEqual((NOT_SPECIFIED, int), get_signature(example))
 
         def example(a) -> None:  ...
-        self.assertEqual((NOT_SPECIFIED, None), get_signature(example))
+        with self.assertWarns(UserWarning):
+            self.assertEqual((NOT_SPECIFIED, None), get_signature(example))
 
         def example(a) -> tp.Union[bool, None]:  ...
         self.assertEqual((NOT_SPECIFIED, tp.Union[bool, None]), get_signature(example))
@@ -219,7 +220,6 @@ class TestGetName(unittest.TestCase):
         def func(): ...
         self.assertEqual('abc', get_name(func, 'abc'))
         self.assertEqual('test', get_name(func, 'test'))
-        self.assertRaises(TypeError, get_name, func, None)
         self.assertRaises(TypeError, get_name, func, object())
         self.assertRaises(ValueError, get_name, func, '')
 
@@ -230,21 +230,21 @@ class TestGetName(unittest.TestCase):
             def _func(): ...
             return _func
 
-        self.assert_('func' in get_name(func))
-        self.assert_('lambda' in get_name(lambda x: x))
-        self.assert_('hof' in get_name(hof))
+        self.assertTrue('func' in get_name(func))
+        self.assertTrue('lambda' in get_name(lambda x: x))
+        self.assertTrue('hof' in get_name(hof))
 
     def test_implicit_title_callable(self):
         class Obj1:
             def __call__(self, *args, **kwargs): ...
-        self.assert_('Obj1' in get_name(Obj1()))
+        self.assertTrue('Obj1' in get_name(Obj1()))
 
     def test_implicit_title_builtins(self):
-        self.assert_('float' in get_name(float))
-        self.assert_('dict' in get_name(dict))
-        self.assert_('abs' in get_name(abs))
-        self.assert_('round' in get_name(round))
-        self.assert_('callable' in get_name(callable))
+        self.assertTrue('float' in get_name(float))
+        self.assertTrue('dict' in get_name(dict))
+        self.assertTrue('abs' in get_name(abs))
+        self.assertTrue('round' in get_name(round))
+        self.assertTrue('callable' in get_name(callable))
 
 
 class TestChainableDecorator(unittest.TestCase):
@@ -253,7 +253,7 @@ class TestChainableDecorator(unittest.TestCase):
             return 2 * a
         func = chainable(func_)
         self.assertIsInstance(func, Wrapper)
-        self.assert_("func_" in func.name)
+        self.assertTrue("func_" in func.name)
         self.assertIs(func.default, None)
         self.assertIs(func.function, func_)
         self.assertEqual(10, func(5))
@@ -263,7 +263,7 @@ class TestChainableDecorator(unittest.TestCase):
         def func(a: int) -> int:
             return 2 * a
         self.assertIsInstance(func, Wrapper)
-        self.assert_("func" in func.name)
+        self.assertTrue("func" in func.name)
         self.assertIs(func.default, None)
         self.assertEqual(10, func(5))
 
@@ -275,7 +275,7 @@ class TestChainableDecorator(unittest.TestCase):
 
         @chainable(default='test')
         def func(a: int) -> int: ...
-        self.assert_('func' in func.name)
+        self.assertTrue('func' in func.name)
         self.assertEqual('test', func.default)
 
         default = object()
