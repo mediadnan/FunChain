@@ -1,5 +1,11 @@
 
 # FunChain
+
+[![Tests](https://github.com/mediadnan/funchain/actions/workflows/tests.yml/badge.svg)](https://github.com/mediadnan/funchain/actions/workflows/tests.yml)
+![Python versions](https://img.shields.io/pypi/pyversions/funchain)
+![PyPI version](https://img.shields.io/pypi/v/funchain)
+![License MIT](https://img.shields.io/github/license/mediadnan/funchain)
+
 **funchain** *(functions' chain)* is a python3 tool aiming to ease piping functions by safely chaining
 results from a function to the other sequentially or simultaneously and reporting failures without breaking the main program.
 
