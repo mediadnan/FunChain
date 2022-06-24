@@ -2,7 +2,7 @@ from funchain.wrapper import chainable, funfact
 from funchain.chain import Chain, parse
 
 
-__version__ = '0.0.1'
+__version__ = '1.0.0'
 __doc__ = """funchain package provides tools and classes to create ready to use chains,
 the main goal is to ease chaining functions and capture errors without breaking the whole program.
 
