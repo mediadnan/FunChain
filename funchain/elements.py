@@ -20,10 +20,10 @@ class ChainableNode(ABC):
     __doc__ = """
         chainables or chainable nodes are callable objects that can be chained together,
         chained nodes are executed in sequence one passing it result to the next until the last one.
-        
-        calling a chainable returns a tuple of success_indicator and result, the indicator informs 
+
+        calling a chainable returns a tuple of success_indicator and result, the indicator informs
         specifically root chainables if the sub chainables have succeeded or not.
-        
+
         if one chained node fails, the execution halts and returns the default.
     """
 
@@ -158,7 +158,8 @@ class ChainableNode(ABC):
 
     def report_success(self, reporter: Optional[Reporter]) -> None:
         """reports a successful operation"""
-        reporter and reporter.success(self)
+        if reporter:
+            reporter.success(self)
 
     def report_failure(
             self,
@@ -169,18 +170,20 @@ class ChainableNode(ABC):
             **kwargs
     ) -> None:
         """reports a failed operation"""
-        reporter and reporter.failure(
-            self,
-            dict(
-                input=input,
-                output=self.default,
-                error=error,
-                root=repr(self.root),
-                previous=repr(self.previous),
-                **kwargs
+        if reporter:
+            reporter.failure(
+                self,
+                dict(
+                    input=input,
+                    output=self.default,
+                    error=error,
+                    root=repr(self.root),
+                    previous=repr(self.previous),
+                    **kwargs
+                )
             )
-        )
-        logger and logger.error(f"{input!r} -> {self!r} !! {error!r} -> {self.default!r}")
+        if logger:
+            logger.error(f"{input!r} -> {self!r} !! {error!r} -> {self.default!r}")
 
     # Functionality  -----------------------------------------------------
 
@@ -262,7 +265,7 @@ class ChainFunc(ChainableNode):
     __doc__ = """
     chain functions are the main chainable nodes, the only chainable that actually change a value and pass it
     to the next node, the object is a wrapper around a wrapper (Wrapper object) that wraps some function.
-    
+
     chain function object runs the wrapped function inside a safe try...except context, if the execution
     of the function returns a value then it marks a success and passes the result to next,
     but if it raises some exception, it marks it as a failure with all details and returns a default value
@@ -295,14 +298,14 @@ class ChainFunc(ChainableNode):
 #   CHAIN COLLECTIONS   --------------------------------------------------
 class ChainGroup(ChainCollection):
     __doc__ = """
-    chain groups are containers that chain nodes together and hold reference of the first element named entry, 
+    chain groups are containers that chain nodes together and hold reference of the first element named entry,
     calling a chain group will call it entry node and it next nodes internally then pass the result to group's next.
     the chain will return a success_indicator and a result.
-    
+
     the chain group indicates failure if ANY of it members fail.
-    
+
     it is the choice for making sequential operations.
-    
+
     the groups owns the members, each of the sub-nodes keeps reference of this group as root.
     """
 
@@ -315,7 +318,7 @@ class ChainGroup(ChainCollection):
         self.__entry = reduce(ChainableNode.chain, (self.own(member) for member in members)).first
 
     @property
-    def entry(self) -> Optional[ChainableNode]:
+    def entry(self) -> ChainableNode:
         """gets the first member of the subsequence - read-only"""
         return self.__entry
 
@@ -346,7 +349,7 @@ class ChainModel(ChainCollection):
     chain models are containers that map branch_names to nodes, calling a model
     will call each member with the given argument and return a success_indicator
     and a dictionary mapping branch_names to results.
-    
+
     the chain model indicates failure when ALL of it members fail.
 
     it is the choice for making 'parallel' operations.
