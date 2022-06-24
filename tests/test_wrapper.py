@@ -2,7 +2,7 @@ import unittest
 
 import typing as tp
 
-from funchain.wrapper import (
+from fun_chain.wrapper import (
     NOT_SPECIFIED,
     get_name,
     get_signature,

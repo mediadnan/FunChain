@@ -1,12 +1,12 @@
 
-# FunChain
+# Fun_Chain
 
-[![Tests](https://github.com/mediadnan/funchain/actions/workflows/tests.yml/badge.svg)](https://github.com/mediadnan/funchain/actions/workflows/tests.yml)
-![Python versions](https://img.shields.io/pypi/pyversions/funchain)
-![PyPI version](https://img.shields.io/pypi/v/funchain)
-![License MIT](https://img.shields.io/github/license/mediadnan/funchain)
+[![Tests](https://github.com/mediadnan/fun_chain/actions/workflows/tests.yml/badge.svg)](https://github.com/mediadnan/fun_chain/actions/workflows/tests.yml)
+![Python versions](https://img.shields.io/pypi/pyversions/fun_chain)
+![PyPI version](https://img.shields.io/pypi/v/fun_chain)
+![License MIT](https://img.shields.io/github/license/mediadnan/fun_chain)
 
-**funchain** *(functions' chain)* is a python3 tool aiming to ease piping functions by safely chaining
+**fun_chain** *(functions' chain)* is a python3 tool aiming to ease piping functions by safely chaining
 results from a function to the other sequentially or simultaneously and reporting failures without breaking the main program.
 
 It provides tools needed for designing a process pipeline like grouping and branching, tools for creating
@@ -65,7 +65,7 @@ in running images or any running service instead of a serverless function.
 ## The need
 As a lazy developer among many, repetitive tasks such as validating and handling errors *(or any tedious
 task)* for each step is tiring and takes away the joy and focus from the main idea of a program,
-``funchain`` was created mainly to automate chaining functions for data processing purposes
+``fun_chain`` was created mainly to automate chaining functions for data processing purposes
 designed to live on a remote server and get notified if an anomaly occurs 
 without breaking the whole system and be able to adapt quickly to change, 
 reducing the refactoring energy you have to put if one of your sources changed slightly.
@@ -78,9 +78,9 @@ of data processing with a series of functions that could fail at any step.
 
 ## Installation
 
-You can pip-install it **funchain** by running the command
+You can pip-install it **fun_chain** by running the command
 ````bash
-pip install funchain
+pip install fun_chain
 ````
 
 ## Main API
@@ -89,7 +89,7 @@ This package contains some funny names that you'll get used to, but when you rea
 that means a functions that takes exactly one positional argument *(or one positional first argument and optional others)*
 and returns a value, that value will be the input for the next ***chainable function*** and so on...
 
-### *funchain.Chain*
+### *fun_chain.Chain*
 The main objects that you'll be using are ``Chain`` instances, 
 the constructor takes the following arguments:
   + ****chainables*** are positional arguments that define the structure of your workflow, this is where
@@ -112,7 +112,7 @@ Let say that we want to calculate the rounded square root of a number given as a
 
 ````python
 from math import sqrt
-from funchain import Chain
+from fun_chain import Chain
 
 rounded_square_root = Chain(float, sqrt, round, title='rounded_square_root', callback=print)
 
@@ -177,7 +177,7 @@ And that will report ```1``` operations succeeded and ```1``` failed ...
 
 ---
 
-### *funchain.chainable*
+### *fun_chain.chainable*
 This is a wrapper function that lets you pass some additional metadata together with the functions,
 it takes a function as a positional argument and these two optional keyword arguments:
 
@@ -188,17 +188,21 @@ it takes a function as a positional argument and these two optional keyword argu
 ``chainable`` can be used in two different ways, either as a function :
 
 ````python
-from funchain import chainable
+from fun_chain import chainable
+
 
 def func(number: int) -> int:
     return 2 * number
+
 
 new_func = chainable(func, title='double')
 ````
 
 or as a decorator
+
 ````python
-from funchain import chainable
+from fun_chain import chainable
+
 
 @chainable(title='double')
 def func(number: int) -> int:
@@ -227,21 +231,24 @@ validation system such as ``pydantic``*
 none ``chainable(lambda x: x*2)``, but using none is the same as passing ``lambda x: x*2`` itself.  
 
 ---
-### *funchain.funfact*
-``funfact`` stands for **function factory**, it is a decorator, and it has the same purpose as ``funchain.chainable()``
+### *fun_chain.funfact*
+``funfact`` stands for **function factory**, it is a decorator, and it has the same purpose as ``fun_chain.chainable()``
 but it decorates higher order functions *(or function factories)* and those are functions that produce functions.
 this is useful when you need to prepare some settings then output a function...
 
 You need to use this decorator in scenarios like those:
 
 + **Use case 1: need to prepare some state to be ready for use**
+
 ````python
-from funchain import funfact
+from fun_chain import funfact
+
 
 @funfact
 def my_func(*args, **kwargs):
     def func(arg: list[str]) -> str:
         pass
+
     # do some expensive initializations and preparations
     # based on *args and **kwargs
     return func
@@ -321,7 +328,7 @@ the ``__call__`` dunder method, otherwise an exception will be raised.*
 # Chain design options
 ## Map option
 This option useful when you have a function that returns a list, a tuple or any iterable, and you need to apply
-the next function to each item instead of applying it to all the collection at once. for this ***funchain*** offers
+the next function to each item instead of applying it to all the collection at once. for this ***fun_chain*** offers
 an easy syntax to mark the next functions as function that need to be mapped, and that by passing ``'*'`` before them.
 
 ##### Example
@@ -329,22 +336,25 @@ Let's do some arithmetics again, consider that we have this string ``"-134.76, 1
 and we need to extract the rounded absolute value of each number.
 
 ````python
-from funchain import Chain, funfact
+from fun_chain import Chain, funfact
+
 
 @funfact
 def str_split(sep: str = None):
     def split(text: str) -> list[str]:
         return text.split(sep)
+
     if not (isinstance(sep, str) or sep is None):
         raise ValueError('sep must be a string')
     return split
+
 
 abs_rounded_values = Chain(
     str_split(',', title='split_by_commas', default=[]),
     '*',
     float,
-    abs, 
-    round, 
+    abs,
+    round,
     title="abs_rounded_values"
 )
 
@@ -385,7 +395,7 @@ convert ``'abc'`` into a ``float``, or you need to refactor your functions and a
 blocks and manually then add specific handlers for each step then attach some callback, maybe add some loggings...,
 and you see that gets uglier quickly, and it's far less scalable and more error-prone...
 
-By using the fist approach (``funchain.Chain``), this is handled by default, in case of failures like this,
+By using the fist approach (``fun_chain.Chain``), this is handled by default, in case of failures like this,
 it will return a default value without breaking your code,
 and calling your report callback with all the details,
 the report callback can be a function that you create, it should get the report object and perform some logic on it,
@@ -395,7 +405,7 @@ like analysing it, and then dispatching some kind of event *such as sending noti
 
 ## Grouping option
 This is used for grouping a sequence of chainable functions, by default there is only one group, and it's the main 
-sequence you provide to ``funchain.Chain``, but in some cases you might need to use subgroups, and you do that by
+sequence you provide to ``fun_chain.Chain``, but in some cases you might need to use subgroups, and you do that by
 surrounding the chainable functions by ``()``.
 
 This is mostly needed to mark an end for a mapped sequence.
@@ -418,13 +428,14 @@ And we want it to be like this :
 The code can be like that :
 
 ````python
-from funchain import Chain, funfact, chainable
+from fun_chain import Chain, funfact, chainable
 
 
 @funfact
-def add_tag(tag_name: str,):
+def add_tag(tag_name: str, ):
     def tag_func(text: str) -> str:
         return f"<{tag_name}>{text}</{tag_name}>"
+
     return tag_func
 
 
@@ -482,7 +493,7 @@ and we want to perform some statistics on them.
 
 ````python
 from statistics import mode, mean, median
-from funchain import Chain, chainable
+from fun_chain import Chain, chainable
 
 analyze_numbers = Chain(
     (
@@ -500,9 +511,9 @@ analyze_numbers = Chain(
     title='analyze_numbers'
 )
 
-
 if __name__ == '__main__':
     from pprint import pp
+
     result = analyze_numbers("1, 2, 4, 3, 2, 4, 0, 1, 8, 9, 0, 1, 4, 2, 1, 2, 2, 4, 1, 0, 6")
     pp(result)
 ````
@@ -535,7 +546,7 @@ as it is the second in its main chain.
 
 ---
 ## More
-This is just an introduction, ``funchain`` documentation is intended to be created later and that will cover in depth
+This is just an introduction, ``fun_chain`` documentation is intended to be created later and that will cover in depth
 usage and more example, it will also cover object documentation ``ChainModel``, ``ChainGroup``, ``ChainFunc``, and 
 ``Report`` objects.
 

@@ -3,11 +3,11 @@ requires = ["setuptools>=42.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [tool.pytest.ini_options]
-addopts = "--cov=funchain"
+addopts = "--cov=fun_chain"
 testpaths = [
     "tests"
 ]
 
 [tool.mypy]
-mypy_path = "funchain"
+mypy_path = "fun_chain"
 check_untyped_defs = true

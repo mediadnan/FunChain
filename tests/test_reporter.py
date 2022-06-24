@@ -1,5 +1,5 @@
 import unittest
-from funchain.reporter import Reporter
+from fun_chain.reporter import Reporter
 
 
 class TestReporter(unittest.TestCase):

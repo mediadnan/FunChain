@@ -1,9 +1,9 @@
-from funchain.wrapper import chainable, funfact
-from funchain.chain import Chain, parse
+from fun_chain.wrapper import chainable, funfact
+from fun_chain.chain import Chain, parse
 
 
 __version__ = '1.0.0'
-__doc__ = """funchain package provides tools and classes to create ready to use chains,
+__doc__ = """fun_chain package provides tools and classes to create ready to use chains,
 the main goal is to ease chaining functions and capture errors without breaking the whole program.
 
 the main user interface tools are Chain class, parse function and the two decorators chainable and funfact.
