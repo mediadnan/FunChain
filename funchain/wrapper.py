@@ -7,7 +7,6 @@ from typing import (
     Any,
     Callable,
     Optional,
-    TypeAlias,
     overload,
     Tuple,
 )
@@ -15,7 +14,7 @@ from typing import (
 from funchain.tools import validate
 
 NOT_SPECIFIED = object()
-CHAINABLE_FUNC: TypeAlias = Callable[[Any], Any]
+CHAINABLE_FUNC = Callable[[Any], Any]
 
 
 def get_name(func: Callable, title: Optional[str] = None) -> str:
@@ -90,7 +89,7 @@ def pretty_annotation(annotation) -> str:
     elif isinstance(annotation, typing._BaseGenericAlias):  # TYPE: ignore
         return pretty_annotation(annotation.__origin__)
     elif isinstance(annotation, typing._SpecialForm):  # TYPE: ignore
-        return annotation._name
+        return annotation._name  # TYPE: ignore
     elif isinstance(annotation, typing.ForwardRef):
         return annotation.__forward_arg__
     elif isinstance(annotation, type):

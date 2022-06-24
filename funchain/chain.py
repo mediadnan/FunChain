@@ -2,7 +2,6 @@ import logging
 import warnings
 from weakref import WeakValueDictionary
 from typing import (
-    TypeAlias,
     Union,
     Dict,
     Tuple,
@@ -19,10 +18,10 @@ from .reporter import Reporter, REPORT_CALLBACK
 from .tools import validate
 
 # type aliases
-SUPPORTED_OPTIONS: TypeAlias = Literal['*']
-CHAIN_MODEL_DICT: TypeAlias = Dict[str, 'SUPPORTED_CHAINABLE_OBJECTS']
-CHAIN_GROUP_TUPLE: TypeAlias = Tuple['SUPPORTED_CHAINABLE_OBJECTS', ...]
-SUPPORTED_CHAINABLE_OBJECTS: TypeAlias = Union[
+SUPPORTED_OPTIONS = Literal['*']
+CHAIN_MODEL_DICT = Dict[str, 'SUPPORTED_CHAINABLE_OBJECTS']
+CHAIN_GROUP_TUPLE = Tuple['SUPPORTED_CHAINABLE_OBJECTS', ...]
+SUPPORTED_CHAINABLE_OBJECTS = Union[
     Wrapper,
     CHAINABLE_FUNC,
     SUPPORTED_OPTIONS,

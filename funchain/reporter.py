@@ -4,13 +4,12 @@ from typing import (
     Dict,
     Any,
     Callable,
-    TypeAlias,
     Generator,
     List,
     Optional
 )
 
-REPORT_CALLBACK: TypeAlias = Callable[['Report'], None]
+REPORT_CALLBACK = Callable[['Report'], None]
 
 
 class Report:
