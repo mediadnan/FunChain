@@ -18,14 +18,14 @@ NOT_SPECIFIED = object()
 CHAINABLE_FUNC: TypeAlias = Callable[[Any], Any]
 
 
-def get_name(func: Callable, title: str = ...) -> str:
+def get_name(func: Callable, title: Optional[str] = None) -> str:
     """validates the name if passed or the function's __qualname__"""
-    if title is not ...:
+    if title is not None:
         return validate(title, 'title', str, True)
     return func.__qualname__ if hasattr(func, '__qualname__') else type(func).__qualname__
 
 
-def get_signature(func: CHAINABLE_FUNC) -> Optional[Tuple[Any, Any]]:
+def get_signature(func: CHAINABLE_FUNC) -> Tuple[Any, Any]:
     """verifies and gets the function's signature, enforces (Any) -> Any ."""
     if not callable(func):
         raise TypeError(f"{get_signature.__name__} takes a callable as parameter")
@@ -50,7 +50,12 @@ def get_signature(func: CHAINABLE_FUNC) -> Optional[Tuple[Any, Any]]:
     elif not (required_args < (2 + i) and required_kwargs == 0):
         raise ValueError("chainable functions must only take one required positional argument")
 
-    arg_ann = spec.annotations.get(spec.args[i] if len(spec.args) > i else spec.varargs, NOT_SPECIFIED)
+    if len(spec.args) > i:
+        arg_ann = spec.annotations.get(spec.args[i], NOT_SPECIFIED)
+    elif spec.varargs:
+        arg_ann = spec.annotations.get(spec.varargs, NOT_SPECIFIED)
+    else:
+        arg_ann = NOT_SPECIFIED
     return_ann = spec.annotations.get('return', NOT_SPECIFIED)
 
     # check function's return
@@ -70,21 +75,21 @@ def pretty_annotation(annotation) -> str:
         return '?'
     elif annotation is Ellipsis:
         return '...'
-    elif annotation is type(None):
+    elif type(None) is annotation:
         return 'None'
-    elif type(annotation) is typing._UnionGenericAlias:  # Type: ignore
+    elif type(annotation) is typing._UnionGenericAlias:  # TYPE: ignore
         return ' | '.join(map(pretty_annotation, annotation.__args__))
-    elif type(annotation) is typing._CallableGenericAlias:  # Type: ignore
+    elif type(annotation) is typing._CallableGenericAlias:  # TYPE: ignore
         *args_type, return_type = annotation.__args__
         args_type = ', '.join(map(pretty_annotation, args_type))
         return f'({pretty_annotation(args_type)}) -> {pretty_annotation(return_type)}'
-    elif isinstance(annotation, (typing._GenericAlias, types.GenericAlias)):  # Type: ignore
+    elif isinstance(annotation, (typing._GenericAlias, types.GenericAlias)):  # TYPE: ignore
         origin = pretty_annotation(annotation.__origin__)
         args = ', '.join(map(pretty_annotation, annotation.__args__))
         return f'{origin}[{args}]'
-    elif isinstance(annotation, typing._BaseGenericAlias):  # Type: ignore
+    elif isinstance(annotation, typing._BaseGenericAlias):  # TYPE: ignore
         return pretty_annotation(annotation.__origin__)
-    elif isinstance(annotation, typing._SpecialForm):  # Type: ignore
+    elif isinstance(annotation, typing._SpecialForm):  # TYPE: ignore
         return annotation._name
     elif isinstance(annotation, typing.ForwardRef):
         return annotation.__forward_arg__
@@ -105,7 +110,7 @@ class Wrapper:
             self,
             function: CHAINABLE_FUNC,
             *,
-            title: str = ...,
+            title: str = None,
             default: Any = None
     ) -> None:
         """
@@ -151,12 +156,12 @@ class Wrapper:
 
 
 @overload
-def chainable(function: CHAINABLE_FUNC, /, *, title: str = None, default: Any = None) -> Wrapper: ...
+def chainable(function: CHAINABLE_FUNC, /, *, title: Optional[str] = None, default: Any = None) -> Wrapper: ...
 @overload
-def chainable(*, title: str = None, default: Any = None) -> Callable[[CHAINABLE_FUNC], Wrapper]: ...
+def chainable(*, title: Optional[str] = None, default: Any = None) -> Callable[[CHAINABLE_FUNC], Wrapper]: ...
 
 
-def chainable(function: CHAINABLE_FUNC = None, /, *, title: str = ..., default: Any = None):
+def chainable(function: CHAINABLE_FUNC = None, /, *, title: Optional[str] = None, default: Any = None):
     """
     wraps a function and returns a Wrapper object used by chains to create the right component,
     it can be used as a decorator or as a function wrapper.
@@ -219,7 +224,7 @@ def funfact(func: CHAINABLE_FUNC):
     @functools.wraps(func)
     def wrapper(
             *args,
-            title: str = ...,
+            title: Optional[str] = None,
             default: Any = None,
             **kwargs
     ) -> Wrapper:
