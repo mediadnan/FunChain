@@ -2,10 +2,10 @@ import unittest
 import warnings
 from typing import Iterable, Type
 
-from fun_chain.chain import parse, Chain, SUPPORTED_CHAINABLE_OBJECTS
-from fun_chain.elements import ChainGroup, ChainFunc, ChainableNode, ChainModel, ChainMapOption
-from fun_chain.wrapper import Wrapper, chainable, funfact
-from fun_chain.reporter import Report
+from fastchain.chain import parse, Chain, SUPPORTED_CHAINABLE_OBJECTS
+from fastchain.elements import ChainGroup, ChainFunc, ChainableNode, ChainModel, ChainMapOption
+from fastchain.wrapper import Wrapper, chainable, funfact
+from fastchain.reporter import Report
 
 
 class TestParse(unittest.TestCase):

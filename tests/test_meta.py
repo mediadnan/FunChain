@@ -1,6 +1,6 @@
 from pathlib import Path
 from configparser import ConfigParser
-from fun_chain import __version__
+from fastchain import __version__
 
 
 root = Path(__file__).parent.parent

@@ -11,7 +11,7 @@ from typing import (
     Tuple,
 )
 
-from fun_chain.tools import validate
+from fastchain.tools import validate
 
 NOT_SPECIFIED = object()
 CHAINABLE_FUNC = Callable[[Any], Any]

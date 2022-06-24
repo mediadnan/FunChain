@@ -3,9 +3,9 @@ import unittest
 from logging import Logger
 from typing import Any, Tuple
 
-from fun_chain.wrapper import Wrapper
-from fun_chain.elements import ChainGroup, ChainableNode, ChainMapOption, ChainFunc, ChainModel
-from fun_chain.reporter import Reporter, Report
+from fastchain.wrapper import Wrapper
+from fastchain.elements import ChainGroup, ChainableNode, ChainMapOption, ChainFunc, ChainModel
+from fastchain.reporter import Reporter, Report
 
 
 class Chainable(ChainableNode):

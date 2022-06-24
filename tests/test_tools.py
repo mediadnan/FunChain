@@ -1,6 +1,6 @@
 import unittest
 
-from fun_chain.tools import validate
+from fastchain.tools import validate
 
 
 class TestValidate(unittest.TestCase):
