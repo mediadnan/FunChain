@@ -193,12 +193,12 @@ class ChainableNode(ABC):
 
     def _call_next(self, result: Any, reporter: Reporter = None, log: Logger = None) -> Tuple[bool, Any]:
         """calls the next node with the result"""
-        return self.next(result, reporter, log)
+        return self.next(result, reporter, log)  # type: ignore
 
     def __call__(self, arg: Any, reporter: Reporter = None, log: Logger = None) -> Tuple[bool, Any]:
         """takes an input value and returns the success indicator and the result or default"""
         state, result = self._context(arg, reporter, log)
-        if not (state and self.next is not None):
+        if not state or self.__next is None:
             return state, result
         return self._call_next(result, reporter, log)
 
@@ -256,7 +256,7 @@ class ChainMapOption(ChainOption):
         return True, args
 
     def _call_next(self, results: Iterable, reporter: Reporter = None, log: Logger = None) -> Tuple[bool, Any]:
-        flags, results = zip(*(self.next(result, reporter, log) for result in results))
+        flags, results = zip(*(self.next(result, reporter, log) for result in results))  # type: ignore
         return all(flags), results
 
 

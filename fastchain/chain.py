@@ -5,11 +5,10 @@ from typing import (
     Union,
     Dict,
     Tuple,
-    overload,
     Any,
     Optional,
     Type,
-    Literal
+    Literal,
 )
 
 from .elements import ChainableNode, ChainOption, ChainMapOption, ChainFunc, ChainGroup, ChainModel
@@ -18,18 +17,13 @@ from .reporter import Reporter, REPORT_CALLBACK
 from .tools import validate
 
 # type aliases
-SUPPORTED_OPTIONS = Literal['*']
-CHAIN_MODEL_DICT = Dict[str, 'SUPPORTED_CHAINABLE_OBJECTS']
-CHAIN_GROUP_TUPLE = Tuple['SUPPORTED_CHAINABLE_OBJECTS', ...]
-SUPPORTED_CHAINABLE_OBJECTS = Union[
+SUPPORTED_CHAINABLE_OBJECTS = Union[            # type: ignore
     Wrapper,
     CHAINABLE_FUNC,
-    SUPPORTED_OPTIONS,
-    CHAIN_MODEL_DICT,
-    CHAIN_GROUP_TUPLE,
+    Literal['*'],
+    Dict[str, 'SUPPORTED_CHAINABLE_OBJECTS'],   # type: ignore
+    Tuple['SUPPORTED_CHAINABLE_OBJECTS', ...]   # type: ignore
 ]
-
-
 CHAIN_OPTIONS: Dict[str, Type[ChainOption]] = {
     '*': ChainMapOption,
 }
@@ -121,16 +115,6 @@ class Chain:
             self.__callback(self.__reporter.report())
             self.__reporter.reset()
         return result
-
-
-@overload
-def parse(title: str, obj: CHAIN_MODEL_DICT) -> ChainModel: ...
-@overload
-def parse(title: str, obj: CHAIN_GROUP_TUPLE) -> ChainGroup: ...
-@overload
-def parse(title: str, obj: Union[CHAINABLE_FUNC, Wrapper, Tuple[Union[CHAINABLE_FUNC, Wrapper]]]) -> ChainFunc: ...
-@overload
-def parse(title: str, obj: SUPPORTED_OPTIONS) -> ChainOption: ...
 
 
 def parse(title: str, structure: SUPPORTED_CHAINABLE_OBJECTS) -> ChainableNode:
