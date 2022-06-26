@@ -1,3 +1,4 @@
+import sys
 import unittest
 
 import typing as tp
@@ -94,7 +95,6 @@ class TestGetFunctionSignature(unittest.TestCase):
             hash,
             len,
             next,
-            aiter,
             iter,
             id
         }
@@ -188,23 +188,29 @@ class TestPrettyAnnotation(unittest.TestCase):
     def test_callables(self):
         self.assertEqual('(...) -> bool', pretty_annotation(tp.Callable[..., bool]))
         self.assertEqual('() -> bool', pretty_annotation(tp.Callable[[], bool]))
+
+    @unittest.skipIf(sys.version_info.minor < 9, "ellipsis not supported in Callable args")
+    def test_callable_varargs(self):
         self.assertEqual('(int, ...) -> bool', pretty_annotation(tp.Callable[[int, ...], bool]))
 
     def test_generic_types(self):
         self.assertEqual('list', pretty_annotation(tp.List))
         self.assertEqual('list', pretty_annotation(list))
         self.assertEqual('list[str]', pretty_annotation(tp.List[str]))
-        self.assertEqual('list[str]', pretty_annotation(list[str]))
 
         self.assertEqual('tuple', pretty_annotation(tp.Tuple))
         self.assertEqual('tuple', pretty_annotation(tuple))
         self.assertEqual('tuple[str, ...]', pretty_annotation(tp.Tuple[str, ...]))
-        self.assertEqual('tuple[str, ...]', pretty_annotation(tuple[str, ...]))
 
         self.assertEqual('dict', pretty_annotation(tp.Dict))
         self.assertEqual('dict', pretty_annotation(dict))
         self.assertEqual('dict[str, dict[int, set[bool]]]', pretty_annotation(tp.Dict[str, tp.Dict[int, tp.Set[bool]]]))
-        self.assertEqual('dict[str, dict[int, set[bool]]]', pretty_annotation(dict[str, dict[int, set[bool]]]))
+
+    @unittest.skipIf(sys.version_info.minor < 9, "unsupported generic with builtin classes")
+    def test_generic_types_builtin(self):
+        self.assertEqual('list[str]', pretty_annotation(list[str]))     # type: ignore
+        self.assertEqual('tuple[str, ...]', pretty_annotation(tuple[str, ...]))     # type: ignore
+        self.assertEqual('dict[str, dict[int, set[bool]]]', pretty_annotation(dict[str, dict[int, set[bool]]]))  # type: ignore
 
     def test_special_forms(self):
         self.assertEqual('Any', pretty_annotation(tp.Any))
