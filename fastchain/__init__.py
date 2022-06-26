@@ -2,7 +2,7 @@ from fastchain.wrapper import chainable, funfact
 from fastchain.chain import Chain, parse
 
 
-__version__ = '1.0.0'
+__version__ = '1.0.1'
 __doc__ = """fastchain package provides tools and classes to create ready to use chains,
 the main goal is to ease chaining functions and capture errors without breaking the whole program.
 
