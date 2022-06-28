@@ -145,24 +145,6 @@ def chainable(function: CHAINABLE_FUNC = None, *, title: Optional[str] = None, d
     :param function: function or a callable object with a signature (Any) -> Any
     :param title: the name to identify this function (default: func.__qualname__)
     :param default: the value to be returned at failures (default: None)
-
-    USAGE:
-
-    >>> @chainable
-    ... def function(arg):
-    ...     pass
-
-    >>> @chainable(title="my_function", default=0)
-    ... def function(arg):
-    ...     pass
-
-    or
-
-    >>> def function(arg):
-    ...     pass
-
-    >>> func = chainable(function)
-    >>> my_func = chainable(function, title="my_func", default='')
     """
     if function is None:
         def decorator(decorated: CHAINABLE_FUNC):
@@ -183,15 +165,6 @@ def funfact(func: CHAINABLE_FUNC):
 
     :param func: function that returns a callable function.
     :return: function that returns a Wrapper object.
-
-    USAGE:
-
-    >>> @funfact
-    ... def hof(*args, **kwargs):
-    ...     def func(a): ...
-    ...     return func
-
-    >>> my_func = hof(4, 3, 1, title='my_func', default=0)
     """
     @functools.wraps(func)
     def wrapper(
