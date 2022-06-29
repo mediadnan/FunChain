@@ -3,40 +3,49 @@ Mapping
 =======
 The **map option** is needed when you have a function that returns a list, a tuple or any sequence, and you need to apply
 the rest of the function to each item of this sequence instead of applying it to the sequence as a whole.
-For this fastchain offers an easy syntax to mark where the iterations must begin, and that by passing '*'.
+For this fastchain offers an easy syntax to mark where the iterations must begin, and that by passing ``'*'``.
 
 Map option example
 ------------------
-Let's do some arithmetics again, consider that we have this string ``"-134.76, 103.4 , -89.34"``
-and we need to extract the rounded absolute value of each number.
+Consider having a string with a sequence of decimals, and we want to get the absolute rounded values.
+
+For this let's create some reusables in a file named ``components.py``
+
+.. literalinclude:: /_examples/components.py
+   :caption: components.py
+   :language: python
+   :lines: 3, 18-25
+   :linenos:
+
+And then create ``map_option_example.py`` right next to it
 
 .. _map_option_code_example:
-
 .. literalinclude:: /_examples/map_option_example.py
-   :name: map_option_example
+   :name: map_option_example.py
    :language: python
-   :lines: 4-17
-   :emphasize-lines: 9
+   :lines: -12
+   :linenos:
+   :emphasize-lines: 7
 
 
-In this example, we create reusable ``split_by_commas``, then we passed it as first argument
-to chain, knowing that it will return a sequence of strings and we need to apply the next functions for each
-returned item. For that we've placed ``'*'`` after ``split_by_commas``
+In this example, we passed ``split`` as first process of the chain
+knowing that it will return a sequence of strings and we need to apply the next functions for each
+returned item, so we placed ``'*'`` after ``split``.
 
-Now if we call the chain:
+Now if we call the chain the result will be
 
-    >>> abs_rounded_values("-134.76, 103.4 , -89.34")
+    >>> chain("-134.76 103.4 -89.34")
     (135, 103, 89)
 
-The flow of processes will be similar to this
+The flow of processes will be represented as follows
 
 .. code-block::
 
-                                                                      | "-134.76" -> [float] =(...)-> [round] => 135
-    "-134.76, 103.4 , -89.34" -> [split] => ["-134.76", ...] -> [*] =>| " 103.4 " -> [float] =(...)-> [round] => 103
-                                                                      | " -89.34" -> [float] =(...)-> [round] => 89
+                                                                             | "-134.76" -> [float] =(...)-> [round] => 135
+    "-134.76 103.4 -89.34" -> [split_by_commas] => ["-134.76", ...] -> [*] =>| " 103.4 " -> [float] =(...)-> [round] => 103
+                                                                             | " -89.34" -> [float] =(...)-> [round] => 89
 
-.. important::
+.. note::
    The chain will fail if the map option\ ``*`` receives a non-iterable object.
 
 Advantages *(Reminder)*

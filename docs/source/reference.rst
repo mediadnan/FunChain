@@ -1,6 +1,8 @@
 =========
 Reference
 =========
+This document contains API reference of classes and function of ``FastChain`` package.
+
 
 Chain Module
 ============

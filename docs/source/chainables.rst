@@ -85,38 +85,30 @@ or the functions simply needs some configuration to a specific use case, then us
 Let say that we need a component to match a specific pattern, we will create a general purpose regex matcher:
 
 .. _regex-funfact-example:
-.. code-block:: python
-
-   import re
-   from typing import AnyStr, Callable, List
-   from fastchain import funfact, Chain
-
-
-   @funfact
-   def regex(pattern: AnyStr, flags: re.RegexFlag = re.DOTALL) -> Callable[[str], List[str]]:
-       """generates a function that matches a regular expression and returns those matches"""
-       def func(text: str) -> List[str]:
-           matches = regex_pattern.findall(text)
-           if not matches:
-               # This makes sure the chain does proceed
-               # if no matches where found.
-               raise ValueError(f"No matches for {pattern!r}")
-           return matches
-       regex_pattern = re.compile(pattern, flags)
-       return func
+.. literalinclude:: /_examples/components.py
+   :language: python
+   :lines: -17
+   :linenos:
 
 In this example, we decorated ``regex`` which is a *function factor* with ``@funfact`` decorator, now calling ``regex``
-returns a ``wrapper`` [1]_ instead of ``func(text: str) -> str`` just like :ref:`chainable <chainable-usage>` does.
+returns a ``wrapper`` [#f1]_ instead of ``func(text: str) -> str`` just like :ref:`chainable <chainable-usage>` does.
 in fact ``regex`` now takes ``pattern`` and ``flags`` as positional arguments plus ``title`` and ``default`` keyword arguments.
 
 
 Using it in chains will be like
 
-.. code-block:: python
+.. literalinclude:: /_examples/regex_prices__simple_example.py
+   :language: python
+   :linenos:
+   :lines: -10
+   :emphasize-lines: 6
 
-   chain = Chain(..., regex(r"\$\s?(\d+\.?\d*)", title="price_finder", default=()), ...)
+And if we try it we get
 
-The call to ``regex`` has produced a callable [1]_, and the regex pattern ``"\$\s?(\d+\.?\d*)"``
+    >>> chain("They have a 34% off this week, the initial price was $70.28 now it's $52.45")
+    [70.28, 52.45]
+
+The call to ``regex`` has produced a callable [#f1]_, and the regex pattern ``"\$\s?(\d+\.?\d*)"``
 will only be compiled once and be available for all calls.
 We'll comeback to this example in the next chapter.
 
@@ -183,7 +175,7 @@ otherwise ``ValueError`` will be raised.
 
 .. note::
    + Now calling the constructor ``MyCallable(...)`` does not return ``MyCallable`` instance,
-     but a wrapper [1]_ around it.
+     but a wrapper [#f1]_ around it.
    + If you call ``MyCallable`` without specifying the title, the default title will be ``'MyCallable'``
 
 --------
@@ -191,4 +183,4 @@ otherwise ``ValueError`` will be raised.
 In the next chapter, we will discuss what options do we have to design a chain ...
 
 .. rubric:: Footnotes
-.. [1] :ref:`wrappers <wrapper-ref>` are object used by :ref:`chains <chain-ref>` to create it nodes.
+.. [#f1] :ref:`wrappers <wrapper-ref>` are object used by :ref:`chains <chain-ref>` to create it nodes.

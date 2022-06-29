@@ -1,18 +1,14 @@
 from fastchain import Chain
-from components import tag, split, join
+from components import join, split, tag
 
 
-pipeline = Chain(
-    (
-        split(),
-        '*',
-        str.strip,
-        tag('p'),
-    ),
+chain = Chain(
+    split(),
+    ('*', str.strip, tag('p')),
     join(),
     tag('div'),
     title='nested_html',
 )
 
 if __name__ == '__main__':
-    print(pipeline("text-1 text-2 text-3"))
+    assert chain("text1 text2 text3") == "<div><p>text1</p><p>text2</p><p>text3</p></div>"

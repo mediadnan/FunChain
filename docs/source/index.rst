@@ -41,16 +41,16 @@ Of course there's some other ways to deal with this kind of issues, but as the p
 handling each step of the code separately, or having to dive into the logs to figure out the source of the problem.
 
 The goal of this tool is to reduce or even remove the need to interact with a code each time a provider has changed
-the interface or any similar action that may break your code, and to achieve that, ``FastChain`` must:
+the interface or any similar action that may break your code, and to achieve that, ``FastChain`` must
 
-# Provide an easy API to create a process flow abstracting away all the decisions like ``if..else`` or ```try..except``
++ Provide an easy API to create a process flow abstracting away all the decisions like ``if..else`` or ```try..except``
   and handle those internally.
 
-# Being able to locate the exact source of problem and report it to a custom handler, decreasing the time to fix it.
++ Being able to locate the exact source of problem and report it to a custom handler, decreasing the time to fix it.
 
-# Isolate components to make sure that if one component breaks, the rest will not be affected and continue.
++ Isolate components to make sure that if one component breaks, the rest will not be affected and continue.
 
-# Separate chain structure from the code entirely, and make it possible to edit the process flows without interacting
++ Separate chain structure from the code entirely, and make it possible to edit the process flows without interacting
   with the core source code.
 
 

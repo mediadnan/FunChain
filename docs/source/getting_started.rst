@@ -1,3 +1,9 @@
+.. raw:: html
+
+    <style> .red {color:red} </style>
+
+.. role:: red
+
 .. _getting-started:
 
 ===============
@@ -36,13 +42,6 @@ directly from the repository via this command
 
 ______________
 
-.. raw:: html
-
-    <style> .red {color:red} </style>
-
-.. role:: red
-
-
 Basic usage
 ===========
 This package contains some funny names that you'll get used to, but when you read **'chainable function'**
@@ -54,25 +53,16 @@ The main objects that we will be interacting with are :ref:`Chain <chain-ref>` i
 as example let say that we want to calculate the rounded square root of a number given as a string.
 
 .. _rounded_square_root_example:
-.. code-block:: python
+.. literalinclude:: /_examples/rounded_square_root_example.py
+   :language: python
    :linenos:
    :name: rounded square root example
-
-   from math import sqrt
-   from fastchain import Chain
-
-   chain = Chain(float, sqrt, round, title='rounded_square_root', callback=print)
-
-   if __name__ == '__main__':
-       result = chain("   17  ")
-       assert result == 4
-       assert isinstance(result, int)
 
 In the example above we created a :ref:`chain <chain-ref>` with a sequence of three functions (``float`` -> ``sqrt`` -> ``round``)
 and gave it the title ``rounded_square_root`` and we specified ``print`` as the report handler,
 when we call it with ``"   17  "``, the input will be processed as follows:
 
-    "   17  " -> [float] => 17.0 -> [sqrt] => 4.123105625617661 -> [round] => 4
+    "   17  " -> **[float]** => 17.0 -> **[sqrt]** => 4.123105625617661 -> **[round]** => 4
 
 .. note::
     *In fact this is overly simplified for example purposes, stripping out the decision nodes...*
