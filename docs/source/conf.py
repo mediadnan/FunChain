@@ -13,7 +13,6 @@
 # import os
 # import sys
 # sys.path.insert(0, os.path.abspath('.'))
-from fastchain import __version__
 
 
 # -- Project information -----------------------------------------------------
@@ -21,7 +20,7 @@ from fastchain import __version__
 project = 'FastChain'
 copyright = '2022, MARSO Adnan'
 author = 'MARSO Adnan'
-version = __version__
+version = '1.0.1'
 release = '1.0.1'
 
 
