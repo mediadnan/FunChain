@@ -40,7 +40,7 @@ master_doc = 'index'
 # -- Options for HTML output -------------------------------------------------
 
 html_theme = 'furo'
-html_static_path = ['_static', 'source/_examples']
+html_static_path = ['_static', '_examples']
 # html_logo = "_static/logo/logo-color.svg"
 html_favicon = "_static/favicon/favicon-black.svg"
 html_theme_options = {
