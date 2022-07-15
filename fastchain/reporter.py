@@ -49,24 +49,22 @@ class Reporter(Generic[T]):
     def failed(
             self,
             source: T,
-            title: str,
             *,
             input: Any,
             error: Exception,
-            record: bool = True
+            ignore: bool = False
     ) -> None:
         """
         mark operation as failed.
 
         :param source: the object marking this failure.
-        :param title: the unique title of this failure.
         :param input: the value that caused this failure.
         :param error: the risen exception that contains details of the failure.
-        :param record: whether to record the failure or not, default to True.
+        :param ignore: whether to ignore the failure or not, default to False.
         """
         self._count(source, False)
-        if record:
-            self.__failures[title] = FailureDetails(input=input, error=error)
+        if not ignore:
+            self.__failures[source] = FailureDetails(input=input, error=error)
 
     def report(self) -> ReportStats:
         """
@@ -136,10 +134,10 @@ class Reporter(Generic[T]):
         ]
         if failures:
             lines.extend(("Registered failures", '-' * 19))
-            for f_title, failure in failures.items():
+            for source, failure in failures.items():
                 input, error = failure['input'], failure['error']
                 lines.extend((
-                    f"- {f_title}:",
+                    f"- {source}:",
                     f"     input:      {input!r}",
                     f"     input_type: {type(input)}",
                     f"     error:      {error!r}"

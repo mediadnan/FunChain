@@ -1,397 +1,232 @@
-from logging import Logger
+import abc
 from abc import ABC, abstractmethod
-from functools import reduce
-from typing import (
-    Optional,
-    Tuple,
-    Any,
-    Dict,
-    Set,
-    Iterable,
-)
+from typing import Any, TypeAlias, TypeVar, Iterable, Generic, Callable, Generator, overload, TYPE_CHECKING
 
-from .wrapper import Wrapper
 from .reporter import Reporter
-from .tools import validate
+from ._tools import get_qualname
+
+T = TypeVar("T")
+T1 = TypeVar("T1")
+T2 = TypeVar("T2")
+FEEDBACK: TypeAlias = tuple[True, T] | tuple[False, Any]
+CHAINABLE: TypeAlias = Callable[[T1], T2]
+CHAINABLE_OBJECTS: TypeAlias = CHAINABLE | tuple | dict[str | int, Any] | list | str
 
 
-#   ABSTRACT BASE CLASSES ------------------------------------------------
-class ChainableNode(ABC):
-    __doc__ = """
-        chainables or chainable nodes are callable objects that can be chained together,
-        chained nodes are executed in sequence one passing it result to the next until the last one.
+class ChainFailure(Exception):
+    """special Exception that signals a failing operation"""
 
-        calling a chainable returns a tuple of success_indicator and result, the indicator informs
-        specifically root chainables if the sub chainables have succeeded or not.
 
-        if one chained node fails, the execution halts and returns the default.
-    """
+class Chainable(ABC, Generic[T1, T2]):
+    __slots__ = (
+        'name',
+        'title',
+        'optional',
+        'default'
+    )
 
-    __branch: str
-    __title: str
-
-    __root: Optional['ChainCollection'] = None
-    __next: Optional['ChainableNode'] = None
-    __prev: Optional['ChainableNode'] = None
-
-    # Construction  ------------------------------------------------------
-
-    def __init__(self, branch: str, title: str) -> None:
-        self.__branch = branch
-        self.__title = title
-
-    # Identity  ----------------------------------------------------------
-
-    @property
-    def branch(self):
-        """gets the branch name - read-only"""
-        return self.__branch
-
-    @property
-    def title(self) -> str:
-        """name of the component - read-only"""
-        return self.__title
-
-    @property
-    def position(self) -> Tuple[int, ...]:
-        """absolute position preceded by the subgroups' - read-only"""
-        return *(self.__root.position if self.__root else ()), len(self.previous_all)
-
-    @property
-    def default(self) -> Any:
-        """the value to be returned when failing - read-only"""
-        return None
-
-    @property
-    def size(self) -> int:
-        """size without counting next - read-only"""
-        return 1
-
-    def __str__(self) -> str:
-        """unique composition of [namespace] :: [title] [position]"""
-        return f"{self.__branch} :: {self.title} {self.position}"
-
-    def __len__(self) -> int:
-        if self.next is None:
-            return self.size
-        return self.size + len(self.next)
-
-    # Navigation  --------------------------------------------------------
-
-    def chain(self, other: 'ChainableNode') -> 'ChainableNode':
-        """binds the chainable (as next) and returns it"""
-        other.previous = self
-        self.__next = other
-        return other
-
-    @property
-    def root(self) -> Optional['ChainCollection']:
-        """gets the root of this component"""
-        return self.__root
-
-    @root.setter
-    def root(self, other: 'ChainCollection') -> None:
-        self.__root = validate(other, 'root', ChainCollection)
-
-    @property
-    def next(self) -> Optional['ChainableNode']:
-        """gets the successor of this component - read-only"""
-        return self.__next
-
-    @property
-    def previous(self) -> Optional['ChainableNode']:
-        """gets the predecessor of this component"""
-        return self.__prev
-
-    @previous.setter
-    def previous(self, other: 'ChainableNode') -> None:
-        self.__prev = validate(other, 'previous', ChainableNode)
-
-    @property
-    def roots(self) -> Tuple['ChainCollection', ...]:
-        """gets all roots of this component - read-only"""
-        if not self.root:
-            return ()
-        return *self.root.roots, self.root
-
-    @property
-    def next_all(self) -> Tuple['ChainableNode', ...]:
-        """gets all successors of this component - read-only"""
-        if not self.next:
-            return ()
-        return self.next, *self.next.next_all
-
-    @property
-    def previous_all(self) -> Tuple['ChainableNode', ...]:
-        """gets all predecessors of this component - read-only"""
-        if not self.previous:
-            return ()
-        return *self.previous.previous_all, self.previous
-
-    @property
-    def origin(self) -> Optional['ChainCollection']:
-        """gets the first root of this component - read-only"""
-        if not self.root:
-            return self if isinstance(self, ChainCollection) else None
-        return self.root.origin
-
-    @property
-    def last(self) -> 'ChainableNode':
-        """gets the first component of the sequence - read-only"""
-        if not self.next:
-            return self
-        return self.next.last
-
-    @property
-    def first(self):
-        """gets the first component of the sequence - read-only"""
-        if not self.previous:
-            return self
-        return self.previous.first
-
-    @property
-    def sequence(self) -> Tuple['ChainableNode', ...]:
-        """gets all chained components from first to last - read-only"""
-        return *self.previous_all, self, *self.next_all
-
-    # Reporting  ---------------------------------------------------------
-
-    def report_success(self, reporter: Optional[Reporter]) -> None:
-        """reports a successful operation"""
-        if reporter:
-            reporter.success(self)
-
-    def report_failure(
+    def __init__(
             self,
-            reporter: Optional[Reporter],
-            logger: Optional[Logger],
-            input,
-            error,
-            **kwargs
-    ) -> None:
-        """reports a failed operation"""
-        if reporter:
-            reporter.failure(
-                self,
-                dict(
-                    input=input,
-                    output=self.default,
-                    error=error,
-                    root=repr(self.root),
-                    previous=repr(self.previous),
-                    **kwargs
-                )
-            )
-        if logger:
-            logger.error(f"{input!r} -> {self!r} !! {error!r} -> {self.default!r}")
+            name: str,
+            *,
+            title: str | None = None,
+            root: str | None = None,
+            pos: int | None = None,
+            optional: bool = False,
+            default: Any = None,
+    ):
+        if title is None:
+            title = name
+            if pos is not None:
+                title = f'{title}[{pos}]'
+            if root is not None:
+                title = f'{root}.{title}'
+        self.title: str = title
+        self.name: str = name
+        self.optional: bool = optional
+        self.default: T2 | None = default
 
-    # Functionality  -----------------------------------------------------
+    def __str__(self):
+        return self.title
+
+    @abc.abstractmethod
+    def __repr__(self) -> str:
+        """chainable string representation"""
 
     @abstractmethod
-    def _context(self, arg, reporter: Reporter = None, log: Logger = None) -> Tuple[bool, Any]:
-        """uses arg and returns the result_state and the result"""
+    def __call__(self, arg: T1, reporter: Reporter) -> FEEDBACK[T2]:
+        """processes arg and returns feedback with success and result"""
 
-    def _call_next(self, result: Any, reporter: Reporter = None, log: Logger = None) -> Tuple[bool, Any]:
-        """calls the next node with the result"""
-        return self.next(result, reporter, log)  # type: ignore
-
-    def __call__(self, arg: Any, reporter: Reporter = None, log: Logger = None) -> Tuple[bool, Any]:
-        """takes an input value and returns the success indicator and the result or default"""
-        state, result = self._context(arg, reporter, log)
-        if not state or self.__next is None:
-            return state, result
-        return self._call_next(result, reporter, log)
+    def failure(self, reporter: Reporter, input: Any, error: Exception) -> tuple[False, Any]:
+        """reports self as failed with given input and error"""
+        reporter.failed(self, input=input, error=error, ignore=self.optional)
+        return False, self.default
 
 
-class ChainCollection(ChainableNode, ABC):
-    __doc__ = """chain collection are nodes that have children or sub-nodes that do the actual job"""
+class ChainNode(Chainable, Generic[T1, T2]):
+    __slots__ = 'function',
 
-    __members: Set[ChainableNode]
+    def __init__(self, function: Callable[[T1], T2], **kwargs):
+        if 'name' not in kwargs:
+            kwargs['name'] = get_qualname(function)
+        self.function: CHAINABLE[T1, T2] = function
+        super().__init__(**kwargs)
 
-    def __init__(self, branch: str) -> None:
-        super().__init__(branch, type(self).__name__)
-        self.__members = set()
-
-    def own(self, other: ChainableNode) -> ChainableNode:
-        """makes self as root of other and keeps it references as member"""
-        self.__members.add(other)
-        other.root = self
-        return other
-
-    @property
-    def members(self) -> Set[ChainableNode]:
-        """gets all children elements - read-only"""
-        return self.__members
-
-
-class ChainOption(ChainableNode, ABC):
-    __doc__ = """chain options are helper nodes that affect chain behaviour without changing the passed argument"""
-
-    _option_: str
-
-    def __init__(self, branch: str) -> None:
-        super().__init__(branch, f'OPTION[{self._option_}]')
-
-    def __repr__(self) -> str:
-        return self._option_
-
-
-#   CHAIN OPTIONS   ------------------------------------------------------
-class ChainMapOption(ChainOption):
-    __doc__ = """chain map option takes an iterable and pass each value to the next node."""
-
-    _option_ = '*'
-
-    @property
-    def default(self) -> tuple:
-        return ()
-
-    def _context(self, args: Iterable, reporter: Reporter = None, log: Logger = None) -> Tuple[bool, Any]:
+    def __call__(self, arg: T1, reporter: Reporter) -> FEEDBACK[T2]:
         try:
-            iter(args)
-        except TypeError as type_error:
-            self.report_failure(reporter, log, args, type_error)
-            return False, self.default
-        self.report_success(reporter)
-        return True, args
-
-    def _call_next(self, results: Iterable, reporter: Reporter = None, log: Logger = None) -> Tuple[bool, Any]:
-        flags, results = zip(*(self.next(result, reporter, log) for result in results))  # type: ignore
-        return all(flags), results
-
-
-#   CHAIN FUNCTION  ------------------------------------------------------
-class ChainFunc(ChainableNode):
-    __doc__ = """
-    chain functions are the main chainable nodes, the only chainable that actually change a value and pass it
-    to the next node, the object is a wrapper around a wrapper (Wrapper object) that wraps some function.
-
-    chain function object runs the wrapped function inside a safe try...except context, if the execution
-    of the function returns a value then it marks a success and passes the result to next,
-    but if it raises some exception, it marks it as a failure with all details and returns a default value
-    without calling next.
-    """
-
-    _func: Wrapper
-
-    def __init__(self, func: Wrapper, branch: str):
-        super().__init__(branch, func.name)
-        self._func = func
-
-    @property
-    def default(self) -> Any:
-        return self._func.default
-
-    def __repr__(self) -> str:
-        return f'[{self._func!r}]'
-
-    def _context(self, arg, reporter: Reporter = None, log: Logger = None) -> Tuple[bool, Any]:
-        try:
-            result = self._func.function(arg)
+            result = self.function(arg)
         except Exception as err:
-            self.report_failure(reporter, log, arg, err)
+            self.failure(reporter, arg, err)
             return False, self.default
-        self.report_success(reporter)
+        reporter.success(self)
         return True, result
 
-
-#   CHAIN COLLECTIONS   --------------------------------------------------
-class ChainGroup(ChainCollection):
-    __doc__ = """
-    chain groups are containers that chain nodes together and hold reference of the first element named entry,
-    calling a chain group will call it entry node and it next nodes internally then pass the result to group's next.
-    the chain will return a success_indicator and a result.
-
-    the chain group indicates failure if ANY of it members fail.
-
-    it is the choice for making sequential operations.
-
-    the groups owns the members, each of the sub-nodes keeps reference of this group as root.
-    """
-
-    __entry: ChainableNode
-
-    def __init__(self, members: Tuple[ChainableNode, ...], branch: str) -> None:
-        if not members:
-            raise ValueError('chain groups must contain elements')
-        super().__init__(branch)
-        self.__entry = reduce(ChainableNode.chain, (self.own(member) for member in members)).first
-
-    @property
-    def entry(self) -> ChainableNode:
-        """gets the first member of the subsequence - read-only"""
-        return self.__entry
-
-    @property
-    def default(self) -> None:
-        return None
-
-    @property
-    def size(self) -> int:
-        return len(self.entry)
-
     def __repr__(self) -> str:
-        return f"({' => '.join(map(repr, self.entry.sequence))})"
+        return f'<{self.name}>'
 
-    def __getitem__(self, item: int) -> ChainableNode:
-        sequence = self.entry.sequence
+
+class ChainMap(Chainable):
+    __slots__ = 'node',
+
+    def __init__(self, node: Chainable[T1, T2]):
+        super(ChainMap, self).__init__(title=node.title, name=node.name, optional=node.optional, default=())
+        self.node: Chainable = node
+
+    def __repr__(self):
+        return f'*{self.node!r}'
+
+    def __call__(self, args: Iterable[T1], reporter: Reporter) -> FEEDBACK[Iterable[T2]]:
         try:
-            return sequence[item]
-        except IndexError:
-            raise IndexError(f"index out of range, last index is {len(sequence) - 1}") from None
+            iter(args)
+        except TypeError as error:
+            return self.failure(reporter, args, error)
+        return True, self._process(args, reporter)
 
-    def _context(self, arg, reporter: Reporter = None, log: Logger = None) -> Tuple[bool, Any]:
-        return self.entry(arg, reporter, log)
+    def _process(self, args: Iterable[T1], reporter: Reporter) -> Generator[T2, None, None]:
+        for arg in args:
+            success, result = self.node(arg, reporter)
+            if success:
+                yield result
+            elif self.optional:
+                continue
+            break
+
+
+class ChainCollection(Chainable, ABC):
+    __slots__ = 'nodes',
+    NAME: str = 'chain-collection'
+
+    def __init__(self, nodes: Iterable[Chainable], **kwargs):
+        self.nodes: tuple[Chainable, ...] = tuple(nodes)
+        if 'name' not in kwargs:
+            kwargs['name'] = self.NAME
+        if 'optional' not in kwargs:
+            kwargs['optional'] = all(node.optional for node in nodes)
+        super(ChainCollection, self).__init__(**kwargs)
+
+
+class ChainSequence(ChainCollection, Generic[T1, T2]):
+    NAME = 'chain-sequence'
+
+    def __init__(self, nodes: tuple[Chainable[T1, Any], ..., Chainable[Any, T2]], **kwargs):
+        for node in reversed(nodes):
+            if not node.optional:
+                kwargs['default'] = node.default
+                break
+        super(ChainSequence, self).__init__(nodes, **kwargs)
+
+    def __call__(self, arg: T1, reporter: Reporter) -> FEEDBACK[T2]:
+        for node in self.nodes:
+            success, result = node(arg, reporter)
+            if success:
+                arg = result
+                continue
+            elif not node.optional:
+                break
+        else:
+            return False, self.default
+        return success, result
+
+    def __repr__(self):
+        return ' -> '.join(map(repr, self.nodes))
 
 
 class ChainModel(ChainCollection):
-    __doc__ = """
-    chain models are containers that map branch_names to nodes, calling a model
-    will call each member with the given argument and return a success_indicator
-    and a dictionary mapping branch_names to results.
+    NAME = 'chain-model'
+    __slots__ = 'keys',
 
-    the chain model indicates failure when ALL of it members fail.
+    def __init__(self, model: dict[T, Chainable], **kwargs):
+        kwargs['default'] = {key: node.default for key, node in model.items() if not node.optional}
+        self.keys, nodes = zip(*model.items())
+        super().__init__(nodes, **kwargs)
 
-    it is the choice for making 'parallel' operations.
+    def __call__(self, arg: T1, reporter: Reporter) -> FEEDBACK[dict[T, T2]]:
+        result = {}
+        for key, node in zip(self.keys, self.nodes):
+            success, result = node(arg, reporter)
+            if success:
+                result[key] = result
+            elif not node.optional:
+                return False, self.default | result
+        return True, result
 
-    the groups owns the members, each of the sub-nodes keeps reference of this group as root.
-    """
+    def __repr__(self):
+        return repr(dict(zip(self.keys, self.nodes)))
 
-    __model: Dict[str, ChainableNode]
 
-    def __init__(self, members: Dict[str, ChainableNode], branch: str) -> None:
-        super().__init__(branch)
-        if not members:
-            raise ValueError('chain models must contain elements')
-        self.__model = {name: self.own(component) for name, component in members.items()}
+class ChainGroup(ChainCollection):
+    NAME = 'chain-group'
 
-    @property
-    def model(self) -> Dict[str, ChainableNode]:
-        """gets the model dictionary - read-only"""
-        return self.__model
+    def __init__(self, nodes: list[Chainable], **kwargs):
+        kwargs['default'] = []
+        super().__init__(nodes, **kwargs)
 
-    @property
-    def default(self) -> Any:
-        return dict()
+    def __call__(self, arg: T1, reporter: Reporter) -> FEEDBACK[list[T2]]:
+        results = []
+        for node in self.nodes:
+            success, result = node(arg, reporter)
+            if success:
+                results.append(result)
+            elif not node.optional:
+                return False, self.default
+        return True, results
 
-    @property
-    def size(self) -> int:
-        return sum(map(len, self.model.values()))
+    def __repr__(self):
+        return repr(list(self.nodes))
 
-    def __repr__(self) -> str:
-        return repr(self.model)
 
-    def __getitem__(self, item: str) -> ChainableNode:
+class ChainMatch(ChainCollection):
+    NAME = "chain-match"
+
+    def __init__(self, nodes: list[Chainable], **kwargs):
+        kwargs['default'] = (node.default for node in nodes if not node.optional)
+        super().__init__(nodes, **kwargs)
+
+    def __call__(self, args: Iterable[T1], reporter: Reporter) -> FEEDBACK[list[T2]]:
+        results = []
         try:
-            return self.model[item]
-        except KeyError:
-            raise KeyError(f'chain model has no key named {item}')
+            for arg, node in zip(args, self.nodes, strict=True):
+                success, result = node(arg, reporter)
+                if success:
+                    results.append(result)
+                elif not node.optional:
+                    return False, self.default
+            return True, results
+        except TypeError as error:
+            return self.failure(reporter, args, error)
 
-    def _context(self, arg, reporter: Reporter = None, log: Logger = None) -> Tuple[bool, Any]:
-        states = set()
-        results = dict()
-        for name, component in self.model.items():
-            state, result = component(arg, reporter, log)
-            states.add(state)
-            results[name] = result
-        return any(states), results
+    def __repr__(self):
+        return f"[{' | '.join(map(repr, self.nodes))}]"
+
+
+@overload
+def parse(obj: Callable[[T1], T2], **kwargs) -> ChainNode[T1, T2]: ...
+@overload
+def parse(obj: tuple[CHAINABLE_OBJECTS, ...], **kwargs) -> ChainSequence: ...
+@overload
+def parse(obj: dict[T, CHAINABLE_OBJECTS], **kwargs) -> ChainModel[T1, dict[T, T2]]: ...
+@overload
+def parse(obj: list[CHAINABLE_OBJECTS], **kwargs) -> ChainGroup[T1, T2]: ...
+
+
+def parse(obj, **kwargs) -> Chainable: ...
