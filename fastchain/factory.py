@@ -4,7 +4,7 @@ import inspect
 from typing import Any, Callable, overload, Generic, ParamSpec
 
 from ._tools import get_qualname
-from .elements import CHAINABLE, Chainable, ChainNode, T2, T1
+from .chainable import CHAINABLE, Chainable, ChainNode, T2, T1
 
 
 class PreChainable(abc.ABC):
@@ -73,34 +73,8 @@ class PreNode(PreChainable, Generic[T1, T2]):
         return self.__func(arg)
 
 
-@overload
 def chainable(
-        function: CHAINABLE,
-        /,
-        *,
-        name: str | None = ...,
-        default: Any = ...,
-        default_factory: Callable[[], Any] | None = ...,
-        optional: bool = ...,
-        mode: str | None = ...,
-        **kwargs
-) -> PreNode: ...
-
-
-@overload
-def chainable(
-        *,
-        name: str | None = ...,
-        default: Any = ...,
-        default_factory: Callable[[], Any] | None = ...,
-        optional: bool = ...,
-        mode: str | None = ...,
-        **kwargs
-) -> Callable[[CHAINABLE], PreNode]: ...
-
-
-def chainable(
-        function: CHAINABLE | None = None,
+        function: CHAINABLE[T1, T2],
         /,
         *,
         name: str | None = None,
@@ -109,23 +83,10 @@ def chainable(
         optional: bool = False,
         mode: str | None = None,
         **kwargs,
-) -> PreNode | Callable[[CHAINABLE], PreNode]:
+) -> PreNode[T1, T2]:
     """
     wrapper that presets a chain's node (function) by configuring
     its state *(name, default)* and behaviour *(optional, mode)*.
-
-    it can be used inline :
-
-    >>> def func(a: int) -> int:
-    ...     return a * 10
-    ... myfunc = chainable(func, name="my_func")
-
-    or as a decorator:
-
-    >>> @chainable(name="my_func")
-    ...  def func(a: int) -> int:
-    ...     return a * 2
-    ... myfunc = func
 
     :param function: the chainable function (Any) -> Any
     :param name: the name given to the generated component, default to function.__qualname__.
@@ -133,24 +94,20 @@ def chainable(
     :param default_factory: the function that generates a default value when called, default to None.
     :param optional: specifies whether the chain can ignore its failing, default to False.
     :param mode: specifies the calling mode, default to None.
-    :keyword kwargs: any keyword argument to be patially passed to function.
+    :keyword kwargs: any keyword argument to be partially passed to function.
     :return: PreNode object or a decorator that returns a PreNode object.
     """
 
-    def decorator(func: CHAINABLE) -> PreNode:
-        if not callable(func):
-            raise TypeError("chainable must decorate a function.")
-        if kwargs:
-            func = functools.partial(func, **kwargs)
-        return PreNode(
-            func,
+    return functools.wraps(function)(
+        PreNode(
+            function,
             name=name,
             default=default,
             default_factory=default_factory,
             optional=optional,
             mode=mode
         )
-    return decorator if function is None else decorator(function)
+    )
 
 
 P = ParamSpec("P")
