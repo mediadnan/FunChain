@@ -40,7 +40,7 @@ def iter_chainable(cls: Type['CT']) -> Type['CT']:
 
 class Chainable(abc.ABC):
 
-    __slots__ = 'title', 'optional', '__repr'
+    __slots__ = 'title', 'optional',
 
     def __new__(cls, *args, iterable: bool = False, **kwargs):
         return super().__new__(iter_chainable(cls) if iterable else cls)
@@ -48,10 +48,9 @@ class Chainable(abc.ABC):
     def __init__(self, *, title: str, optional: bool = False, **_):
         self.title: str = title
         self.optional: bool = optional
-        self.__repr: str = f"<chain-{self.__class__.__name__.lower()}>"
 
     def __repr__(self) -> str:
-        return self.__repr
+        return f"<chain-{self.__class__.__name__.lower()}>"
 
     @abc.abstractmethod
     def __call__(self, input, report: Report) -> FEEDBACK:
@@ -86,17 +85,10 @@ class Node(Chainable):
 
     __slots__ = 'function', 'default_factory'
 
-    def __init__(
-            self,
-            function: CHAINABLE,
-            *,
-            default: Any = None,
-            default_factory: Callable[[], Any] = None,
-            **kwargs,
-    ):
+    def __init__(self, function: CHAINABLE, default_factory: Callable[[], Any], **kwargs):
         super(Node, self).__init__(**kwargs)
         self.function: CHAINABLE = function
-        self.default_factory: Callable[[], Any] = default_factory if callable(default_factory) else lambda: default
+        self.default_factory: Callable[[], Any] = default_factory
 
     def __call__(self, input, report: Report) -> FEEDBACK:
         try:

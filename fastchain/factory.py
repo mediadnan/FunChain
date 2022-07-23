@@ -8,7 +8,6 @@ from typing import (
     Generic,
     TypeAlias,
     Literal,
-    Union,
     overload,
     ParamSpec
 )
@@ -28,13 +27,9 @@ from .chainables import (
 
 
 OPTIONS: TypeAlias = Literal['*', '?', ':']
-CHAINABLES: TypeAlias = Union[
-    'Factory',
-    CHAINABLE,
-    tuple[OPTIONS | Any, ...],  # replace 'Any' with 'CHAINABLE' when circular hints get supported.
-    list[Any],                  # replace 'Any' with 'CHAINABLE' when circular hints get supported.
-    dict[str, Any]              # replace 'Any' with 'CHAINABLE' when circular hints get supported.
-]
+
+# todo: replace 'Any' with 'CNB' when circular reference is supported
+CNB: TypeAlias = CHAINABLE | tuple[OPTIONS | Any, ...] | list[Any] | dict[str, Any] | 'Factory'
 
 
 class Factory(abc.ABC, Generic[CT]):
@@ -48,33 +43,39 @@ class NodeFactory(Factory[Node]):
 
     def __init__(
             self,
-            function: CHAINABLE,
-            *,
+            func: CHAINABLE, *,
             name: str | None = None,
             default: Any = None,
-            default_factory: Callable[[], Any] | None = None,
-            **kwargs
+            default_factory: Callable[[], Any] | None = None
     ):
-        if not callable(function):
-            raise TypeError(f"expected a chainable function but got {type(function)}")
+        if not callable(func):
+            raise TypeError(f"nodes must be chainable functions (Any) -> Any, not {type(func)}")
+
         if name is None:
-            name = get_qualname(function)
-        if not (default_factory is None or callable(default_factory)):
+            name = get_qualname(func)
+        elif not isinstance(name, str):
+            raise TypeError(f"node's name must be a {str} not {type(name)}")
+        elif not name:
+            raise ValueError("empty strings are not valid node names")
+
+        if default_factory is None:
+            def df(): return default
+            default_factory = df
+        elif not callable(default_factory):
             raise TypeError("default_factory must be a 0-argument function that returns any value")
-        if kwargs:
-            function = partial(function, **kwargs)
-        self.function = function
+
         self.name = name
-        self.kwargs = dict(default=default, default_factory=default_factory)
+        self.func = func
+        self.default_factory = default_factory
 
     def __call__(self, title: str, **kwargs) -> Node:
-        return Node(self.function, title=title, **self.kwargs, **kwargs)
+        return Node(self.func, title=title, default_factory=self.default_factory, **kwargs)
 
 
 class CollectionFactory(Factory, Generic[CCT]):
     name: str
     constructor: Type[CCT]
-    transfer_only: set[str] = {'optional'}  # values to be parsed recursively to members
+    transfer_only: set[str] = {'optional'}  # values to be passed recursively to members
 
     @overload
     def __init__(self, cn: Type[Model], members: Callable[..., dict[str, Chainable]]): ...
@@ -87,7 +88,7 @@ class CollectionFactory(Factory, Generic[CCT]):
         self.constructor = constructor
         self.parse_members = members
 
-    def __call__(self, title: str, *_, **kwargs) -> CCT:
+    def __call__(self, title: str, **kwargs) -> CCT:
         members = self.parse_members(title, **{k: v for k, v in kwargs.items() if k in self.transfer_only})
         if not members:
             raise ValueError(f"cannot create an empty {self.name}")
@@ -103,9 +104,6 @@ def parse(
         **kwargs
 ) -> Chainable:
 
-    if root is not None and branch is None:
-        root = f'{root}[{branch}]'
-
     if isinstance(chainable_object, Factory):
         title = chainable_object.name
         if root is not None:
@@ -114,7 +112,7 @@ def parse(
             title = f'{root}/{title}'
         return chainable_object(title, **kwargs)
 
-    if callable(chainable_object):
+    elif callable(chainable_object):
         return parse(NodeFactory(chainable_object), root=root, **kwargs)
 
     elif isinstance(chainable_object, tuple):

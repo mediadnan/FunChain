@@ -1,4 +1,4 @@
-from .chain import Chain, LOG_FAILURES
+from .chain import Chain, LOG_FAILURES, RAIS_FOR_FAIL
 from .factory import funfact, chainable
 
 __version__ = '2.0.0'
@@ -10,3 +10,4 @@ the main user interface tools are Chain class, parse function and the two decora
 Chain is the main component, it parses the given model and creates the right execution structure.
 it also takes a callback that takes a report as its only parameter.
 chains are callables, they take an input and returns the last result."""
+__all__ = ('Chain', 'LOG_FAILURES', 'RAIS_FOR_FAIL', 'funfact', 'chainable')

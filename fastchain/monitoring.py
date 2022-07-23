@@ -33,8 +33,8 @@ class ChainFailure(RuntimeError):
 class FailureHandler(abc.ABC):
     __slots__ = 'owner',
 
-    def __init__(self, owner: str):
-        if not owner:
+    def __init__(self, owner: str | None):
+        if owner is None:
             raise ValueError(f"cannot create a {self.name} without owners name")
         self.owner = owner
 
@@ -53,7 +53,7 @@ class FailureHandler(abc.ABC):
 class LoggingHandler(FailureHandler):
     name: str = "logging handler"
 
-    def __init__(self, owner: str):
+    def __init__(self, owner: str | None):
         super(LoggingHandler, self).__init__(owner)
         self.logger: Logger = getLogger(owner)
 
@@ -105,7 +105,7 @@ class Report(Generic[T]):
         :param error: the risen exception.
         :param fatal: True if the error is from a required component
         """
-        failure = {'source': source, 'input': input, 'error': error, 'fatal': fatal}
+        failure = FailureDetails(source=source, input=input, error=error, fatal=fatal)
         self.failures.append(failure)
         for handler in self.failure_handlers:
             handler(failure)
@@ -179,11 +179,11 @@ def create_report_maker(
     """
     if not components:
         raise ValueError("unable create reports without components")
-    components: frozenset[T] = frozenset(components)
-    required: int = [not getattr(component, 'optional', False) for component in components].count(True)
+    components_: frozenset[T] = frozenset(components)
+    required: int = [not getattr(component, 'optional', False) for component in components_].count(True)
     failure_handlers: list[FailureHandler] = []
     if log_failures:
         failure_handlers.append(LoggingHandler(name))
     if raise_for_fail:
         failure_handlers.append(RaiseFailureHandler(name))
-    return lambda: Report(components, required, failure_handlers)
+    return lambda: Report(components_, required, failure_handlers)
