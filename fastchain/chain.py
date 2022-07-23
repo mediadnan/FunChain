@@ -1,157 +1,66 @@
-import logging
-import warnings
-from weakref import WeakValueDictionary
-from typing import (
-    Union,
-    Dict,
-    Tuple,
-    Any,
-    Optional,
-    Type,
-    Literal,
-)
+import re
+from typing import Callable, Pattern
+from .factory import parse
+from .chainables import CHAINABLE_OBJECTS
+from .monitoring import ReportDetails, Report, create_report_maker
 
-from .elements import ChainableNode, ChainOption, ChainMapOption, ChainFunc, ChainGroup, ChainModel
-from .wrapper import Wrapper, CHAINABLE_FUNC
-from .reporter import Reporter, REPORT_CALLBACK
-from .tools import validate
-
-# type aliases
-SUPPORTED_CHAINABLE_OBJECTS = Union[            # type: ignore
-    Wrapper,
-    CHAINABLE_FUNC,
-    Literal['*'],
-    Dict[str, 'SUPPORTED_CHAINABLE_OBJECTS'],   # type: ignore
-    Tuple['SUPPORTED_CHAINABLE_OBJECTS', ...]   # type: ignore
-]
-CHAIN_OPTIONS: Dict[str, Type[ChainOption]] = {
-    '*': ChainMapOption,
-}
+CHAIN_NAME: Pattern[str] = re.compile(r'^\w[\w\d_-]+?$', re.DOTALL)
+LOG_FAILURES: bool = True
+RAIS_FOR_FAIL: bool = False
 
 
 class Chain:
-    __doc__ = """
-    Chain objects are callables that take a single argument and pass it to the internal
-    structure initially parsed then returns the value or default in case of failure.
-
-    if a callback function is passed when initializing, this callback will be called
-    at the end of the execution with the report object holding information about
-    the execution and failures.
-
-    if log is True, the errors will be logged with the standard logging module.
-
-    the title of each chain should be unique to avoid confusion when receiving reports.
-    """
-
-    __title: str
-    __core: ChainableNode
-    __len: int
-    __logger: Optional[logging.Logger] = None
-    __callback: Optional[REPORT_CALLBACK] = None
-    __reporter: Reporter
-
-    __chains: WeakValueDictionary = WeakValueDictionary()
-
-    def __new__(
-            cls,
-            *chainables: SUPPORTED_CHAINABLE_OBJECTS,
-            title: str,
-            callback: REPORT_CALLBACK = None,
-            log: bool = False,
-    ):
-        if title in cls.__chains:
-            warnings.warn(f"a chain with the title {title!r} already exists!", UserWarning, stacklevel=2)
-        chain = super().__new__(cls)
-        cls.__chains[title] = chain
-        return chain
+    __slots__ = '__name', '__core', '__report_maker',
 
     def __init__(
             self,
-            *chainables: SUPPORTED_CHAINABLE_OBJECTS,
-            title: str,
-            callback: REPORT_CALLBACK = None,
-            log: bool = False,
-    ) -> None:
+            name: str,
+            *chainables: CHAINABLE_OBJECTS,
+            log_failures: bool = LOG_FAILURES,
+            raise_for_fail: bool = RAIS_FOR_FAIL
+    ):
         """
-        prepares the chain by parsing supported chainable objects.
+        creates a chain and globally registers it.
 
-        :param chainables: supported chainable objects,
-        :param title: a unique title that identifies the chain.
-        :param callback: a function that takes a Report object at the end of execution. (optional, default: None)
-        :param log: if True, the errors are logged with standard logging module. (optional, default: False)
+        :param name: the chains name must be unique.
+        :param chainables: any supported 'chainable' object.
+        :key log_failures: whether to log failures or not, default to True.
         """
-        self.__core = parse(title, chainables)
-        self.__title = title
-        self.__len = len(self.__core)
-        self.__reporter = Reporter(title, len(self.__core))
-        if callback:
-            self.__callback = callback
-        if log:
-            self.__logger = logging.getLogger(self.title)
+        if not isinstance(name, str):
+            raise TypeError("the name of the chain must be a string.")
+        elif not CHAIN_NAME.match(name):
+            raise ValueError("chain's name must begin with a letter and only contain letter, digits, _ and -")
+        core = parse(chainables)
+
+        self.__name: str = name
+        self.__core = core
+        self.__report_maker: Callable[[], Report] = create_report_maker(
+            core.nodes(),
+            log_failures,
+            raise_for_fail,
+            name=name
+        )
 
     @property
-    def title(self) -> str:
-        """gets the name of the chain - read-only"""
-        return self.__title
-
-    @property
-    def core(self) -> ChainableNode:
-        """gets the chain structure object - read-only"""
-        return self.__core
-
-    @classmethod
-    def chains(cls) -> WeakValueDictionary:
-        return cls.__chains
+    def name(self) -> str:
+        """gets the name of the chain - readonly"""
+        return self.__name
 
     def __repr__(self) -> str:
-        return f'<Chain {self.title!r}: {self.core!r}>'
+        return f'<chain {self.__name!r}>'
 
-    def __len__(self) -> int:
-        return self.__len
+    def __call__(self, input, reports: dict[str, ReportDetails] | None = None):
+        """
+        processes the given input and returns the result,
+        the chain creates its report and only registers it
+        if reports is not None.
 
-    def __call__(self, arg: Any) -> Any:
-        _, result = self.__core(arg, self.__reporter, self.__logger)
-        if self.__callback:
-            self.__callback(self.__reporter.report())
-            self.__reporter.reset()
+        :param input: the entry data to be processed
+        :param reports: a dictionary where to register the execution statistics.
+        :return: the output result from given input.
+        """
+        report = self.__report_maker()
+        result = self.__core(input, report=report)[1]
+        if reports is not None:
+            reports[self.__name] = report.make()
         return result
-
-
-def parse(title: str, structure: SUPPORTED_CHAINABLE_OBJECTS) -> ChainableNode:
-    """converts the model structure into a chain structure"""
-    return _parse(validate(title, 'title', str, True), structure)
-
-
-def _parse(title: str, obj: SUPPORTED_CHAINABLE_OBJECTS) -> ChainableNode:
-    if isinstance(obj, Wrapper):
-        return ChainFunc(obj, title)
-
-    elif callable(obj):
-        return _parse(title, Wrapper(obj))
-
-    elif isinstance(obj, str):
-        try:
-            return CHAIN_OPTIONS[obj](title)
-        except KeyError:
-            options = ', '.join(map(repr, CHAIN_OPTIONS.keys()))
-            raise ValueError(f"unrecognized option {obj!r}, available options are: {options}")
-
-    elif isinstance(obj, tuple):
-        if len(obj) == 1:
-            return _parse(title, obj[0])
-        return ChainGroup(
-            tuple(_parse(title, element) for element in obj),
-            title
-        )
-
-    elif isinstance(obj, dict):
-        return ChainModel(
-            {
-                key: _parse(f"{title} / {key}", member)
-                for key, member in obj.items()
-            },
-            title
-        )
-
-    else:
-        raise ValueError(f"unsupported type '{type(obj).__name__}' cannot be parsed.")
