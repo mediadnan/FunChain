@@ -1,49 +1,45 @@
 import re
-import logging
-from types import MappingProxyType
-from weakref import WeakValueDictionary as WeakDict
 from typing import Callable, Pattern
-from .chainable import CHAINABLE_OBJECTS, parse
-from .monitoring import ReportDetails, Report
+from .factory import parse
+from .chainables import CHAINABLE_OBJECTS
+from .monitoring import ReportDetails, Report, create_report_maker
 
-CHAIN_NAME: Pattern[str] = re.compile(r'^\w[\w\d_-]*?$', re.DOTALL)
+CHAIN_NAME: Pattern[str] = re.compile(r'^\w[\w\d_-]+?$', re.DOTALL)
+LOG_FAILURES: bool = True
+RAIS_FOR_FAIL: bool = False
 
 
 class Chain:
-    __slots__ = (
-        '__weakref__',
-        '__name',
-        '__core',
-        'create_report',
-        'logger'
-    )
+    __slots__ = '__name', '__core', '__report_maker',
 
     def __init__(
             self,
             name: str,
             *chainables: CHAINABLE_OBJECTS,
-            log: bool = True
+            log_failures: bool = LOG_FAILURES,
+            raise_for_fail: bool = RAIS_FOR_FAIL
     ):
         """
         creates a chain and globally registers it.
 
         :param name: the chains name must be unique.
         :param chainables: any supported 'chainable' object.
-        :key log: whether to log failures or not, default to True.
+        :key log_failures: whether to log failures or not, default to True.
         """
         if not isinstance(name, str):
             raise TypeError("the name of the chain must be a string.")
-        elif CHAIN_NAME.match(name):
+        elif not CHAIN_NAME.match(name):
             raise ValueError("chain's name must begin with a letter and only contain letter, digits, _ and -")
-        elif name in __chains__:
-            raise ValueError("a chain with the same name already exists.")
+        core = parse(chainables)
+
         self.__name: str = name
-        self.logger: logging.Logger | None = logging.getLogger(name) if log else None
-        self.__core = parse(chainables, logger=self.logger)
-        nodes = tuple(self.__core.nodes())
-        required_nodes = len([filter(lambda node: not node.optional, nodes)])
-        self.create_report: Callable[[], Report] = lambda: Report(nodes, required_nodes)
-        __chains__[name] = self
+        self.__core = core
+        self.__report_maker: Callable[[], Report] = create_report_maker(
+            core.nodes(),
+            log_failures,
+            raise_for_fail,
+            name=name
+        )
 
     @property
     def name(self) -> str:
@@ -51,7 +47,7 @@ class Chain:
         return self.__name
 
     def __repr__(self) -> str:
-        return f'<Chain {self.__name!r}: {self.__core!r}>'
+        return f'<chain {self.__name!r}>'
 
     def __call__(self, input, reports: dict[str, ReportDetails] | None = None):
         """
@@ -63,17 +59,8 @@ class Chain:
         :param reports: a dictionary where to register the execution statistics.
         :return: the output result from given input.
         """
-        report = self.create_report()
-        _, result = self.__core(input, report=report)
+        report = self.__report_maker()
+        result = self.__core(input, report=report)[1]
         if reports is not None:
             reports[self.__name] = report.make()
         return result
-
-
-__chains__: WeakDict[str, Chain] = WeakDict()
-chains: MappingProxyType[str, Chain] = MappingProxyType(__chains__)
-
-
-def get_chain(name: str) -> Chain | None:
-    """gets chain by name if exists or None otherwise."""
-    return __chains__.get(name, None)

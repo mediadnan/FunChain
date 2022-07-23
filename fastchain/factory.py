@@ -1,116 +1,172 @@
 import abc
-import functools
-import inspect
-from typing import Any, Callable, overload, Generic, ParamSpec
-
+from functools import partial, update_wrapper, WRAPPER_ASSIGNMENTS
+from inspect import signature
+from typing import (
+    Any,
+    Callable,
+    Type,
+    Generic,
+    TypeAlias,
+    Literal,
+    Union,
+    overload,
+    ParamSpec
+)
 from ._tools import get_qualname
-from .chainable import CHAINABLE, Chainable, ChainNode, T2, T1
+from .chainables import (
+    CHAINABLE,
+    Chainable,
+    Node,
+    Pipe,
+    Match,
+    Group,
+    Model,
+    PASS,
+    CT,
+    CCT
+)
 
 
-class PreChainable(abc.ABC):
-    """
-    PreChainables are reusable objects that hold settings for making
-    a custom Chainable object when called with the make method.
-    """
+OPTIONS: TypeAlias = Literal['*', '?', ':']
+CHAINABLES: TypeAlias = Union[
+    'Factory',
+    CHAINABLE,
+    tuple[OPTIONS | Any, ...],  # replace 'Any' with 'CHAINABLE' when circular hints get supported.
+    list[Any],                  # replace 'Any' with 'CHAINABLE' when circular hints get supported.
+    dict[str, Any]              # replace 'Any' with 'CHAINABLE' when circular hints get supported.
+]
+
+
+class Factory(abc.ABC, Generic[CT]):
+    name: str
     @abc.abstractmethod
-    def make(self, root: str, pos: tuple[str | int, ...], **kwargs) -> Chainable:
-        """takes parsing arguments and merges them with the preset ones to produce a chainable"""
+    def __call__(self, title: str, **kwargs) -> CT: ...
 
 
-class PreNode(PreChainable, Generic[T1, T2]):
-    """
-    PreNode objects are reusable objects holding custom settings for making
-    ChainNode objects.
-    """
-
-    __slots__ = '__func', '__kwargs', '__df'
+class NodeFactory(Factory[Node]):
+    name: str
 
     def __init__(
             self,
-            function: CHAINABLE[T1, T2],
+            function: CHAINABLE,
             *,
             name: str | None = None,
-            default: T2 | None = None,
-            default_factory: Callable[[], T2 | None] | None = None,
-            optional: bool = False,
-            mode: str | None = None,
+            default: Any = None,
+            default_factory: Callable[[], Any] | None = None,
+            **kwargs
     ):
         if not callable(function):
-            raise TypeError(f"function should be callable not {type(function).__name__}")
-        self.__func: CHAINABLE = function
-        self.__df: Callable[[], Any] = default_factory if callable(default_factory) else lambda: default
-        self.__kwargs: dict[str, Any] = dict(
-            optional=optional,
-            mode=mode,
-            name=name
-        )
+            raise TypeError(f"expected a chainable function but got {type(function)}")
+        if name is None:
+            name = get_qualname(function)
+        if not (default_factory is None or callable(default_factory)):
+            raise TypeError("default_factory must be a 0-argument function that returns any value")
+        if kwargs:
+            function = partial(function, **kwargs)
+        self.function = function
+        self.name = name
+        self.kwargs = dict(default=default, default_factory=default_factory)
 
-    def make(self, root: str, pos: tuple[str | int, ...], **kwargs) -> ChainNode[T1, T2]:
-        """
-        called from parser function to product a pre-configured ChainNode instance
-
-        :param root: the name of the chain that owns this node.
-        :param pos: the position of this node between the other nodes.
-        :key name: the name to be given to the node.
-        :key default: the value to be returned when failing.
-        :key optional: specifies whether the chain can ignore its failing.
-        :key mode: specifies the calling mode.
-
-        :return: ChainNode instance with preset and given settings.
-        """
-        kwargs.update(root=root, pos=pos)
-        kwargs = self.__kwargs | kwargs
-        if 'default' not in kwargs:
-            kwargs.update(default=self.__df())
-        return ChainNode[T1, T2](self.__func, **kwargs)
-
-    @property
-    def func(self) -> CHAINABLE[T1, T2]:
-        """returns the wrapped function"""
-        return self.__func
-
-    def __call__(self, arg: T1) -> T2:
-        return self.__func(arg)
+    def __call__(self, title: str, **kwargs) -> Node:
+        return Node(self.function, title=title, **self.kwargs, **kwargs)
 
 
-def chainable(
-        function: CHAINABLE[T1, T2],
-        /,
+class CollectionFactory(Factory, Generic[CCT]):
+    name: str
+    constructor: Type[CCT]
+    transfer_only: set[str] = {'optional'}  # values to be parsed recursively to members
+
+    @overload
+    def __init__(self, cn: Type[Model], members: Callable[..., dict[str, Chainable]]): ...
+
+    @overload
+    def __init__(self, cn: Type[Pipe] | Type[Group] | Type[Match], members: Callable[..., list[Chainable]]): ...
+
+    def __init__(self, constructor, members):
+        self.name = constructor.__name__.lower()
+        self.constructor = constructor
+        self.parse_members = members
+
+    def __call__(self, title: str, *_, **kwargs) -> CCT:
+        members = self.parse_members(title, **{k: v for k, v in kwargs.items() if k in self.transfer_only})
+        if not members:
+            raise ValueError(f"cannot create an empty {self.name}")
+        return self.constructor(members, title=title, **kwargs)
+
+
+def parse(
+        chainable_object,
         *,
-        name: str | None = None,
-        default: Any = None,
-        default_factory: Callable[[], Any] | None = None,
-        optional: bool = False,
-        mode: str | None = None,
-        **kwargs,
-) -> PreNode[T1, T2]:
-    """
-    wrapper that presets a chain's node (function) by configuring
-    its state *(name, default)* and behaviour *(optional, mode)*.
+        root: str | None = None,
+        branch: Any = None,
+        kind: Type[Chainable] | None = None,
+        **kwargs
+) -> Chainable:
 
-    :param function: the chainable function (Any) -> Any
-    :param name: the name given to the generated component, default to function.__qualname__.
-    :param default: the value to be returned when failing, default to None.
-    :param default_factory: the function that generates a default value when called, default to None.
-    :param optional: specifies whether the chain can ignore its failing, default to False.
-    :param mode: specifies the calling mode, default to None.
-    :keyword kwargs: any keyword argument to be partially passed to function.
-    :return: PreNode object or a decorator that returns a PreNode object.
-    """
+    if root is not None and branch is None:
+        root = f'{root}[{branch}]'
 
-    return functools.wraps(function)(
-        PreNode(
-            function,
-            name=name,
-            default=default,
-            default_factory=default_factory,
-            optional=optional,
-            mode=mode
-        )
-    )
+    if isinstance(chainable_object, Factory):
+        title = chainable_object.name
+        if root is not None:
+            if branch is not None:
+                root = f'{root}[{branch}]'
+            title = f'{root}/{title}'
+        return chainable_object(title, **kwargs)
+
+    if callable(chainable_object):
+        return parse(NodeFactory(chainable_object), root=root, **kwargs)
+
+    elif isinstance(chainable_object, tuple):
+        merged: list[tuple[Any, dict[str, Any]]] = []
+        options: dict[str, Any] = {}
+        for item in chainable_object:
+            if isinstance(item, str):
+                match item:
+                    case '*':
+                        options['iterable'] = True
+                    case '?':
+                        options['optional'] = True
+                    case ':':
+                        options['kind'] = Match
+                    case _:
+                        raise ValueError(f"unsupported option {item!r}")
+            else:
+                merged.append((item, options))
+                options = {}
+        del options
+
+        if len(merged) == 1:
+            return parse(merged[0][0], root=root, branch=branch, **kwargs, **merged[0][1])
+
+        def parse_pipe_members(root_: str | None, **kwargs_) -> list[Chainable]:
+            return [parse(obj, root=root_, branch=i, **kwargs_, **ops) for i, (obj, ops) in enumerate(merged)]
+        return parse(CollectionFactory[Pipe](Pipe, parse_pipe_members), root=root, branch=branch, **kwargs)
+
+    elif isinstance(chainable_object, dict):
+        def parse_model_members(root_: str | None, **kwargs_) -> dict[str, Chainable]:
+            return {key: parse(value, root=root_, branch=key, **kwargs_) for key, value in chainable_object.items()}
+        return parse(CollectionFactory[Model](Model, parse_model_members), root=root, branch=branch, **kwargs)
+
+    elif isinstance(chainable_object, list):
+        def parse_group_members(root_: str | None, **kwargs_) -> list[Chainable]:
+            return [parse(obj, root=root_, branch=i, **kwargs_) for i, obj in enumerate(chainable_object)]
+        if kind is None or not issubclass(kind, (Group, Match)):
+            kind = Group
+        return parse(CollectionFactory[Group | Match](kind, parse_group_members), root=root, branch=branch, **kwargs)
+
+    elif chainable_object is Ellipsis:
+        return PASS
+
+    else:
+        raise TypeError(f"unchainable type {type(chainable_object)}.")
 
 
-P = ParamSpec("P")
+SP = ParamSpec('SP')
+
+
+@overload
+def funfact(func: Callable[SP, CHAINABLE], /) -> Callable[SP, NodeFactory]: ...
 
 
 @overload
@@ -118,53 +174,85 @@ def funfact(
         *,
         name: str | None = ...,
         default: Any = ...,
-        default_factory: Callable[[], Any] | None = ...,
-        optional: bool | None = ...,
-        mode: str | None = ...
-) -> Callable[[Callable[P, CHAINABLE]], Callable[P, PreNode]]: ...
+) -> Callable[[Callable[SP, CHAINABLE]], Callable[SP, NodeFactory]]: ...
 
 
 @overload
-def funfact(function: Callable[P, CHAINABLE], /) -> Callable[P, PreNode]: ...
+def funfact(
+        *,
+        name: str | None = ...,
+        default_factory: Callable[[], Any] = ...,
+) -> Callable[[Callable[SP, CHAINABLE]], Callable[SP, NodeFactory]]: ...
 
 
 def funfact(
-        function: Callable[P, CHAINABLE] | None = None,
-        /,
-        *,
+        func: Callable[SP, CHAINABLE] | None = None, /, *,
         name: str | None = None,
         default: Any = None,
         default_factory: Callable[[], Any] | None = None,
-        optional: bool | None = None,
-        mode: str | None = None
-):
+) -> Callable[SP, NodeFactory] | Callable[[Callable[SP, CHAINABLE]], Callable[SP, NodeFactory]]:
     """
-    generates a decorator with the given parameters.
+    decorator that transforms a higher order function that produces a chainable function to
+    a similar function that produces a node factory object with the given name and default.
 
-    :param function: placeholder in case the decorator is called without parameters over the fun-factory.
-    :param name: the name given to the generated component, default to decorated function's __qualname__.
-    :param default: the value to be returned when failing, default to None.
-    :param default_factory: the function that generates a default value when called, default to None.
-    :param optional: specifies whether the chain can ignore its failing, default to None.
-    :param mode: specifies the calling mode, default to None.
+
+    :param func: higher order function that produces a chainable function (1-argument function).
+    :param name: custom name for the node, otherwise func.__qualname__ will be the name.
+    :param default: a value that will be returned in case of failure (exception), default to None.
+    :param default_factory: 0-argument function that returns a default value (for mutable default objects).
+    :return: function with same arg-spec as func but returns a NodeFactory object (partially initialized node).
     """
-    def decorator(func: Callable[P, CHAINABLE]) -> Callable[[*P.args, *P.kwargs, ...], CHAINABLE]:
-        @functools.wraps(func)
-        def wrapper(*args, **kwargs: P) -> PreNode:
-            return PreNode(
-                func(*args, **{k: v for k, v in kwargs.items() if k not in special_kwargs}),
-                name=kwargs.get('name', name),
-                default=kwargs.get('default', default),
-                default_factory=kwargs.get('default_factory', default_factory),
-                optional=kwargs.get('optional', optional),
-                mode=kwargs.get('mode', mode)
+    def decorator(function: Callable[SP, CHAINABLE]) -> Callable[SP, NodeFactory]:
+        def wrapper(*args: SP.args, **kwargs: SP.kwargs) -> NodeFactory:
+            return NodeFactory(
+                function(*args, **kwargs),
+                name=name,
+                default=default,
+                default_factory=default_factory,
             )
+        if not callable(function):
+            raise TypeError(f"funfact decorator expects a function not {type(function)}")
         nonlocal name
         if name is None:
-            name = get_qualname(func)
-        special_kwargs = {'name', 'default', 'default_factory', 'optional', 'mode'}.difference(
-            set(n for n, p in inspect.signature(func).parameters.items() if p.kind > 0)
-        )
-        return wrapper
-    return decorator if function is None else decorator(function)
+            name = get_qualname(function)
+        setattr(wrapper, '__signature__', signature(function))
+        return update_wrapper(wrapper, function, (*WRAPPER_ASSIGNMENTS, '__defaults__', '__kwdefaults__'))
+    return decorator if func is None else decorator(func)
 
+
+@overload
+def chainable(
+        func: CHAINABLE, /,
+        name: str | None = ...,
+        default: Any = ...,
+        default_factory: Callable[[], Any] | None = ...
+) -> NodeFactory: ...
+
+
+@overload
+def chainable(
+        func: Callable, /,
+        *args,
+        name: str | None = ...,
+        default: Any = ...,
+        default_factory: Callable[[], Any] | None = ...,
+        **kwargs
+) -> NodeFactory: ...
+
+
+def chainable(func: Callable, /, *args, name=None, default=None, default_factory=None, **kwargs) -> NodeFactory:
+    """
+    prepares a chain node with the given name and default/default_factory from a chainable function
+    ( 1-argument function), or from a non-chainable if given remaining *args and **kwargs.
+
+    :param func: function, method, type or any callable object.
+    :param args: if provided, they will be partially applied to func.
+    :param name: custom name for the node, otherwise func.__qualname__ will be the name.
+    :param default: a value that will be returned in case of failure (exception), default to None.
+    :param default_factory: 0-argument function that returns a default value (for mutable default objects).
+    :param kwargs: if provided, they will be partially applied to func.
+    :return: NodeFactory object (partially initialized node)
+    """
+    if args or kwargs:
+        func = partial(func, *args, **kwargs)
+    return NodeFactory(func, name=name, default=default, default_factory=default_factory)

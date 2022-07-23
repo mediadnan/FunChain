@@ -1,5 +1,8 @@
-__version__ = '1.0.1'
-__doc__ = """fastchain package provides tools and classes to create ready to use chains,
+from .chain import Chain, LOG_FAILURES
+from .factory import funfact, chainable
+
+__version__ = '2.0.0'
+__doc__ = """fastchain is a package that provides tools to create ready to use function chains,
 the main goal is to ease chaining functions and capture errors without breaking the whole program.
 
 the main user interface tools are Chain class, parse function and the two decorators chainable and funfact.
