@@ -13,7 +13,6 @@ from .monitoring import Report
 
 FEEDBACK: TypeAlias = tuple[bool, Any]
 CHAINABLE: TypeAlias = Callable[[Any], Any]
-CHAINABLE_OBJECTS: TypeAlias = CHAINABLE | tuple | dict[str | int, Any] | list | str
 
 
 def iter_chainable(cls: Type['CT']) -> Type['CT']:
@@ -72,7 +71,7 @@ class Chainable(abc.ABC):
         :param error: the exception that caused the failure.
         :param report: report object that holds processing details.
         """
-        report.register_failure(self.title, input, error)
+        report.register_failure(self.title, input, error, fatal=not self.optional)
 
 
 class Node(Chainable):
@@ -83,7 +82,7 @@ class Node(Chainable):
     process is marked as failure.
     """
 
-    __slots__ = 'function', 'default_factory'
+    __slots__ = 'function', 'default_factory',
 
     def __init__(self, function: CHAINABLE, default_factory: Callable[[], Any], **kwargs):
         super(Node, self).__init__(**kwargs)
