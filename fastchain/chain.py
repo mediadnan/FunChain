@@ -1,8 +1,7 @@
 from typing import Callable, overload, TypeVar, Any
 
 from ._tools import validate_name
-from .factory import parse
-from .chainables import CHAINABLE_OBJECTS
+from .factory import parse, CHAINABLES
 from .monitoring import ReportDetails, Report, create_report_maker
 
 LOG_FAILURES: bool = True
@@ -17,7 +16,7 @@ class Chain:
     def __init__(
             self,
             name: str,
-            *chainables: CHAINABLE_OBJECTS,
+            *chainables: CHAINABLES,
             log_failures: bool = LOG_FAILURES,
             raise_for_fail: bool = RAIS_FOR_FAIL
     ):
@@ -108,7 +107,7 @@ class ChainMaker:
         """
         return self.__registered_chains__.get(self._case_insensitive_name(name), default)
 
-    def __call__(self, name: str, *chainables: CHAINABLE_OBJECTS) -> Chain:
+    def __call__(self, name: str, *chainables: CHAINABLES) -> Chain:
         """
         creates a new chain with the same configuration and same prefix.
 
