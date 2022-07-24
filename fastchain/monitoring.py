@@ -152,7 +152,7 @@ class Report(Generic[T]):
             completed += success_count / record_count
         return ReportDetails(
             rate=round(completed / total, 4),
-            expected_rate=round(completed / self.required, 4),
+            expected_rate=round(self.required / total, 4),
             succeeded=successes,
             missed=misses,
             failed=failures,
