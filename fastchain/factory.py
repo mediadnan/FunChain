@@ -9,7 +9,8 @@ from typing import (
     TypeAlias,
     Literal,
     overload,
-    ParamSpec
+    ParamSpec,
+    TypeVar, cast
 )
 from ._tools import get_qualname
 from .chainables import (
@@ -25,11 +26,13 @@ from .chainables import (
     CCT
 )
 
+TP = TypeVar('TP')
+SPEC = ParamSpec('SPEC')
 
 OPTIONS: TypeAlias = Literal['*', '?', ':']
-
-# todo: replace 'Any' with 'CNB' when circular reference is supported
-CNB: TypeAlias = CHAINABLE | tuple[OPTIONS | Any, ...] | list[Any] | dict[str, Any] | 'Factory'
+# TODO: replace 'T' with 'CHAINABLES_' when circular reference get supported by mypy
+CHAINABLES_: TypeAlias = CHAINABLE | tuple[TP, ...] | list[TP] | dict[str, TP] | 'Factory' | OPTIONS
+CHAINABLES: TypeAlias = CHAINABLES_[CHAINABLES_[CHAINABLES_[CHAINABLES_[CHAINABLES_[CHAINABLES_[Any]]]]]]
 
 
 class Factory(abc.ABC, Generic[CT]):
@@ -78,13 +81,14 @@ class CollectionFactory(Factory, Generic[CCT]):
     transfer_only: set[str] = {'optional'}  # values to be passed recursively to members
 
     @overload
-    def __init__(self, cn: Type[Model], members: Callable[..., dict[str, Chainable]]): ...
-
+    def __init__(self, cn: Type[Model], members: Callable[..., dict[str, Chainable]], name: str | None = ...): ...
     @overload
-    def __init__(self, cn: Type[Pipe] | Type[Group] | Type[Match], members: Callable[..., list[Chainable]]): ...
+    def __init__(self, cn: Type[Pipe] | Type[Group] | Type[Match], members: Callable[..., list[Chainable]], name: str | None = ...): ...  # noqa: E501
 
-    def __init__(self, constructor, members):
-        self.name = constructor.__name__.lower()
+    def __init__(self, constructor, members, name=None):
+        if name is None:
+            name = constructor.__name__.lower()
+        self.name = name
         self.constructor = constructor
         self.parse_members = members
 
@@ -96,14 +100,25 @@ class CollectionFactory(Factory, Generic[CCT]):
 
 
 def parse(
-        chainable_object,
+        chainable_object: CHAINABLES,
         *,
         root: str | None = None,
         branch: Any = None,
         kind: Type[Chainable] | None = None,
         **kwargs
 ) -> Chainable:
+    """
+    creates chainable objects hierarchy recursively from given structure.
 
+    :param chainable_object: any of the supported objects.
+    :param root: name of the collection owning the chainable.
+    :param branch: index or key of the chainable according to the owner.
+    :param kind: informs the parser which type is expected to be parsed.
+    :key optional: informs the parser if the component is required or optional, default False.
+    :key iterable: informs the parser if the component should be applied to all the items
+                   of an input or be applied to the input as whole, default False.
+    :return: returns the corresponding chainable object based on the first argument.
+    """
     if isinstance(chainable_object, Factory):
         title = chainable_object.name
         if root is not None:
@@ -111,10 +126,8 @@ def parse(
                 root = f'{root}[{branch}]'
             title = f'{root}/{title}'
         return chainable_object(title, **kwargs)
-
     elif callable(chainable_object):
-        return parse(NodeFactory(chainable_object), root=root, **kwargs)
-
+        return parse(NodeFactory(chainable_object), root=root, branch=branch, **kwargs)
     elif isinstance(chainable_object, tuple):
         merged: list[tuple[Any, dict[str, Any]]] = []
         options: dict[str, Any] = {}
@@ -133,65 +146,80 @@ def parse(
                 merged.append((item, options))
                 options = {}
         del options
-
         if len(merged) == 1:
             return parse(merged[0][0], root=root, branch=branch, **kwargs, **merged[0][1])
-
-        def parse_pipe_members(root_: str | None, **kwargs_) -> list[Chainable]:
-            return [parse(obj, root=root_, branch=i, **kwargs_, **ops) for i, (obj, ops) in enumerate(merged)]
-        return parse(CollectionFactory[Pipe](Pipe, parse_pipe_members), root=root, branch=branch, **kwargs)
-
+        return parse(
+            CollectionFactory[Pipe](
+                Pipe,
+                lambda root_, **kwargs_: [
+                    parse(obj, root=root_, branch=i, **kwargs_, **ops)
+                    for i, (obj, ops) in enumerate(merged)
+                ],
+                name="pos"
+            ),
+            root=root,
+            branch=branch,
+            **kwargs
+        )
     elif isinstance(chainable_object, dict):
-        def parse_model_members(root_: str | None, **kwargs_) -> dict[str, Chainable]:
-            return {key: parse(value, root=root_, branch=key, **kwargs_) for key, value in chainable_object.items()}
-        return parse(CollectionFactory[Model](Model, parse_model_members), root=root, branch=branch, **kwargs)
-
+        return parse(
+            CollectionFactory[Model](
+                Model,
+                lambda root_, **kwargs_: {
+                    key: parse(value, root=root_, branch=key, **kwargs_)
+                    for key, value in cast(dict, chainable_object).items()
+                }
+            ),
+            root=root,
+            branch=branch,
+            **kwargs
+        )
     elif isinstance(chainable_object, list):
-        def parse_group_members(root_: str | None, **kwargs_) -> list[Chainable]:
-            return [parse(obj, root=root_, branch=i, **kwargs_) for i, obj in enumerate(chainable_object)]
         if kind is None or not issubclass(kind, (Group, Match)):
             kind = Group
-        return parse(CollectionFactory[Group | Match](kind, parse_group_members), root=root, branch=branch, **kwargs)
-
+        return parse(
+            CollectionFactory[Group | Match](
+                kind,
+                lambda root_, **kwargs_: [
+                    parse(obj, root=root_, branch=i, **kwargs_)
+                    for i, obj in enumerate(chainable_object)
+                ]
+            ),
+            root=root,
+            branch=branch,
+            **kwargs
+        )
     elif chainable_object is Ellipsis:
         return PASS
-
     else:
         raise TypeError(f"unchainable type {type(chainable_object)}.")
 
 
-SP = ParamSpec('SP')
-
-
 @overload
-def funfact(func: Callable[SP, CHAINABLE], /) -> Callable[SP, NodeFactory]: ...
-
-
+def funfact(func: Callable[SPEC, CHAINABLE], /) -> Callable[SPEC, NodeFactory]: ...
 @overload
-def funfact(
-        *,
-        name: str | None = ...,
-        default: Any = ...,
-) -> Callable[[Callable[SP, CHAINABLE]], Callable[SP, NodeFactory]]: ...
-
-
+def funfact(*, name: str | None = ..., default: Any = ...) -> Callable[[Callable[SPEC, CHAINABLE]], Callable[SPEC, NodeFactory]]: ...                        # noqa: E501
 @overload
-def funfact(
-        *,
-        name: str | None = ...,
-        default_factory: Callable[[], Any] = ...,
-) -> Callable[[Callable[SP, CHAINABLE]], Callable[SP, NodeFactory]]: ...
+def funfact(*, name: str | None = ..., default_factory: Callable[[], Any] = ...) -> Callable[[Callable[SPEC, CHAINABLE]], Callable[SPEC, NodeFactory]]: ...  # noqa: E501
 
 
-def funfact(
-        func: Callable[SP, CHAINABLE] | None = None, /, *,
-        name: str | None = None,
-        default: Any = None,
-        default_factory: Callable[[], Any] | None = None,
-) -> Callable[SP, NodeFactory] | Callable[[Callable[SP, CHAINABLE]], Callable[SP, NodeFactory]]:
+def funfact(func=None, /, *, name=None, default=None, default_factory=None):
     """
     decorator that transforms a higher order function that produces a chainable function to
     a similar function that produces a node factory object with the given name and default.
+
+    This decorator can be used without parameters like this:
+
+    >>> @funfact        # default name will be 'factory'
+    ... def factory(*args, **kwargs):
+    ...     # code omitted ...
+    ...     return lambda x: x * 2  # returns chainable function
+
+    Or with a parameters to customize the chainable
+    >>> @funfact(name='my_fact')
+    ... def factory(*args, **kwargs):
+    ...     # code omitted ...
+    ...     return lambda x: x * 2
 
 
     :param func: higher order function that produces a chainable function (1-argument function).
@@ -200,8 +228,8 @@ def funfact(
     :param default_factory: 0-argument function that returns a default value (for mutable default objects).
     :return: function with same arg-spec as func but returns a NodeFactory object (partially initialized node).
     """
-    def decorator(function: Callable[SP, CHAINABLE]) -> Callable[SP, NodeFactory]:
-        def wrapper(*args: SP.args, **kwargs: SP.kwargs) -> NodeFactory:
+    def decorator(function: Callable[SPEC, CHAINABLE]) -> Callable[SPEC, NodeFactory]:
+        def wrapper(*args: SPEC.args, **kwargs: SPEC.kwargs) -> NodeFactory:
             return NodeFactory(
                 function(*args, **kwargs),
                 name=name,
@@ -219,32 +247,35 @@ def funfact(
 
 
 @overload
-def chainable(
-        func: CHAINABLE, /,
-        name: str | None = ...,
-        default: Any = ...,
-        default_factory: Callable[[], Any] | None = ...
-) -> NodeFactory: ...
-
-
+def chainable(func: CHAINABLE, /, name: str | None = ..., default: Any = ..., default_factory: Callable[[], Any] | None = ...) -> NodeFactory: ...                  # noqa: E501
 @overload
-def chainable(
-        func: Callable, /,
-        *args,
-        name: str | None = ...,
-        default: Any = ...,
-        default_factory: Callable[[], Any] | None = ...,
-        **kwargs
-) -> NodeFactory: ...
+def chainable(func: Callable, /, *args, name: str | None = ..., default: Any = ..., default_factory: Callable[[], Any] | None = ..., **kwargs) -> NodeFactory: ...  # noqa: E501
 
 
-def chainable(func: Callable, /, *args, name=None, default=None, default_factory=None, **kwargs) -> NodeFactory:
+def chainable(func, /, *args, name=None, default=None, default_factory=None, **kwargs) -> NodeFactory:
     """
-    prepares a chain node with the given name and default/default_factory from a chainable function
-    ( 1-argument function), or from a non-chainable if given remaining *args and **kwargs.
+    prepares a chain-node factory with the given name and default/default_factory from
+    a chainable function, or from a non-chainable if given remaining *args and **kwargs that will
+    be partially applied to this function.
+
+    This:
+
+    >>> def half(a):    # chainable function (1-argument)
+    ...     return a / 2
+    >>>  chainable(half)
+
+    is equivalent to:
+
+    >>> def divide(a, b):   # non_chainable function
+    ...     return a / b
+    >>> chainable(divide, b=2, name="half")
+
+    or even this:
+
+    >>> chainable(lambda x: divide(x, 2), name="half")
 
     :param func: function, method, type or any callable object.
-    :param args: if provided, they will be partially applied to func.
+    :param args: if provided, they will be partially applied (first) to func.
     :param name: custom name for the node, otherwise func.__qualname__ will be the name.
     :param default: a value that will be returned in case of failure (exception), default to None.
     :param default_factory: 0-argument function that returns a default value (for mutable default objects).
