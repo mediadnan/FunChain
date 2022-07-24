@@ -294,39 +294,8 @@ for further information about interpreting reports please refer to the documenta
 Stripping out all the handlers and decisions, the journey from ``'523.5814, 74.2347, 366.3606'``
 to ``[22.88, 8.62, 19.14]`` can be visualized like the following:
 
-````mermaid
-flowchart TB
-  A((input)) -- "'523.5814, 74.2347, 366.3606'" --> B[str.split]
-  B -- "['523.5814', ' 74.2347', ' 366.3606']" --> C((*))
-  
-  C -- "' 523.5814'" -->  D1
-  C -- "' 74.2347'" --> D2
-  C -- "' 366.3606'" --> D3
-  
-  subgraph SUB1[iter 1]
-    direction TB
-    D1[float] -- 523.5814 --> E1[sqrt]
-    E1 -- 22.8819... --> F1[round]
-    end
-  
-  subgraph SUB2[iter 2]
-    direction TB
-    D2[float] -- 74.2347 --> E2[sqrt]
-    E2 -- 8.6159... --> F2[round]
-    end
-  
-  subgraph SUB3[iter 3]
-    direction TB
-    D3[float] -- 366.3606 --> E3[sqrt]
-    E3 -- 19.1405... --> F3[round]
-  end
+![mermaid_flowchart](.media/mermaid_flowchart_rounded_sqrts.svg)
 
-  F1 -- 22.88 --> G[list]
-  F2 -- 8.62 --> G
-  F3 -- 19.14 --> G
-  
-  G -- "[22.88, 8.62, 19.14]" --> H((output))
-````
 Of course, some quick decisions are made between transitions like checking the success to determine either to continue
 or stop the sequence (in isolation) or even pass the given input to the next function if the failing function is not
 required...
