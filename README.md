@@ -201,7 +201,7 @@ I think you see where this is going, try...except for each step, logging, maybe 
 to a remote service and so on. It is already too much work for a function supposed to do a simple task.
 
 ### Solution
-We will be using in this example the class ``fastchain.Chain`` (simple a chain constructor) 
+We will be using in this example the class ``fastchain.Chain`` (a chain constructor) 
 and the utility function ``fastchain.chainable`` (similar to ``functools.partial`` with additional functionalities),
 
 
