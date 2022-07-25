@@ -1,12 +1,18 @@
-# FastChain
-***Chain functions easily and safely***
-
-![PyPI version](https://img.shields.io/pypi/v/fastchain)
-![Python versions](https://img.shields.io/pypi/pyversions/fastchain)
-![License MIT](https://img.shields.io/github/license/mediadnan/fastchain)
-[![Tests](https://github.com/mediadnan/fastchain/actions/workflows/tests.yml/badge.svg)](https://github.com/mediadnan/fastchain/actions/workflows/tests.yml)
-![Read the Docs](https://img.shields.io/readthedocs/fast-chain)
-![PyPI - Downloads](https://img.shields.io/pypi/dm/fastchain)
+<center>
+  <h1>
+    <img src="./docs/_static/favicon/favicon-dark.svg" alt="logo" width="28" height="28"></img> FastChain
+  </h1>
+  <strong>chain functions easily and safely</strong>
+  <div>
+    <br/>
+    <a href="https://github.com/mediadnan/fastchain/actions/workflows/tests.yml"><img src="https://github.com/mediadnan/fastchain/actions/workflows/tests.yml/badge.svg" alt="Tests" /></a>
+    <img src="https://img.shields.io/github/license/mediadnan/fastchain" alt="License MIT" />
+    <a href="https://fast-chain.readthedocs.io/en/latest/"><img src="https://img.shields.io/readthedocs/fast-chain" alt="Read the Docs"></a>
+    <img src="https://img.shields.io/pypi/pyversions/fastchain" alt="Python versions" />
+    <img src="https://img.shields.io/pypi/v/fastchain" alt="PyPI version" />
+    <img src="https://img.shields.io/pypi/dm/fastchain" alt="PyPI - Downloads"/>
+  </div>
+</center> 
 
 ## Introduction
 
@@ -294,18 +300,18 @@ for further information about interpreting reports please refer to the documenta
 Stripping out all the handlers and decisions, the journey from ``'523.5814, 74.2347, 366.3606'``
 to ``[22.88, 8.62, 19.14]`` can be visualized like the following:
 
-![mermaid_flowchart](.media/mermaid_flowchart_rounded_sqrts.svg)
+![mermaid_flowchart](docs/_static/diagrams/mermaid_flowchart_rounded_sqrts.svg)
 
 Of course, some quick decisions are made between transitions like checking the success to determine either to continue
 or stop the sequence (in isolation) or even pass the given input to the next function if the failing function is not
 required...
 
 ## Todo list
-Next goals for upcoming versions will be listed here, 
-
+Next goals and ideas for upcoming versions:
 
  + Adding support for async functions, to support non-blocking networking and IO-bound operations.
- + Combine hybrid chain that contain async function and regular functions smoothly. 
+ + Combine hybrid chain that contain async function and regular functions smoothly.
+ + More IDE support and why not plugins to check chaining input output types. 
 
 > **note**
 > If you have some good ideas that need to be added please help us grow this project,
