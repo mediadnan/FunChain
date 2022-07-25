@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- FastChain's logo is a combination of two icon's from 'https://www.flaticon.com/uicons'-->
+<svg
+ xmlns="http://www.w3.org/2000/svg"
+ id="Outline"
+ fill="url(#grad-fill)"
+ stroke-width="0.1"
+ stroke="#000000"
+ stroke-opacity="0.9"
+ viewBox="0 -0.2 24 24.4"
+ >
+    <defs>
+    <linearGradient id="grad-fill" x1="0%" y1="0%" x2="100%" y2="0%">
+        <stop offset="0%" stop-color="#0a063f" stop-opacity="1"/>
+        <stop offset="50%" stop-color="#0d0948" stop-opacity="1"/>
+        <stop offset="100%" stop-color="#0c0213" stop-opacity="1"/>
+    </linearGradient>
+    </defs>
+    <path d="M18.581,2.14,12.316.051a1,1,0,0,0-.632,0L5.418,2.14A4.993,4.993,0,0,0,2,6.883V12c0,7.563,9.2,11.74,9.594,11.914a1,1,0,0,0,.812,0C12.8,23.74,22,19.563,22,12V6.883A4.993,4.993,0,0,0,18.581,2.14ZM20,12c0,5.455-6.319,9.033-8,9.889-1.683-.853-8-4.42-8-9.889V6.883A3,3,0,0,1,6.051,4.037L12,2.054l5.948,1.983A3,3,0,0,1,20,6.883Z"/>
+    <path d="M21.864,18.127A5.337,5.337,0,0,0,16.674,14H13.5V12.384a6.282,6.282,0,1,0-3,0V14H7.326a5.337,5.337,0,0,0-5.19,4.127,3,3,0,1,0,2.921.69A2.331,2.331,0,0,1,7.326,17H10.5v1.4a3,3,0,1,0,3,0V17h3.174a2.331,2.331,0,0,1,2.269,1.817,3,3,0,1,0,2.921-.69ZM8.718,6.283A3.282,3.282,0,1,1,12,9.565,3.286,3.286,0,0,1,8.718,6.283Z" stroke-width="0.2" transform="scale(0.5), translate(12, 9)"/>
+</svg>
