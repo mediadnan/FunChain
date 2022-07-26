@@ -1,8 +1,6 @@
-<center>
-  <h1>
-    <img src="./docs/_static/favicon/favicon-dark.svg" alt="logo" width="28" height="28"></img> FastChain
-  </h1>
-  <strong>chain functions easily and safely</strong>
+<div align="center" id="heading">
+  <h1><img src="./docs/_static/favicon/favicon-light.svg" alt="logo" width="24" height="24" /> FastChain</h1>
+  <strong style="">chain functions easily and safely</strong>
   <div>
     <br/>
     <a href="https://github.com/mediadnan/fastchain/actions/workflows/tests.yml"><img src="https://github.com/mediadnan/fastchain/actions/workflows/tests.yml/badge.svg" alt="Tests" /></a>
@@ -12,7 +10,8 @@
     <img src="https://img.shields.io/pypi/v/fastchain" alt="PyPI version" />
     <img src="https://img.shields.io/pypi/dm/fastchain" alt="PyPI - Downloads"/>
   </div>
-</center> 
+</div> 
+
 
 ## Introduction
 
@@ -300,7 +299,7 @@ for further information about interpreting reports please refer to the documenta
 Stripping out all the handlers and decisions, the journey from ``'523.5814, 74.2347, 366.3606'``
 to ``[22.88, 8.62, 19.14]`` can be visualized like the following:
 
-![mermaid_flowchart](docs/_static/diagrams/mermaid_flowchart_rounded_sqrts.svg)
+<div align="center"><img src="docs/_static/diagrams/mermaid_flowchart_rounded_sqrts.svg" alt="mermaid_flowchart"/></div>
 
 Of course, some quick decisions are made between transitions like checking the success to determine either to continue
 or stop the sequence (in isolation) or even pass the given input to the next function if the failing function is not

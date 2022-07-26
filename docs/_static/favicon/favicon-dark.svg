@@ -5,9 +5,10 @@
  id="Outline"
  fill="url(#grad-fill)"
  stroke-width="0.1"
- stroke="#000000"
- stroke-opacity="0.9"
+ stroke="#101010"
+ stroke-opacity="1"
  viewBox="0 -0.2 24 24.4"
+ style="filter: drop-shadow(0.5px 0.5px 1px rgb(0 0 0 / 0.2));-webkit-filter: drop-shadow(0.5px 0.5px 1px rgb(0 0 0 / 0.2));"
  >
     <defs>
     <linearGradient id="grad-fill" x1="0%" y1="0%" x2="100%" y2="0%">

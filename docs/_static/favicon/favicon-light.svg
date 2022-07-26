@@ -1,19 +1,20 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!-- FastChain's logo is a combination of two icon's from 'https://www.flaticon.com/uicons'-->
+
 <svg
  xmlns="http://www.w3.org/2000/svg"
  id="Outline"
  fill="url(#grad-fill)"
  stroke-width="0.1"
- stroke="#23204b"
- stroke-opacity="0.9"
+ stroke="#25212d"
+ stroke-opacity="0.8"
  viewBox="0 -0.2 24 24.4"
+ style="filter: drop-shadow(0.5px 0.5px 1px rgb(0 0 0 / 0.2));-webkit-filter: drop-shadow(0.5px 0.5px 1px rgb(0 0 0 / 0.2));"
  >
     <defs>
-    <linearGradient id="grad-fill" x1="0%" y1="0%" x2="100%" y2="0%">
-        <stop offset="0%" stop-color="#736be8" stop-opacity="1"/>
-        <stop offset="50%" stop-color="#8883d1" stop-opacity="1"/>
-        <stop offset="100%" stop-color="#714e8a" stop-opacity="1"/>
+    <linearGradient id="grad-fill" x1="0%" y1="10%" x2="100%" y2="20%">
+        <stop offset="0%" stop-color="#b6bcd3" stop-opacity="1" />
+        <stop offset="100%" stop-color="#b2bad4" stop-opacity="1"/>
     </linearGradient>
     </defs>
     <path d="M18.581,2.14,12.316.051a1,1,0,0,0-.632,0L5.418,2.14A4.993,4.993,0,0,0,2,6.883V12c0,7.563,9.2,11.74,9.594,11.914a1,1,0,0,0,.812,0C12.8,23.74,22,19.563,22,12V6.883A4.993,4.993,0,0,0,18.581,2.14ZM20,12c0,5.455-6.319,9.033-8,9.889-1.683-.853-8-4.42-8-9.889V6.883A3,3,0,0,1,6.051,4.037L12,2.054l5.948,1.983A3,3,0,0,1,20,6.883Z"/>
