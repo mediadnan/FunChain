@@ -14,20 +14,23 @@
 # import sys
 # sys.path.insert(0, os.path.abspath('.'))
 
+from pygments.styles.dracula import DraculaStyle
+
 
 # -- Project information -----------------------------------------------------
 
 project = 'FastChain'
 copyright = '2022, MARSO Adnan'
 author = 'MARSO Adnan'
-version = '1.0.1'
-release = '1.0.1'
+version = '2.0'
+release = '2.0.0'
 
 
 # -- General configuration ---------------------------------------------------
 
 extensions = [
     "sphinx.ext.autodoc",
+    "sphinx_design",
 ]
 
 templates_path = ['_templates']
@@ -39,11 +42,18 @@ master_doc = 'index'
 # -- Options for HTML output -------------------------------------------------
 
 html_theme = 'furo'
-html_static_path = ['_static', '_examples']
-# html_logo = "_static/logo/logo-color.svg"
-html_favicon = "_static/favicon/favicon-black.svg"
+html_title = f"{project} (v{version}) docs"
+html_short_title = f"{project} docs"
+html_logo = "_static/logo/logo.svg"
+html_static_path = ['_static']
+html_favicon = "_static/favicon/favicon.svg"
 html_theme_options = {
     "sidebar_hide_name": True,
-    "light_logo": "logo/logo-black-no-bg.svg",
-    "dark_logo": "logo/logo-white-no-bg.svg",
+    "navigation_with_keys": True,
+    # "announcement": "<em>Important</em> announcement!",
 }
+
+# Autodoc config
+
+autoclass_content = "both"
+autodoc_class_signature = "mixed"

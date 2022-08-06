@@ -2,7 +2,7 @@ import re
 from functools import partialmethod, partial
 from typing import Pattern, Callable
 
-NAME: Pattern[str] = re.compile(r'^\w(?:[\w\d]+[_-]?)+?$')
+NAME: Pattern[str] = re.compile(r'^[a-z_](?:\w+[_-]?)+?$', re.IGNORECASE)
 
 
 def get_qualname(func: Callable) -> str:
@@ -18,7 +18,7 @@ def get_qualname(func: Callable) -> str:
 def validate_name(name: str) -> str:
     """validates the component name"""
     if not isinstance(name, str):
-        raise TypeError("the name should be a string")
-    elif not NAME.fullmatch(name):
+        raise TypeError(f"name must be str not {type(name).__name__}")
+    elif not NAME.match(name):
         raise ValueError("the name should start with a letter and only contain letters, digits, '_' , and '-'")
     return name

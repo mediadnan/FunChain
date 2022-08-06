@@ -1,21 +1,29 @@
+"""
+This module holds implementations of all the monitoring tools that collect
+data processing statistics from chainables.
+"""
 import abc
 import warnings
-from logging import Logger, INFO, ERROR, getLogger
-from typing import TypedDict, TypeVar, Generic, Iterable, Any, Callable
+import logging
+import typing as tp
+
+from fastchain._abc import ReporterBase
+
+if tp.TYPE_CHECKING:
+    from fastchain.chainables import Chainable
+else:
+    Chainable = tp.Any
 
 
-T = TypeVar('T')
-
-
-class FailureDetails(TypedDict):
+class FailureDetails(tp.TypedDict):
     """standard failure details dictionary"""
     source: str
-    input: Any
+    input: tp.Any
     error: Exception
     fatal: bool
 
 
-class ReportDetails(TypedDict):
+class ReportDetails(tp.TypedDict):
     """standard report details dictionary"""
     rate: float
     expected_rate: float
@@ -26,22 +34,17 @@ class ReportDetails(TypedDict):
     failures: list[FailureDetails]
 
 
-class ChainFailure(RuntimeError):
-    """custom exception optionally raised by a chain in case of failure"""
-
-
 class FailureHandler(abc.ABC):
     __slots__ = 'owner',
 
-    def __init__(self, owner: str | None):
+    def __init__(self, owner: str) -> None:
         if owner is None:
             raise ValueError(f"cannot create a {self.name} without owners name")
-        self.owner = owner
+        self.owner: str = owner
 
-    @staticmethod
-    def message(failure: FailureDetails) -> str:
+    def message(self, failure: FailureDetails) -> str:
         source, input, error = failure['source'], failure['input'], failure['error']
-        return f"{source!r} raised {error!r} after receiving {input!r} (type: {type(input)})"
+        return f"{self.owner}::{source} raised {error!r} after receiving {input!r} (type: {type(input).__qualname__})"
 
     @abc.abstractmethod
     def __call__(self, failure: FailureDetails) -> None: pass
@@ -53,36 +56,48 @@ class FailureHandler(abc.ABC):
 class LoggingHandler(FailureHandler):
     name: str = "logging handler"
 
-    def __init__(self, owner: str | None):
-        super(LoggingHandler, self).__init__(owner)
-        self.logger: Logger = getLogger(owner)
-
-    def __call__(self, failure: FailureDetails):
-        self.logger.log(ERROR if failure['fatal'] else INFO, self.message(failure), stacklevel=2)
-
-
-class RaiseFailureHandler(FailureHandler):
-    name: str = "raise_for_failures handler"
+    def __init__(self, owner: str) -> None:
+        super().__init__(owner)
+        fmt = logging.Formatter("%(levelname)s %(message)s at %(asctime)s ", "%Y-%m-%d %H:%M:%S", '%')
+        sh = logging.StreamHandler()
+        sh.setFormatter(fmt)
+        logger = logging.getLogger(owner)
+        logger.addHandler(sh)
+        self.logger: logging.Logger = logger
 
     def __call__(self, failure: FailureDetails) -> None:
-        if failure['fatal']:
-            raise ChainFailure(f"{self.owner} :: {self.message(failure)}")
+        lvl = logging.ERROR if failure['fatal'] else logging.INFO
+        self.logger.log(lvl, self.message(failure), stacklevel=2)
 
 
-class Report(Generic[T]):
+class Reporter(ReporterBase):
+    """
+    Reporter objects get created internally by the chain when it gets called
+    to keep track of the execution information and stats between node calls,
+    register failures' exceptions and call registered handlers on them, and also
+    make a statistics report at the end.
+
+    Users are not supposed to create Reporter object this should be handled by
+    the chain and utilities that the chain uses unless the intentions are testing.
+    """
     __slots__ = 'counter', 'required', 'failures', 'failure_handlers',
 
-    def __init__(self, components: frozenset[T], required: int, failure_handlers: list[FailureHandler]):
-        self.counter: dict[T, list[bool]] = {component: [] for component in components}
+    def __init__(
+            self,
+            components: frozenset[Chainable],
+            required: int,
+            failure_handlers: list[FailureHandler]
+    ) -> None:
+        self.counter: dict[Chainable, list[bool]] = {component: [] for component in components}
         self.required: int = required
         self.failures: list[FailureDetails] = []
         self.failure_handlers: list[FailureHandler] = failure_handlers
 
-    def __call__(self, component: T, success: bool) -> None:
+    def __call__(self, component: Chainable, success: bool) -> None:
         """
         marks the registered component result as success or failure for statistics.
 
-        :param component: one of the previously registered components.
+        :param component: one of the previously registered counter.
         :param success: either True for successful operations or False for unsuccessful ones.
         :return: None
         """
@@ -96,7 +111,13 @@ class Report(Generic[T]):
                 source=self
             )
 
-    def register_failure(self, source: str, input, error: Exception, fatal: bool = False) -> None:
+    def register_failure(
+            self,
+            source: str,
+            input: tp.Any,
+            error: Exception,
+            fatal: bool = False
+    ) -> None:
         """
         registers the failure to be reported.
 
@@ -105,12 +126,12 @@ class Report(Generic[T]):
         :param error: the risen exception.
         :param fatal: True if the error is from a required component
         """
-        failure = FailureDetails(source=source, input=input, error=error, fatal=fatal)
+        failure = dict(source=source, input=input, error=error, fatal=fatal)
         self.failures.append(failure)
         for handler in self.failure_handlers:
             handler(failure)
 
-    def make(self) -> ReportDetails:
+    def report(self) -> ReportDetails:
         """
         builds a report dictionary with the following information;
 
@@ -130,16 +151,16 @@ class Report(Generic[T]):
             number of reported failing operations.
 
         **total** *(int)*
-            number of components expected to succeed.
+            number of counter expected to succeed.
 
         **failures** *(list[dict])*
             a list of registered failure (source, input, error).
         """
-        completed: float = 0.0
-        successes: int = 0
-        failures: int = 0
-        misses: int = 0
-        total: int = len(self.counter)
+        completed = 0.0
+        successes = 0
+        failures = 0
+        misses = 0
+        total = len(self.counter)
         for record in self.counter.values():
             record_count = len(record)
             if not record_count:
@@ -150,7 +171,7 @@ class Report(Generic[T]):
             successes += success_count
             failures += failure_count
             completed += success_count / record_count
-        return ReportDetails(
+        return dict(
             rate=round(completed / total, 4),
             expected_rate=round(self.required / total, 4),
             succeeded=successes,
@@ -161,29 +182,30 @@ class Report(Generic[T]):
         )
 
 
-def create_report_maker(
-        components: Iterable[T],
-        log_failures: bool,
-        raise_for_fail: bool,
-        name: str | None = None,
-) -> Callable[[], Report[T]]:
+class ReporterMaker:
     """
-    prepares a report factory to optimize report initialization,
-    and tries to detect optional components (components with an attribute 'optional' == True).
+    ReporterMaker object is a reporter factory that prepares its initial information
+    to optimize its initialization when the chain get called.
+    """
+    __slots__ = 'components', 'required', 'failure_handlers'
 
-    :param components: components that will be reporting (usually chainables)
-    :param log_failures: if true, the failures will be logged.
-    :param raise_for_fail: if true, an exception will be raised in case of fatal failure.
-    :param name: optionally, the name of the reports' owner that will be used in loggings.
-    :return: a Report factory, 0-arguments function that returns a report object.
-    """
-    if not components:
-        raise ValueError("unable create reports without components")
-    components_: frozenset[T] = frozenset(components)
-    required: int = [not getattr(component, 'optional', False) for component in components_].count(True)
-    failure_handlers: list[FailureHandler] = []
-    if log_failures:
-        failure_handlers.append(LoggingHandler(name))
-    if raise_for_fail:
-        failure_handlers.append(RaiseFailureHandler(name))
-    return lambda: Report(components_, required, failure_handlers)
+    def __init__(self, name: str, components: tp.Iterable[Chainable], handlers: list[tp.Type[FailureHandler]]) -> None:
+        """
+        Initializes a new ReporterMaker object with the given information.
+
+        :param name: the name of the owner.
+        :type name: str
+        :param components: chainables that will be reporting.
+        :type components: Iterable[Chainable]
+        :param handlers: a list of FailureHandler subclasses to handle failures.
+        :type handlers: list[FailureHandler]
+        """
+        if not components:
+            raise ValueError("unable create reports without counter")
+        self.components: frozenset[Chainable] = frozenset(components)
+        self.required: int = [not getattr(component, 'optional', False) for component in self.components].count(True)
+        self.failure_handlers: list[FailureHandler] = [handler(name) for handler in handlers]
+
+    def __call__(self) -> Reporter:
+        """creates a new Reporter object with the previously specified information."""
+        return Reporter(self.components, self.required, self.failure_handlers)
