@@ -1,18 +1,23 @@
+"""
+This module implements Chainable collections, those are containers
+containing node components or another nested containers, they process
+data by passing the input to their members and return the results
+in a specific format.
+"""
 from abc import ABC
-from typing import TypeVar, overload
-from .base import Chainable, FEEDBACK
-from ..monitoring import Reporter
-
+from typing import TypeVar, overload, Any, Generator
+from .base import Chainable
+from .._abc import ReporterBase
 
 ChainableCollection = TypeVar('ChainableCollection', bound='Collection', covariant=True)
 
 
 class Collection(Chainable, ABC):
     """
-    a collection is a chainable that contains other chainables called members,
-    it must implement a way of passing the input to its members according to it expected behaviour.
+    Collection is the base class for all chainable-collection objects,
+    and those are objects that contain another chainables that actually
+    do the processing and the collection only orchestrates this process.
     """
-
     __slots__ = 'branches', 'members',
 
     @overload
@@ -21,12 +26,11 @@ class Collection(Chainable, ABC):
     def __init__(self, **members: Chainable) -> None: ...
 
     def __init__(self, *args, **kwargs):
-        name = type(self).__name__.lower()
-        super(Collection, self).__init__(name)
+        super(Collection, self).__init__()
         if args and kwargs:
             raise ValueError("cannot pass positional and keyword members together")
         elif not (args or kwargs):
-            raise ValueError(f"{name} cannot be created without members")
+            raise ValueError(f"{self.NAME} cannot be created without members")
 
         branches, members = zip(*enumerate(args)) if args else zip(*kwargs.items())
 
@@ -34,6 +38,9 @@ class Collection(Chainable, ABC):
             raise TypeError("all members must be of type chainable")
         self.branches: tuple[str, ...] = tuple(map(str, branches))
         self.members: tuple[Chainable, ...] = tuple(members)
+
+    def __len__(self):
+        return sum(len(member) for member in self.members)
 
     def set_title(self, root: str | None = None, branch: str | None = None):
         super(Collection, self).set_title(root, branch)
@@ -43,86 +50,132 @@ class Collection(Chainable, ABC):
 
 class Sequence(Collection):
     """
-    a sequence is a chainable that contains a series of chainables, when called with a value
-    it passes the result to the first chainable and its result is passed to the next until
-    the last one.
-    if an optional chainable fails, its input will be passed as it is to the next one,
-    however if a required chainable fails, the whole sequence fails.
+    chain's sequence is a chainable collection that processes data sequentially
+    from a member to the next in the same order passed to the constructor.
+
+    the chain's sequence ignores failures from optional members and forwards
+    their input to the next member as it is, however if a required
+    member fails, the sequence fails and returns that member's default value.
     """
 
-    def process(self, input, report: Reporter) -> FEEDBACK:
+    def default_factory(self) -> Any:
+        """gets the default value from the last required member"""
+        default = None
+        for member in reversed(self.members):
+            if not member.optional:
+                default = member.default_factory()
+                break
+        return default
+
+    def process(self, input, reporter: ReporterBase) -> tuple[bool, Any]:
+        success_set: set[bool] = set()
         for node in self.members:
-            success, result = node.process(input, report)
+            success, result = node.process(input, reporter)
             if success:
                 input = result
             elif not node.optional:
-                return False, result
-        return True, input
+                return False, self.default_factory()
+            success_set.add(success)
+        return any(success_set), input
 
 
 class Match(Collection):
     """
-    a match is a matching chainable that holds multiple branches, if called with an iterable
-    with the same size of its branches, it applies each branch to the corresponding value.
-    however if any of the following cases happen
-    (the size is not the same, the value given is not iterable or
-    branch fails, no matter if it's optional or required)
-    the match process is marked as failure.
+    chain's match is a chainable collection that provides different processing
+    branch for each item in the given input, it is stricter than the rest of
+    it siblings (Collection) and requires you to know exactly what data you're
+    going to get, if it gets a non-iterable object or an iterable with a different
+    size than its members (branches) it immediately fails.
+
+    chain's match object processes data by iterating over input items and its
+    internal members simultaneously and passes each item to the corresponding
+    member, the processing will also fail any member has failed.
     """
-    def process(self, args, report: Reporter) -> FEEDBACK:
-        results: list = list()
+
+    def default_factory(self) -> Any:
+        """generates an iterator of default value for each member"""
+        for member in self.members:
+            yield member.default_factory()
+
+    def _process(self, args, reporter: ReporterBase, states: set[bool]) -> Generator[Any, None, None]:
         try:
-            for arg, node in zip(args, self.members, strict=True):
-                success, result = node.process(arg, report)
-                if not success:
-                    return False, None
-                results.append(result)
-            return True, results
+            args_members = tuple(zip(args, self.members, strict=True))
         except Exception as error:
-            self.failure(args, error, report)
-            return False, None
+            self.failure(args, error, reporter)
+            yield from self.default_factory()
+        else:
+            for arg, node in args_members:
+                success, result = node.process(arg, reporter)
+                states.add(success)
+                yield result
+
+    def process(self, args, reporter: ReporterBase) -> tuple[bool, tuple]:
+        states: set[bool] = set()
+        results: tuple = tuple(self._process(args, reporter, states))
+        success = (states == {True})
+        return success, results
 
 
-class Group(Collection):
+class Model(Collection, ABC):
     """
-    a group is a branching chainable that holds ordered branches,
-    when called it passes the value to each of its branch members and returns a list
-    of successful results with the same order.
-    if an optional branch fails it will be skipped, and if a required branch fails,
-    the group process is marked as failure.
+    Models are chainable collection objects that return
+    the processing result with the same structure as
+    it was defined, a dict_model returns a dict, list_model
+    returns a list ...
     """
-    def process(self, input, report: Reporter) -> FEEDBACK:
+
+
+class ListModel(Model):
+    """
+    chain's list-model is a chainable collection that processes
+    the input by passing it to each of it members and returns
+    the list of results with the same definition order.
+
+    the list-model will fail if none of it members succeed or
+    if a required member fails, and failing optional members
+    will be simply skipped.
+    """
+
+    def default_factory(self) -> Any:
+        """generates a list of default values from required members"""
+        return [member.default_factory() for member in self.members if not member.optional]
+
+    def process(self, input, reporter: ReporterBase) -> tuple[bool, list]:
         successes: set[bool] = set()
         results: list = list()
-        for node in self.members:
-            success, result = node.process(input, report)
-            if not success and node.optional:
-                continue
-            successes.add(success)
-            results.append(result)
-        if any(successes):
-            return True, results
-        return False, None
+        for member in self.members:
+            success, result = member.process(input, reporter)
+            if success or not member.optional:
+                successes.add(success)
+                results.append(result)
+        return (successes == {True}), results
 
 
-class Model(Collection):
+class DictModel(Model):
     """
-    a model is a branching chainable that holds named branches,
-    when called it passes the value to each of its branch members and returns a dictionary
-    with the same names and the successful values.
-    if an optional branch fails it will be skipped together with it name,
-    and if a required branch fails, the model process is marked as failure.
+    chain's dict-model is a chainable collection that processes
+    the input by passing it to each of it members and returns
+    the dict mapping each key to its results.
+
+    the dict-model will fail if none of it members succeed or
+    if a required member fails, and failing optional members
+    will be simply skipped.
     """
 
-    def process(self, input, report: Reporter) -> FEEDBACK:
+    def default_factory(self) -> Any:
+        """generates a dict of default values from required members"""
+        return {
+            branch: member.default_factory()
+            for branch, member in zip(self.branches, self.members)
+            if not member.optional
+        }
+
+    def process(self, input, reporter: ReporterBase) -> tuple[bool, dict]:
         successes: set[bool] = set()
-        results: dict = dict()
-        for key, node in zip(self.branches, self.members):
-            success, result = node.process(input, report)
-            if not success and node.optional:
-                continue
-            successes.add(success)
-            results[key] = result
-        if any(successes):
-            return True, results
-        return False, None
+        results: dict[str, Any] = dict()
+        for branch, member in zip(self.branches, self.members):
+            success, result = member.process(input, reporter)
+            if success or not member.optional:
+                successes.add(success)
+                results[branch] = result
+        return (successes == {True}), results
