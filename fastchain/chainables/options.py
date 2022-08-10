@@ -1,39 +1,44 @@
-from abc import ABC, abstractmethod
-from typing import Any
+"""
+this module implement option functions, those are functions that get applied
+to chainables and either alter their properties or modify some behaviour.
 
-from .base import Chainable, FEEDBACK
-from ..monitoring import Reporter
+the module also contains a mapping of symbols to specific functions
+to serve as shortcuts to those functions.
+"""
+from types import MappingProxyType
+from typing import Iterable, Callable
 
-
-class Option(Chainable, ABC):
-    __slots__ = 'member',
-
-    def __init__(self, member: Chainable) -> None:
-        super(Option, self).__init__(member.title, member.optional)
-        self.member: Chainable = member
-        self.__name__ = f"{member.__name__}{self.symbol}"
-
-    @property
-    @abstractmethod
-    def symbol(self) -> str: pass   # reminder to add this class attribute
-
-    def set_title(self, root: str | None = None, branch: str | None = None):
-        self.member.set_title(root, branch)
+from .base import ChainableObject
+from .._abc import ReporterBase
 
 
-class Map(Option):
-    symbol: str = '*'
+def optional(self: ChainableObject) -> ChainableObject:
+    """sets the chainable as optional"""
+    self.optional = True
+    return self
 
-    def process(self, inputs: Any, report: Reporter) -> FEEDBACK:
+
+def for_each(chainable: ChainableObject) -> ChainableObject:
+    """modifies chainable process method to be applied in iteration"""
+    def _process_each(inputs, reporter):
+        for input in inputs:
+            success, result = _process(input, reporter)
+            if success:
+                yield result
+
+    def process(self: ChainableObject, inputs, reporter: ReporterBase) -> tuple[bool, Iterable]:
         try:
             iter(inputs)
         except TypeError as error:
-            self.member.failure(inputs, error, report)
-            return False, None
-        return True, self._process(inputs, report)
+            self.failure(inputs, error, reporter)
+            return False, ()
+        return True, _process_each(inputs, reporter)
+    _process = getattr(chainable, 'process')
+    setattr(chainable, 'process', process.__get__(chainable, chainable.__class__))
+    return chainable
 
-    def _process(self, args, report):
-        for arg in args:
-            success, result = self.member.process(arg, report)
-            if success:
-                yield result
+
+OptionMap: MappingProxyType[str, Callable[[ChainableObject], ChainableObject]] = MappingProxyType({
+    '?': optional,
+    '*': for_each
+})

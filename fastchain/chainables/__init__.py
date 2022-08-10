@@ -1,16 +1,18 @@
-from typing import Callable
-from .base import CHAINABLE, ChainableObject, Chainable, Node, Pass, optional
-from .collections import ChainableCollection, Collection, Sequence, Model, Group, Match
-from .options import Option, Map
-from types import MappingProxyType
+"""
+This package contains the implementation of elementary chain components
+that perform the processing.
+
+Users are not expected to interact directly with those components and
+that should be handled by the chain and other helper function
+in factory.py module.
+"""
+
+from .base import CHAINABLE, ChainableObject, Chainable, Node, Pass
+from .collections import ChainableCollection, Collection, Sequence, DictModel, ListModel, Match
+from .options import OptionMap
 
 
-PASS: Pass = Pass('pass')  # chain_pass singleton
-
-OptionMap: MappingProxyType[str, Callable[[Chainable], Chainable]] = MappingProxyType({
-    '?': optional,
-    '*': Map
-})
+PASS: Pass = Pass('pass')
 
 __all__ = (
     'CHAINABLE',
@@ -18,13 +20,11 @@ __all__ = (
     'Node',
     'Collection',
     'Sequence',
-    'Model',
-    'Group',
+    'DictModel',
+    'ListModel',
     'Match',
-    'Option',
-    'Map',
     'PASS',
     'ChainableObject',
     'ChainableCollection',
-    'OptionMap'
+    'OptionMap',
 )

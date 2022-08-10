@@ -1,16 +1,21 @@
+"""
+This module contains the base implementation of ChainableBase interface,
+any other chainable should be inheriting from Chainable class that
+provides basic functionalities.
+
+The module also implements the node chainable (the component that wraps function),
+and the skipping component called pass
+"""
+
 from abc import ABC
 from functools import partial, partialmethod
-from typing import (
-    TypeAlias,
-    Any,
-    Callable,
-    TypeVar,
-)
+from typing import TypeAlias, Any, Callable, TypeVar
 
 from .._abc import ChainableBase, ReporterBase
+from .._tools import camel_to_snake
 
 T = TypeVar('T')
-ChainableObject = TypeVar('ChainableObject', bound='Chainable', covariant=True)
+ChainableObject = TypeVar('ChainableObject', bound='Chainable', covariant=True)  # preserves the same chainable type
 FEEDBACK: TypeAlias = tuple[bool, T]
 CHAINABLE: TypeAlias = Callable[[Any], Any]
 
@@ -18,24 +23,47 @@ CHAINABLE: TypeAlias = Callable[[Any], Any]
 class Chainable(ChainableBase, ABC):
     """base class for all chainable elements."""
     __slots__ = 'name', 'title', 'optional',
+    NAME: str
 
-    def __init__(self, name: str) -> None:
-        self.name: str = name
-        self.title: str = name
-        self.optional: bool = False
+    def __init_subclass__(cls, type_name: str | None = None, **kwargs):
+        """
+        creates the object default name when a subclass of Chainable
+        is defined by converting the CamelCase to snake_case if no
+        custom name is provided like:
 
-    def __repr__(self):
-        return f'<chain-{type(self).__name__.lower()}: {self.name}>'
+        >>> class ChainableSubclass(Chainable, type_name="custom_name"):
+        ...     ... # implementation goes here
+
+        :param type_name: the default name
+        :type type_name: str
+        """
+        if type_name is None:
+            type_name = camel_to_snake(cls.__name__)
+        cls.NAME = type_name
+
+    def __init__(self, name: str | None = None) -> None:
+        if name is None:
+            name = self.NAME
+        self.name = name
+        self.title = name
+        self.optional = False
+
+    def __repr__(self): return f'<Chain{type(self).__name__}: {self.name}>'
+    def __len__(self): return 0
+
+    def default_factory(self) -> Any:
+        """generates a default value in case of failure"""
+        return None
 
     def set_title(self, root: str | None = None, branch: str | None = None) -> None:
         """
-        creates the chain's title with a uniform format.
+        creates the chain's coll_title with a uniform format.
 
         + If no root is given -> 'name'
         + If only name and root are given -> 'root/name'
         + If name, root and branch are given -> 'root[branch]/name'
 
-        :param root: pre-generated root title if exists
+        :param root: pre-generated root coll_title if exists
         :type root: str | None
         :param branch: index or key of the root branch identifying this chainable
         :type branch: str | None
@@ -55,41 +83,41 @@ class Chainable(ChainableBase, ABC):
 
         :param input: the value that caused the failure.
         :param error: the exception that caused the failure.
-        :param report: report object that holds processing details.
+        :param report: reporter object that holds processing details.
         """
         report.register_failure(self.title, input, error, not self.optional)
 
 
 class Pass(Chainable):
     """
-    a pass is a chainable that does nothing but passing the received value as it is.
-    this was originally created to be used in branching (model, group) or matching (match),
+    PASS object is a chainable that does nothing but passing the received value as it is.
+    this was originally created to be used for branching (model, group or match),
     where a branch only needs to pass the value as it is, this component
-    never fails, and it's more optimized than a node with lambda x: x
+    never fails, and it's more optimized than Node(lambda x: x)
     """
     def process(self, input: T, report: ReporterBase) -> FEEDBACK[T]:
         return True, input
 
-    def __repr__(self) -> str:
-        return '<chain-pass>'
+    def __repr__(self) -> str: return '<chain-pass>'
 
     def set_title(self, root: str | None = None, branch: str | None = None):
-        """PASS ignores the title"""
+        """PASS ignores title modification"""
         pass
 
 
 class Node(Chainable):
     """
-    a node is the main chainable, it's wraps a user defined 1-argument function.
+    chain's node is the main chainable, it's wraps a user defined 1-argument function.
     if this function raises an exception when called with a value, the exception
     is stored and reported without affecting the main program and the node
     process is marked as failure.
     """
-    __slots__ = 'function', 'default_factory',
+    __slots__ = 'function',
 
     def __init__(
             self,
-            function: CHAINABLE, *,
+            function: CHAINABLE,
+            *,
             name: str | None = None,
             default: Any = None,
             default_factory: Callable[[], Any] | None = None
@@ -101,15 +129,19 @@ class Node(Chainable):
         elif not name:
             raise ValueError("node's name cannot be empty")
         super().__init__(name)
+
         if not callable(function):
             raise TypeError(f"node's function must be callable with signature (Any) -> Any, not {type(function)}")
-        self.function: CHAINABLE = function
-        if default_factory is None:
-            def df(): return default
-            default_factory = df
-        elif not callable(default_factory):
-            raise TypeError("default_factory must be a 0-argument callable that returns any value")
-        self.default_factory: Callable[[], Any] = default_factory
+        self.function = function
+
+        if default_factory is not None:
+            if not callable(default_factory):
+                raise TypeError("default factory must be a 0-argument callable (function)")
+            self.default_factory = default_factory
+        elif default is not None:
+            self.default_factory = lambda: default
+
+    def __len__(self): return 1
 
     @classmethod
     def get_qualname(cls, function: Callable) -> str:
@@ -130,9 +162,3 @@ class Node(Chainable):
             return False, self.default_factory()
         report(self, True)
         return True, result
-
-
-def optional(chainable: ChainableObject) -> ChainableObject:
-    """sets the chainable as optional"""
-    chainable.optional = True
-    return chainable
