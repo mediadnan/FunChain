@@ -316,6 +316,23 @@ def test_collection_creation(source_coll, coll_type, chain_node_inc, chain_node_
     assert coll.branches == BRANCHES_NAMES[bn]
 
 
+@pytest.mark.parametrize('source_coll, expected_default', [
+    param("Sequence(Node(increment, default=0), Node(increment, default=1))", 1, id="sequence of two required nodes"),
+    param("Sequence(Node(increment, default=0), optional(Node(increment, default=1)))", 0, id="sequence of a required and optional node"),  # noqa
+
+    param("Match(Node(increment, default=0), Node(increment, default=1))", (0, 1), id="Match of two required nodes"),
+    param("Match(Node(increment, default=0), optional(Node(increment, default=1)))", (0, 1), id="Match of a required and optional nodes"),  # noqa
+
+    param("DictModel(Node(increment, default=0), Node(increment, default=1))", {'0': 0, '1': 1}, id="DictModel of two required nodes"),  # noqa
+    param("DictModel(Node(increment, default=0), optional(Node(increment, default=1)))", {'0': 0}, id="DictModel of a required and optional nodes"),  # noqa
+
+    param("ListModel(Node(increment, default=0), Node(increment, default=1))", [0, 1], id="ListModel of two required nodes"),  # noqa
+    param("ListModel(Node(increment, default=0), optional(Node(increment, default=1)))", [0], id="ListModel of a required and optional nodes"),  # noqa
+])
+def test_collection_defaults(source_coll: str, expected_default, increment):
+    assert eval(source_coll).default_factory() == expected_default
+
+
 COLL_SETUPS = {
     'ID': "Node(increment), Node(double)",
     'IF': "Node(increment), Node(fail)",
