@@ -94,8 +94,7 @@ class Match(Collection):
 
     def default_factory(self) -> Any:
         """generates an iterator of default value for each member"""
-        for member in self.members:
-            yield member.default_factory()
+        return tuple(member.default_factory() for member in self.members)
 
     def _process(self, args, reporter: ReporterBase, states: set[bool]) -> Generator[Any, None, None]:
         try:
