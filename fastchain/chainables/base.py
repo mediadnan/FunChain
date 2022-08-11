@@ -9,12 +9,14 @@ and the skipping component called pass
 
 from abc import ABC
 from functools import partial, partialmethod
-from typing import TypeAlias, Any, Callable, TypeVar
+from typing import TypeAlias, Any, Callable, TypeVar, ParamSpec, Literal
 
 from .._abc import ChainableBase, ReporterBase
 from .._tools import camel_to_snake
 
 T = TypeVar('T')
+SPEC = ParamSpec('SPEC')
+RT = TypeVar('RT')
 ChainableObject = TypeVar('ChainableObject', bound='Chainable', covariant=True)  # preserves the same chainable type
 FEEDBACK: TypeAlias = tuple[bool, T]
 CHAINABLE: TypeAlias = Callable[[Any], Any]
@@ -50,10 +52,6 @@ class Chainable(ChainableBase, ABC):
 
     def __repr__(self): return f'<Chain{type(self).__name__}: {self.name}>'
     def __len__(self): return 0
-
-    def default_factory(self) -> Any:
-        """generates a default value in case of failure"""
-        return None
 
     def set_title(self, root: str | None = None, branch: str | None = None) -> None:
         """
@@ -95,14 +93,16 @@ class Pass(Chainable):
     where a branch only needs to pass the value as it is, this component
     never fails, and it's more optimized than Node(lambda x: x)
     """
-    def process(self, input: T, report: ReporterBase) -> FEEDBACK[T]:
+    def process(self, input: T, report: ReporterBase) -> tuple[Literal[True], T]:
         return True, input
 
     def __repr__(self) -> str: return '<chain-pass>'
 
     def set_title(self, root: str | None = None, branch: str | None = None):
         """PASS ignores title modification"""
-        pass
+
+    def default_factory(self) -> None:
+        """this will never be used"""
 
 
 class Node(Chainable):
@@ -112,34 +112,24 @@ class Node(Chainable):
     is stored and reported without affecting the main program and the node
     process is marked as failure.
     """
-    __slots__ = 'function',
+    __slots__ = 'function', 'default'
 
-    def __init__(
-            self,
-            function: CHAINABLE,
-            *,
-            name: str | None = None,
-            default: Any = None,
-            default_factory: Callable[[], Any] | None = None
-    ) -> None:
+    def __init__(self, function: Callable[SPEC, RT], *, name: str | None = None, default: T = None) -> None:
         if name is None:
             name = self.get_qualname(function)
         elif not isinstance(name, str):
             raise TypeError(f"node's name must be str not {type(name)}")
         elif not name:
             raise ValueError("node's name cannot be empty")
-        super().__init__(name)
-
         if not callable(function):
             raise TypeError(f"node's function must be callable with signature (Any) -> Any, not {type(function)}")
+        super().__init__(name)
         self.function = function
+        self.default: T = default
 
-        if default_factory is not None:
-            if not callable(default_factory):
-                raise TypeError("default factory must be a 0-argument callable (function)")
-            self.default_factory = default_factory
-        elif default is not None:
-            self.default_factory = lambda: default
+    def default_factory(self) -> T:
+        """generates the default value, None by default"""
+        return self.default
 
     def __len__(self): return 1
 
@@ -153,7 +143,7 @@ class Node(Chainable):
         else:
             return f"{getattr(type(function), '__qualname__')}_object"
 
-    def process(self, input, report: ReporterBase) -> FEEDBACK:
+    def process(self, input, report: ReporterBase) -> tuple[True, RT] | tuple[False, T]:
         try:
             result = self.function(input)
         except Exception as error:
