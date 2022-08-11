@@ -29,7 +29,7 @@ def chainable():
     param({'type_name': 'my_custom_name'}, 'my_custom_name', id="custom type_name"),
 ])
 def test_chainable_default_name(params: dict[str, Any], expected_default_name: str):
-    class ChainableSubClass(Chainable, **params): pass
+    class ChainableSubClass(Chainable, **params): pass  # noqa
     assert ChainableSubClass.NAME == expected_default_name
 
 
@@ -447,4 +447,3 @@ def test_for_each_option_failure(chain_node_inc, test_reporter):
     assert not success
     assert result == ()
     assert isinstance(test_reporter.failures[node.title]['error'], TypeError)
-
