@@ -1,24 +1,46 @@
 import re
-from functools import partialmethod, partial
-from typing import Pattern, Callable
-
-NAME: Pattern[str] = re.compile(r'^[a-z_](?:\w+[_-]?)+?$', re.IGNORECASE)
+from typing import Pattern, Callable, TypeVar, Any
 
 
-def get_qualname(func: Callable) -> str:
-    """gets the object's (function's) qualified name"""
-    if isinstance(func, (partial, partialmethod)):
-        return get_qualname(func.func)
-    elif hasattr(func, '__qualname__'):
-        return getattr(func, '__qualname__')
-    else:
-        return f"{getattr(type(func), '__qualname__')}_object"
+def camel_to_snake(name: str) -> str:
+    """converts CamelCase (class name style) to snake_case (instance name style)
+
+    :param name: CamelCase name
+    :type name: str
+    :return: snake_case name
+    :rtype: str
+    """
+    name = re.sub('(.)([A-Z][a-z]+)', r'\1_\2', name)
+    name = re.sub('__([A-Z])', r'_\1', name)
+    name = re.sub('([a-z0-9])([A-Z])', r'\1_\2', name)
+    return name.lower()
 
 
-def validate_name(name: str) -> str:
-    """validates the component name"""
+CHAIN_NAME: Pattern[str] = re.compile(r'^[a-z_](?:\w+[_-]?)+?$', re.IGNORECASE)
+
+
+def validate_chain_name(name: str) -> str:
+    """validates the chain's name and returns it"""
     if not isinstance(name, str):
         raise TypeError(f"name must be str not {type(name).__name__}")
-    elif not NAME.match(name):
+    elif not CHAIN_NAME.match(name):
         raise ValueError("the name should start with a letter and only contain letters, digits, '_' , and '-'")
     return name
+
+
+T = TypeVar('T')
+
+
+def bind(obj: T, method: Callable[[T, ...], Any], method_name: str | None = None) -> None:
+    """dynamically assign or re-assign a method to an object.
+
+    :param obj: Any mutable object that allows 'setattr'
+    :param method: a function with signature (self, ...) -> Any
+    :type method: function
+    :param method_name: name given to the assign method, default method.__name__
+    :type method_name: str
+    :return: None
+    """
+    if method_name is None:
+        method_name = method.__name__
+    setattr(obj, method_name, getattr(method, '__get__')(obj, obj.__class__))
