@@ -1,7 +1,9 @@
 from typing import Any
 
 import pytest
-from fastchain._abc import ReporterBase
+from fastchain._abc import ReporterBase  # noqa
+from fastchain.chainables import Chainable
+from fastchain.monitoring import FailureDetails
 
 
 @pytest.fixture
@@ -39,17 +41,23 @@ def fail(fake_error):
 def test_reporter():
     class TestReporter(ReporterBase):
         def __init__(self):
-            self.failures = {}
-            self.counter = {}
+            self.failures: dict[str, FailureDetails] = {}
+            self.counter: dict[Chainable, list[bool]] = {}
 
-        def __call__(self, component, success: bool) -> None:
+        def __call__(self, component: Chainable, success: bool) -> None:
             if component not in self.counter:
-                self.counter[component] = []
-            self.counter[component].append(success)
+                self.counter[component] = [success]
+            else:
+                self.counter[component].append(success)
 
         def register_failure(self, source: str, input, error: Exception, fatal: bool = False) -> None:
-            self.failures[source] = dict(input=input, error=error, fatal=fatal)
+            self.failures[source] = dict(source=source, input=input, error=error, fatal=fatal)
 
         def report(self) -> dict[str, Any]:
             pass
+
+        def clear(self) -> None:
+            self.failures = {}
+            self.counter = {}
+
     return TestReporter()

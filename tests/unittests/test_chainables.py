@@ -17,6 +17,7 @@ chainable_name = "test_name"
 @pytest.fixture
 def chainable():
     class ChainableCopy(Chainable):
+        def default_factory(self) -> Any: return None
         def __len__(self): return 1
         def process(self, input, report): return True, input
     ChainableCopy.__name__ = ChainableCopy.__qualname__ = 'Chainable'
@@ -90,21 +91,25 @@ def test_pass_call(test_reporter):
     assert len(PASS) == 0, "PASS has no size"
 
 
-node_defaults = [
-    pytest.param(dict(), None, id="default_default_value"),
-    pytest.param(dict(default=None), None, id="explicit_default_value"),
-    pytest.param(dict(default=""), "", id="custom_default_value('')"),
-    pytest.param(dict(default_factory=list), [], id="custom_default_factory(list)"),
-    pytest.param(dict(default=0, default_factory=str), "", id="default_factory_overrides_default(str > 0)"),
-]
-
-
+@pytest.mark.parametrize('default_kw, default', [
+    (dict(), None),
+    (dict(default=None), None),
+    (dict(default=0), 0),
+    (dict(default=''), ''),
+], ids=[
+    "no default provided",
+    "explicit default None",
+    "default 0",
+    "default ''"
+])
 @pytest.mark.parametrize('name_kw, name', [
         (dict(), 'increment'),
         (dict(name='my_node'), 'my_node')
-    ], ids=["default_name", "custom_name"])
-@pytest.mark.parametrize('default_kw, default', node_defaults)
-def test_node_chainable_creation(increment, name, default, name_kw: dict[str, Any], default_kw: dict[str, Any]):
+    ], ids=[
+    "default_name",
+    "custom_name"
+])
+def test_node_chainable_creation(increment, name, name_kw, default, default_kw):
     node = Node(increment, **name_kw, **default_kw)
     assert node.function is increment, "unexpected node function, wasn't identical"
     assert node.name == name, "unexpected node name"
@@ -119,13 +124,11 @@ def test_node_chainable_creation(increment, name, default, name_kw: dict[str, An
         ((None,), dict(), TypeError, r'must be.*?callable\b'),
         ("increment", dict(name=5), TypeError, r"must be.*?str\b"),
         ("increment", dict(name=''), ValueError, r"cannot be empty\b"),
-        ("increment", dict(default_factory=""), TypeError, r'must be.*?callable\b'),
     ], ids=[
         "no_arg_provided",
         "non_callable_as_function",
         "bad_name_type(5)",
         "empty_name",
-        "bad_default_factory_value("")"
     ]
 )
 def test_node_validation(args, kwargs, exception_type, msg_contains, request):
@@ -193,12 +196,11 @@ def test_node_successful_processing_method(increment, test_reporter):
     assert not test_reporter.failures, "reporter's failures reg was filled, it shouldn't"
 
 
-@pytest.mark.parametrize('default_kw, default', node_defaults)
-def test_node_unsuccessful_processing_method(fail, fake_error, test_reporter, default, default_kw: dict[str, Any]):
-    node = Node(fail, **default_kw)
+def test_node_unsuccessful_processing_method(fail, fake_error, test_reporter):
+    node = Node(fail)
     assert not test_reporter.counter, "reporter's counter reg wasn't empty"
     assert not test_reporter.failures, "reporter's failures reg wasn't empty"
-    assert node.process(5, test_reporter) == (False, default), "the processing result wasn't as expected"
+    assert node.process(5, test_reporter) == (False, None), "the processing result wasn't as expected"
     assert test_reporter.counter[node] == [False], "node fail wasn't registered"
     assert test_reporter.failures == {
         node.title: {
@@ -215,6 +217,7 @@ def test_node_unsuccessful_processing_method(fail, fake_error, test_reporter, de
 @pytest.fixture
 def mock_collection():
     class TestCollection(Collection):
+        def default_factory(self) -> Any: return None
         def process(self, input, report: ReporterBase) -> tuple[bool, Any]: return True, input
 
     TestCollection.__name__ = 'collection'
