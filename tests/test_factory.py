@@ -1,4 +1,6 @@
-from typing import Type, Any
+import inspect
+import re
+from typing import Type, Any, Callable
 
 import pytest
 import functools    # noqa (needed in namespace for parametized test)
@@ -115,4 +117,74 @@ def test_chainable_function_validation(args, kwargs, Error):
 
 
 # test funfact decorator
+def test_trying_funfact_over_non_callables():
+    with pytest.raises(TypeError, match=r'funfact takes a callable as first argument not .*'):
+        funfact(object())
 
+
+def common_case_check(function_factory, name, default):
+    # check decorated function signature properties preservation
+    wrapped = getattr(function_factory, '__wrapped__')
+    for attr in (
+            '__name__',
+            '__qualname__',
+            '__doc__',
+            '__module__',
+            '__annotations__',
+            '__defaults__',
+            '__kwdefaults__'
+    ):
+        if not hasattr(wrapped, attr):
+            continue
+        assert getattr(function_factory, attr) == getattr(wrapped, attr)
+    assert inspect.signature(wrapped) == inspect.signature(function_factory)
+
+    # check call output
+    node = function_factory(3)
+    assert isinstance(node, Node)
+    assert node.name.endswith(name)
+    assert node.function(5) == 4  # (5 + 3)/2
+    assert node.default_factory() == default
+
+
+def test_funfact_decorating_function_factory_without_parameters():
+    @funfact
+    def function_factory(a: int, b: int = 2) -> Callable[[int], float]:
+        """function docstrings"""
+        def function(n: int) -> float:
+            return (n + a) / b
+        return function
+    common_case_check(function_factory, 'function_factory', None)
+
+
+@pytest.mark.parametrize('name_param, name', [
+    param({}, 'function_factory', id="no name"),
+    param({'name': 'my_function'}, 'my_function', id="custom name"),
+])
+@pytest.mark.parametrize('default_params, default', [
+    param({}, None, id="no default/default_factory"),
+    param({'default': 0}, 0, id="default only"),
+    param({'default_factory': list}, [], id="default_factory only"),
+    param({'default_factory': list, 'default': 0}, [], id="default and default factory"),
+])
+def test_funfact_decorating_function_factory_with_parameters(name_param, name, default_params, default):
+    @funfact(**name_param, **default_params)  # type: ignore
+    def function_factory(a: int, b: int = 2) -> Callable[[int], float]:
+        """function docstrings"""
+        def function(n: int) -> float:
+            return (n + a) / b
+        return function
+    common_case_check(function_factory, name, default)
+
+
+def test_funfact_decorating_class_as_factory():
+    @funfact
+    class Factory:
+        """class docstrings"""
+        def __init__(self, a: int, b: int = 2):
+            self.a = a
+            self.b = b
+
+        def __call__(self, n: int) -> float:
+            return (n + self.a) / self.b
+    common_case_check(Factory, "Factory", None)

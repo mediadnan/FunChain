@@ -2,10 +2,11 @@ import typing as tp
 from functools import partial, update_wrapper, WRAPPER_ASSIGNMENTS
 from inspect import signature
 
-from ._tools import get_qualname
 import fastchain.chainables as cb
+from ._tools import bind
 from .chainables import Chainable, ChainableObject, Node, Sequence, DictModel, Match, ListModel
 
+T = tp.TypeVar('T')
 SPEC = tp.ParamSpec('SPEC')
 OPTIONS: tp.TypeAlias = tp.Literal['*', '?']
 CHAINABLES: tp.TypeAlias = tp.Union[cb.Chainable,
@@ -67,11 +68,12 @@ def sequence(*members: CHAINABLES) -> Sequence | Chainable:
         else:
             members_.append(_parse(member, options=options_))
             options_ = list()
+    members_ = list(filter(lambda x: x is not cb.PASS, members_))  # cleaning unnecessary PASS
     if not members_:
-        raise ValueError("cannot create an empty sequence, you can pass '...' instead.")
+        raise ValueError("a sequence must contain at least one node")
     elif len(members_) == 1:
         return members_[0]
-    return Sequence(*filter(lambda x: x is not cb.PASS, members_))  # cleaning unnecessary PASS
+    return Sequence(*members_)
 
 
 def dict_model(**members: CHAINABLES) -> DictModel:
@@ -92,7 +94,41 @@ def match(*members: CHAINABLES) -> Match:
     members_: tuple[Chainable] = tuple(_parse_all(members))
     if len(members_) < 2:
         raise ValueError("cannot create a chain-match with less than 2 members")
+    elif any(member.optional for member in members_):
+        raise ValueError("chain-match cannot contain optional members")
     return Match(*_parse_all(members))
+
+
+@tp.overload
+def chainable(func: cb.CHAINABLE, /, name: str | None = ..., default: tp.Any = ..., default_factory: tp.Callable[[], tp.Any] | None = ...) -> Node: ...                  # noqa: E501
+@tp.overload
+def chainable(func: tp.Callable[SPEC, tp.Any], /, *args: SPEC.args, name: str | None = ..., default: tp.Any = ..., default_factory: tp.Callable[[], tp.Any] | None = ..., **kwargs: SPEC.kwargs) -> Node: ...  # noqa: E501
+
+
+def chainable(func, /, *args, name=None, default=None, default_factory=None, **kwargs):
+    """
+    prepares a chain node with the given name and default either from a 1-argument function
+    or from multiple-arguments function if given remaining *args and **params
+    that will be partially applied to this function.
+
+    :param func: function, method, type or any callable object.
+    :param args: if provided, they will be partially applied (first) to function.
+    :param name: custom name for the node, otherwise function.__qualname__ will be the name.
+    :param default: a value that will be returned in case of failure (exception), default to None.
+    :param default_factory: 0-argument function that returns a default value (for mutable default objects).
+    :param kwargs: if provided, they will be partially applied to function.
+    :return: Node object
+    """
+    if args or kwargs:
+        func = partial(func, *args, **kwargs)
+    node = Node(func, name=name, default=default)
+
+    if default_factory is None:
+        return node
+    elif not callable(default_factory):
+        raise TypeError("default factory must be a 0-argument callable (function)")
+    bind(node, lambda self: default_factory(), 'default_factory')
+    return node
 
 
 @tp.overload
@@ -108,80 +144,20 @@ def funfact(func=None, /, *, name=None, default=None, default_factory=None):
     decorator that transforms a higher order function that produces a chainable function to
     a similar function that produces a node factory object with the given name and default.
 
-    This decorator can be used without parameters like this:
-
-    >>> @funfact        # default name will be 'factory'
-    ... def factory(*args, **kwargs):
-    ...     # source omitted ...
-    ...     return lambda x: x * 2  # returns chainable function
-
-    Or with a parameters to customize the chainable
-    >>> @funfact(name='my_fact')
-    ... def factory(*args, **kwargs):
-    ...     # source omitted ...
-    ...     return lambda x: x * 2
-
-
     :param func: higher order function that produces a chainable function (1-argument function).
     :param name: custom name for the node, otherwise function.__qualname__ will be the name.
     :param default: a value that will be returned in case of failure (exception), default to None.
     :param default_factory: 0-argument function that returns a default value (for mutable default objects).
     :return: function with same arg-spec as function but returns a NodeFactory object (partially initialized node).
     """
-    def decorator(function):
-        def wrapper(*args, **kwargs):
-            return Node(
-                function(*args, **kwargs),
-                name=name,
-                default=default,
-                default_factory=default_factory,
-            )
+    def decorator(function: tp.Callable[SPEC, cb.CHAINABLE]) -> tp.Callable[SPEC, Node]:
+        def wrapper(*args: SPEC.args, **kwargs: SPEC.kwargs):
+            return chainable(function(*args, **kwargs), name=name, default=default, default_factory=default_factory)
         if not callable(function):
-            raise TypeError(f"funfact decorator expects a function not {type(function)}")
+            raise TypeError(f"funfact takes a callable as first argument not {type(function)}")
         nonlocal name
         if name is None:
-            name = get_qualname(function)
+            name = Node.get_qualname(function)
         setattr(wrapper, '__signature__', signature(function))
         return update_wrapper(wrapper, function, (*WRAPPER_ASSIGNMENTS, '__defaults__', '__kwdefaults__'))
-    return decorator if func is None else decorator(func)
-
-
-@tp.overload
-def chainable(func: cb.CHAINABLE, /, name: str | None = ..., default: tp.Any = ..., default_factory: tp.Callable[[], tp.Any] | None = ...) -> Node: ...                  # noqa: E501
-@tp.overload
-def chainable(func: tp.Callable, /, *args, name: str | None = ..., default: tp.Any = ..., default_factory: tp.Callable[[], tp.Any] | None = ..., **kwargs) -> Node: ...  # noqa: E501
-
-
-def chainable(func, /, *args, name=None, default=None, default_factory=None, **kwargs):
-    """
-    prepares a chain-node factory with the given name and default/default_factory from
-    a chainable function, or from a non-chainable if given remaining *args and **kwargs that will
-    be partially applied to this function.
-
-    This:
-
-    >>> def half(a):    # chainable function (1-argument)
-    ...     return a / 2
-    >>>  chainable(half)
-
-    is equivalent to:
-
-    >>> def divide(a, b):   # non_chainable function
-    ...     return a / b
-    >>> chainable(divide, b=2, name="half")
-
-    or even this:
-
-    >>> chainable(lambda x: divide(x, 2), name="half")
-
-    :param func: function, method, type or any callable object.
-    :param args: if provided, they will be partially applied (first) to function.
-    :param name: custom name for the node, otherwise function.__qualname__ will be the name.
-    :param default: a value that will be returned in case of failure (exception), default to None.
-    :param default_factory: 0-argument function that returns a default value (for mutable default objects).
-    :param kwargs: if provided, they will be partially applied to function.
-    :return: Node object (partially initialized node)
-    """
-    if args or kwargs:
-        func = partial(func, *args, **kwargs)
-    return Node(func, name=name, default=default, default_factory=default_factory)
+    return decorator if (func is None) else decorator(func)
