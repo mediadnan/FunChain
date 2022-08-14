@@ -1,96 +1,28 @@
 """
 This module implements Reporter and ReporterMaker and all the tools to chain's
 process monitoring and handling failures.
-
-It also provides a standard FailureHandler base class to be inherited and customized
-handling failures.
 """
-import abc
 import operator
 import warnings
-import logging
 import typing as tp
 
-from fastchain._abc import ReporterBase
+from fastchain._abc import ReporterBase, FailureDetails, ReportStatistics
 from fastchain.chainables import Chainable, Node, Collection
 
 
-class FailureDetails(tp.TypedDict):
-    """standard failure details dictionary"""
-    source: str
-    input: tp.Any
-    error: Exception
-    fatal: bool
+class FakeReporter(ReporterBase):
+    """Reporter that does nothing when called"""
+    def __init__(self):
+        self.failures = []
 
+    def __call__(self, component, success: bool) -> None:
+        pass
 
-class ReportStatistics(tp.TypedDict):
-    """standard reporter statistics dictionary"""
-    success_rate: float
-    minimum_expected_rate: float
-    successful_node_operations: int
-    failed_node_operations: int
-    missed_nodes: int
-    total_nodes: int
+    def register_failure(self, source: str, input, error: Exception, fatal: bool = False) -> None:
+        pass
 
-
-class FailureHandler(abc.ABC):
-    """
-    Base class for failure handlers that will be called
-    when failures occur.
-
-    all subclasses must have the same __init__ signature
-    and must define the class name attribute
-    (ending with 'handler' for consistency)
-    and implement the __call__ method
-
-    Example:
-        >>> class SpecialHandler(FailureHandler):
-        ...     name: str = 'special handler'
-        ...     def __call__(self, failure: FailureDetails) -> None:
-        ...         ... # here goes the failure handling
-    """
-    __slots__ = 'owner',
-
-    def __init__(self, owner: str) -> None:
-        """
-        initializes the new failure handler.
-
-        :param owner: name of the chain owning this handler
-        :type owner: str
-        """
-        self.owner: str = owner
-
-    def message(self, failure: FailureDetails) -> str:
-        """
-        produces common failure string format
-
-        :param failure: failure obj / dict
-        :type failure: FailureDetails
-        :return: failure message
-        :rtype: str
-        """
-        source, input, error = failure['source'], failure['input'], failure['error']
-        return f"{self.owner}::{source} raised {error!r} after receiving {input!r} (type: {type(input).__qualname__})"
-
-    @abc.abstractmethod
-    def __call__(self, failure: FailureDetails) -> None: pass
-    @property
-    @abc.abstractmethod
-    def name(self) -> str: pass
-
-
-class LoggingHandler(FailureHandler):
-    """handler logs failure with the standard logging.Logger with the owners name"""
-    name: str = "logging handler"
-
-    def __init__(self, owner: str) -> None:
-        super().__init__(owner)
-        self.logger: logging.Logger = logging.getLogger(owner)
-
-    def __call__(self, failure: FailureDetails) -> None:
-        """logs the failure with a different level for different failure's severity"""
-        lvl = logging.ERROR if failure['fatal'] else logging.INFO
-        self.logger.log(lvl, self.message(failure), stacklevel=2)
+    def statistics(self) -> ReportStatistics:
+        return ReportStatistics()
 
 
 class Reporter(ReporterBase):
@@ -104,18 +36,12 @@ class Reporter(ReporterBase):
     created every time the chain is called. And most of the preparation
     are taken care by the ReporterMaker.
     """
-    __slots__ = 'counter', 'minimum_rate', 'failures', 'failure_handlers',
+    __slots__ = 'counter', 'required_nodes', 'failures',
 
-    def __init__(
-            self,
-            components: frozenset[Node],
-            minimum_rate: float,
-            failure_handlers: list[FailureHandler]
-    ) -> None:
+    def __init__(self, components: frozenset[Node], required_nodes: int) -> None:
         self.counter: dict[Node, list[bool]] = {component: [] for component in components}
-        self.minimum_rate: float = minimum_rate
+        self.required_nodes: int = required_nodes
         self.failures: list[FailureDetails] = []
-        self.failure_handlers: list[FailureHandler] = failure_handlers
 
     def __call__(self, node: Node, success: bool) -> None:
         """
@@ -152,10 +78,7 @@ class Reporter(ReporterBase):
         :param error: the risen exception.
         :param fatal: True if the error is from a required node
         """
-        failure = dict(source=source, input=input, error=error, fatal=fatal)
-        self.failures.append(failure)
-        for handler in self.failure_handlers:
-            handler(failure)
+        self.failures.append(dict(source=source, input=input, error=error, fatal=fatal))
 
     def statistics(self) -> ReportStatistics:
         """
@@ -200,7 +123,7 @@ class Reporter(ReporterBase):
             completed += success_count / record_count
         return dict(
             success_rate=round(completed / total, 4),
-            minimum_expected_rate=self.minimum_rate,
+            minimum_expected_rate=self.required_nodes,
             successful_node_operations=successes,
             failed_node_operations=failures,
             missed_nodes=misses,
@@ -220,32 +143,20 @@ class ReporterMaker:
     ReporterMaker is not expected to be created by users (unless for testing),
     the full process is abstracted away and should be taken care of by the chain's constructor.
     """
-    __slots__ = 'components', 'minimum_rate', 'failure_handlers',
+    __slots__ = 'components', 'required_nodes', 'failure_handlers',
 
-    def __init__(
-            self,
-            name: str,
-            chainable: Chainable,
-            handlers: list[tp.Type[FailureHandler]]
-    ) -> None:
+    def __init__(self, chainable: Chainable) -> None:
         """
         Initializes new ReporterMaker object with the given information.
 
-        :param name: the name of the owner.
-        :type name: str
         :param chainable: chainables that will be reporting.
         :type chainable: Iterable[Chainable]
-        :param handlers: a list of FailureHandler subclasses to handle failures.
-        :type handlers: list[FailureHandler]
         """
         if not isinstance(chainable, Chainable):
             raise TypeError("chainable must be an instance of Chainable subclass")
-        elif not all((isinstance(handler, type) and issubclass(handler, FailureHandler)) for handler in handlers):
-            raise TypeError("handlers must be a list of fastchain.monitoring.FailureHandler subclasses")
         nodes = self.get_nodes(chainable)
         self.components: frozenset[Node] = frozenset(nodes)
-        self.minimum_rate: float = operator.countOf(nodes.values(), True) / len(nodes)
-        self.failure_handlers: list[FailureHandler] = [handler(name) for handler in handlers]
+        self.required_nodes: int = operator.countOf(nodes.values(), True)
 
     @classmethod
     def get_nodes(cls, chainable: Chainable, required: bool = True) -> dict[Node, bool]:
@@ -272,4 +183,4 @@ class ReporterMaker:
 
     def __call__(self) -> Reporter:
         """creates a new Reporter object with the previously specified information."""
-        return Reporter(self.components, self.minimum_rate, self.failure_handlers)
+        return Reporter(self.components, self.required_nodes)

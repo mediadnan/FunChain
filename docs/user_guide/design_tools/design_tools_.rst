@@ -428,7 +428,7 @@ and it comes in two different flavours:
 
 .. _chain_models:
 
-Model
+DictModel
 -----
 To create a model, we need to define de structure as we expected to be returned in a ``dict``,
 the chain will replace the nodes by their results when called.

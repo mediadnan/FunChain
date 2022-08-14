@@ -54,7 +54,7 @@ def test_get_nodes(setup, required, total):
 
 
 @pytest.mark.parametrize('handlers', HandlersCombination, ids=repr)
-@pytest.mark.parametrize('setup, minimum_rate', zip(SETUP_CASES, MINIMUM_RATE), ids=repr)
+@pytest.mark.parametrize('setup, required_nodes', zip(SETUP_CASES, MINIMUM_RATE), ids=repr)
 def test_reporter_maker(setup, minimum_rate, handlers):
     chainable_object = parse(eval(setup))
     rm = ReporterMaker('test', chainable_object, handlers)
@@ -65,8 +65,8 @@ def test_reporter_maker(setup, minimum_rate, handlers):
         assert handler.owner == 'test'
     assert reporter.failure_handlers is rm.failure_handlers
     assert rm.components == frozenset(ReporterMaker.get_nodes(chainable_object))
-    assert rm.minimum_rate == eval(minimum_rate)
-    assert reporter.minimum_rate == rm.minimum_rate
+    assert rm.required_nodes == eval(minimum_rate)
+    assert reporter.required_nodes == rm.required_nodes
 
 
 @pytest.mark.parametrize('args_source, Error, msg', [
@@ -90,7 +90,7 @@ def reporter(nodes): return Reporter(frozenset(nodes), 1, [])
 def test_reporter_creation(nodes):
     reporter = Reporter(frozenset(nodes), 1, [])
     assert reporter.counter == {node: [] for node in nodes}
-    assert reporter.minimum_rate == 1
+    assert reporter.required_nodes == 1
     assert reporter.failures == []
     assert reporter.failure_handlers == []
 

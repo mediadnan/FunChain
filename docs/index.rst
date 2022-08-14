@@ -1,17 +1,7 @@
 =============================
 **FastChain**'s Documentation
 =============================
-Welcome to FastChain's official documentation page where you can learn about this library and learn why and how to use it,
-this document will be focusing on technical parts of the project and explain its API so it can be referenced by it users.
-
-.. warning:: 
-
-   FastChain is still **experimental** and unstable currently, its API may change so please use it with caution
-   until a stable version is released.
-
-TODO: introduce the document
-TODO: introduce the package
-TODO: introduce the need
+TODO: rewrite the test
 
 
 Document content
