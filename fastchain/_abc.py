@@ -12,22 +12,23 @@ class FailureDetails(TypedDict):
 
 class ReportStatistics(TypedDict):
     """standard reporter statistics dictionary"""
-    success_rate: float
-    minimum_expected_rate: float
-    successful_node_operations: int
-    failed_node_operations: int
-    missed_nodes: int
-    total_nodes: int
+    rate: float
+    successes: int
+    failures: int
+    total: int
+    required: int
+    missed: int
 
 
 class ReporterBase(ABC):
-    failures: list[FailureDetails]
     @abstractmethod
     def __call__(self, component, success: bool) -> None: ...
     @abstractmethod
     def register_failure(self, source: str, input, error: Exception, fatal: bool = False) -> None: ...
     @abstractmethod
     def statistics(self) -> ReportStatistics: ...
+    @abstractmethod
+    def _failures(self) -> tuple[FailureDetails]: ...
 
 
 class ChainableBase(ABC):

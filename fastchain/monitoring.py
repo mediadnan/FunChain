@@ -12,17 +12,10 @@ from fastchain.chainables import Chainable, Node, Collection
 
 class FakeReporter(ReporterBase):
     """Reporter that does nothing when called"""
-    def __init__(self):
-        self.failures = []
-
-    def __call__(self, component, success: bool) -> None:
-        pass
-
-    def register_failure(self, source: str, input, error: Exception, fatal: bool = False) -> None:
-        pass
-
-    def statistics(self) -> ReportStatistics:
-        return ReportStatistics()
+    def __init__(self): self._failures = []
+    def __call__(self, component, success: bool) -> None: pass
+    def register_failure(self, source: str, input, error: Exception, fatal: bool = False) -> None: pass
+    def statistics(self) -> ReportStatistics: return ReportStatistics(rate=0, successes=0, failures=0, total=0, required=0, missed=0)
 
 
 class Reporter(ReporterBase):
@@ -36,12 +29,12 @@ class Reporter(ReporterBase):
     created every time the chain is called. And most of the preparation
     are taken care by the ReporterMaker.
     """
-    __slots__ = 'counter', 'required_nodes', 'failures',
+    __slots__ = 'counter', 'required_nodes', '_failures',
 
     def __init__(self, components: frozenset[Node], required_nodes: int) -> None:
         self.counter: dict[Node, list[bool]] = {component: [] for component in components}
         self.required_nodes: int = required_nodes
-        self.failures: list[FailureDetails] = []
+        self._failures: list[FailureDetails] = []
 
     def __call__(self, node: Node, success: bool) -> None:
         """
@@ -78,7 +71,10 @@ class Reporter(ReporterBase):
         :param error: the risen exception.
         :param fatal: True if the error is from a required node
         """
-        self.failures.append(dict(source=source, input=input, error=error, fatal=fatal))
+        self._failures.append(dict(source=source, input=input, error=error, fatal=fatal))
+
+    def failures(self) -> tuple[FailureDetails]:
+        return tuple(self._failures)
 
     def statistics(self) -> ReportStatistics:
         """

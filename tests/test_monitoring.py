@@ -8,21 +8,6 @@ from fastchain.factory import *
 from fastchain.monitoring import *
 
 
-class _FailureHandler_(FailureHandler):
-    name: str = "failure handler"
-
-    def __init__(self, owner: str) -> None:
-        super().__init__(owner)
-        self.called = False
-
-    def __call__(self, failure) -> None:
-        self.called = True
-
-
-FailureHandlers = LoggingHandler, _FailureHandler_  # to be extended easily
-HandlersCombination = tuple(itertools.chain(*(itertools.combinations(FailureHandlers, r) for r in range(len(FailureHandlers) + 1))))  # noqa
-
-
 def func(_): pass
 
 
@@ -91,7 +76,7 @@ def test_reporter_creation(nodes):
     reporter = Reporter(frozenset(nodes), 1, [])
     assert reporter.counter == {node: [] for node in nodes}
     assert reporter.required_nodes == 1
-    assert reporter.failures == []
+    assert reporter._failures == []
     assert reporter.failure_handlers == []
 
 
@@ -123,7 +108,7 @@ def test_report_failure(nodes):
     assert not failure_handler.called
     reporter.register_failure('test', None, error, fatal=True)
     assert failure_handler.called
-    assert reporter.failures == [FailureDetails(source="test", input=None, error=error, fatal=True)]
+    assert reporter._failures == [FailureDetails(source="test", input=None, error=error, fatal=True)]
 
 
 @pytest.mark.parametrize('reps', (0, 1, 2, 3), ids=repr)
@@ -142,28 +127,3 @@ def test_marking_unregistered_node(reporter, success_stat):
     node = Node(func)
     with pytest.warns(UserWarning, match=f'unregistered node {node!r} ignored'):
         reporter(node, success_stat)
-
-
-# test failure handlers common
-def test_failure_handler():
-    failure_handler = _FailureHandler_('test')
-    assert failure_handler.owner == 'test'
-    fd = FailureDetails(source='test_source', input='oops', error=ValueError('test'), fatal=True)
-    message = "test::test_source raised ValueError('test') after receiving 'oops' (type: str)"
-    assert failure_handler.message(fd) == message
-
-
-# test logging handler
-@pytest.mark.parametrize('level, fatal', [
-    (logging.INFO, False),
-    (logging.ERROR, True)
-], ids=['fatal=False/INFO', 'fatal=True/ERROR'])
-def test_logging_failure_handler(caplog, level, fatal):
-    logging_handler = LoggingHandler('test_logging_handler')
-    assert isinstance(logging_handler.logger, logging.Logger)
-    message = "test_logging_handler::test_source raised Exception('test') after receiving None (type: NoneType)"
-    with caplog.at_level(level, logging_handler.logger.name):
-        logging_handler(FailureDetails(source='test_source', input=None, error=Exception('test'), fatal=fatal))
-        log = caplog.records[-1]
-        assert log.levelname == logging.getLevelName(level)
-        assert log.message == message
