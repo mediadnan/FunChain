@@ -3,8 +3,8 @@ This module contains the base implementation of ChainableBase interface,
 any other chainable should be inheriting from Chainable class that
 provides basic functionalities.
 
-The module also implements the node chainable (the component that wraps function),
-and the skipping component called pass
+The module also implements the node chainable (the node that wraps function),
+and the skipping node called pass
 """
 
 from abc import ABC
@@ -24,8 +24,7 @@ CHAINABLE: TypeAlias = Callable[[Any], Any]
 
 class Chainable(ChainableBase, ABC):
     """base class for all chainable elements."""
-    __slots__ = 'name', 'title', 'optional',
-    NAME: str
+    __slots__ = 'name', 'title', 'optional', 'required'
 
     def __init_subclass__(cls, type_name: str | None = None, **kwargs):
         """
@@ -49,13 +48,14 @@ class Chainable(ChainableBase, ABC):
         self.name = name
         self.title = name
         self.optional = False
+        self.required = True
 
     def __repr__(self): return f'<Chain{type(self).__name__}: {self.name}>'
     def __len__(self): return 0
 
     def set_title(self, root: str | None = None, branch: str | None = None) -> None:
         """
-        creates the chain's coll_title with a uniform format.
+        creates the chain's nodes title with a uniform format.
 
         + If no root is given -> 'name'
         + If only name and root are given -> 'root/name'
@@ -77,20 +77,20 @@ class Chainable(ChainableBase, ABC):
 
     def failure(self, input: Any, error: Exception, report: ReporterBase) -> None:
         """
-        marks current operation as failure.
+        marks current operation as fd.
 
-        :param input: the value that caused the failure.
-        :param error: the exception that caused the failure.
+        :param input: the value that caused the fd.
+        :param error: the exception that caused the fd.
         :param report: reporter object that holds processing details.
         """
-        report.register_failure(self.title, input, error, not self.optional)
+        report.report_failure(self, input, error)
 
 
 class Pass(Chainable):
     """
     PASS object is a chainable that does nothing but passing the received value as it is.
     this was originally created to be used for branching (model, group or match),
-    where a branch only needs to pass the value as it is, this component
+    where a branch only needs to pass the value as it is, this node
     never fails, and it's more optimized than Node(lambda x: x)
     """
     def process(self, input: T, report: ReporterBase) -> tuple[Literal[True], T]:
@@ -110,7 +110,7 @@ class Node(Chainable):
     chain's node is the main chainable, it's wraps a user defined 1-argument function.
     if this function raises an exception when called with a value, the exception
     is stored and reported without affecting the main program and the node
-    process is marked as failure.
+    process is marked as fd.
     """
     __slots__ = 'function', 'default'
 
@@ -147,8 +147,8 @@ class Node(Chainable):
         try:
             result = self.function(input)
         except Exception as error:
-            report(self, False)
+            report.mark(self, False)
             self.failure(input, error, report)
             return False, self.default_factory()
-        report(self, True)
+        report.mark(self, True)
         return True, result

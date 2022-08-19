@@ -114,7 +114,7 @@ def chainable(func, /, *args, name=None, default=None, default_factory=None, **k
     :param func: function, method, type or any callable object.
     :param args: if provided, they will be partially applied (first) to function.
     :param name: custom name for the node, otherwise function.__qualname__ will be the name.
-    :param default: a value that will be returned in case of failure (exception), default to None.
+    :param default: a value that will be returned in case of fd (exception), default to None.
     :param default_factory: 0-argument function that returns a default value (for mutable default objects).
     :param kwargs: if provided, they will be partially applied to function.
     :return: Node object
@@ -146,7 +146,7 @@ def funfact(func=None, /, *, name=None, default=None, default_factory=None):
 
     :param func: higher order function that produces a chainable function (1-argument function).
     :param name: custom name for the node, otherwise function.__qualname__ will be the name.
-    :param default: a value that will be returned in case of failure (exception), default to None.
+    :param default: a value that will be returned in case of fd (exception), default to None.
     :param default_factory: 0-argument function that returns a default value (for mutable default objects).
     :return: function with same arg-spec as function but returns a NodeFactory object (partially initialized node).
     """

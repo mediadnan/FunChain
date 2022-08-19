@@ -100,13 +100,13 @@ def increment(a: int) -> int: return a + 1
     param((add, 1), {'name': 'increment'}, 'increment', id="partial positional argument passed"),
     param((add,), {'name': 'increment', 'b': 1}, 'increment', id="partial keyword argument passed"),
 ])
-def test_chainable_function_result(args, kwargs, name, default, default_kw, test_reporter):
+def test_chainable_function_result(args, kwargs, name, default, default_kw, basic_reporter):
     node = chainable(*args, **kwargs, **default_kw)  # type: ignore
     assert node.name == name
     assert node.default_factory() == default
     assert node.function(3) == 4
-    assert node.process(3, test_reporter) == (True, 4)
-    assert node.process(None, test_reporter) == (False, default)
+    assert node.process(3, basic_reporter) == (True, 4)
+    assert node.process(None, basic_reporter) == (False, default)
 
 
 @pytest.mark.parametrize('args, kwargs, Error', [
