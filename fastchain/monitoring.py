@@ -1,27 +1,20 @@
 """
 This module implements Reporter and ReporterMaker and all the tools to chain's
-process monitoring and handling failures.
+process monitoring and handling failed.
 """
+import logging
 import operator
-import warnings
 import typing as tp
+import warnings
 
-from fastchain._abc import ReporterBase, FailureDetails, ReportStatistics
+from fastchain._abc import ReporterBase, FailureDetails, ReportDetails
 from fastchain.chainables import Chainable, Node, Collection
-
-
-class FakeReporter(ReporterBase):
-    """Reporter that does nothing when called"""
-    def __init__(self): self._failures = []
-    def __call__(self, component, success: bool) -> None: pass
-    def register_failure(self, source: str, input, error: Exception, fatal: bool = False) -> None: pass
-    def statistics(self) -> ReportStatistics: return ReportStatistics(rate=0, successes=0, failures=0, total=0, required=0, missed=0)
 
 
 class Reporter(ReporterBase):
     """
-    Reporter object is used by the chain's internal component to report processing
-    success state and errors, it is responsible for recording failures
+    Reporter object is used by the chain's internal node to report processing
+    success state and errors, it is responsible for recording failed
     and produce statistics about the overall process.
 
     The reporter should never be created by users unless for testing purposes,
@@ -36,16 +29,8 @@ class Reporter(ReporterBase):
         self.required_nodes: int = required_nodes
         self._failures: list[FailureDetails] = []
 
-    def __call__(self, node: Node, success: bool) -> None:
-        """
-        marks success state of a previously registered node
-
-        :param node: registered node
-        :type node: Node
-        :param success: True if operation succeeded or False otherwise
-        :type success: bool
-        :return: None
-        """
+    def mark(self, node: Node, success: bool) -> None:
+        """marks the node processing success stat"""
         try:
             self.counter[node].append(success)
         except KeyError:
@@ -56,75 +41,36 @@ class Reporter(ReporterBase):
                 source=self
             )
 
-    def register_failure(
-            self,
-            source: str,
-            input: tp.Any,
-            error: Exception,
-            fatal: bool = False
-    ) -> None:
-        """
-        registers the failure to be reported.
+    def report_failure(self, source: Chainable, input: tp.Any, error: Exception) -> None:
+        """registers the failure to be reported"""
+        self._failures.append({'source': source.title, 'input': input, 'error': error, 'fatal': not source.optional})
 
-        :param source: the coll_title of the reporter object.
-        :param input: the value that caused the failure.
-        :param error: the risen exception.
-        :param fatal: True if the error is from a required node
-        """
-        self._failures.append(dict(source=source, input=input, error=error, fatal=fatal))
-
-    def failures(self) -> tuple[FailureDetails]:
-        return tuple(self._failures)
-
-    def statistics(self) -> ReportStatistics:
-        """
-        builds a reporter statistics dictionary with the following information;
-
-        **success_rate** *(float)*
-            ratio (between 0.0 - 1.0) of registered node successes over total number of nodes
-
-        **minimum_expected_rate** *(float)*
-            ratio (between 0.0 - 1.0) of required nodes over total number of nodes
-
-        **successful_node_operations** *(int)*
-            number of reported successful operations from the same or different nodes
-
-        **failed_node_operations** *(int)*
-            number of reported failing operations from the same or different nodes
-
-        **missed_nodes** *(int)*
-            number of unreached chain nodes
-
-        **total_nodes** *(int)*
-            total number of the chain's node
-
-        :return: dictionary of success_rate, minimum_expected_rate, successful_node_operations,
-                 failed_node_operations, missed_nodes and total_nodes
-        :rtype: dict
-        """
+    def report(self) -> ReportDetails:
+        """builds a reporter statistics dictionary"""
         completed = 0.0
-        successes = 0
-        failures = 0
-        misses = 0
+        succeeded = 0
+        failed = 0
+        missed = 0
         total = len(self.counter)
         for record in self.counter.values():
             record_count = len(record)
             if not record_count:
-                misses += 1
+                missed += 1
                 continue
             success_count = record.count(True)
             failure_count = record_count - success_count
-            successes += success_count
-            failures += failure_count
+            succeeded += success_count
+            failed += failure_count
             completed += success_count / record_count
-        return dict(
-            success_rate=round(completed / total, 4),
-            minimum_expected_rate=self.required_nodes,
-            successful_node_operations=successes,
-            failed_node_operations=failures,
-            missed_nodes=misses,
-            total_nodes=total,
-        )
+        return {
+            'rate': completed / total,
+            'succeeded': succeeded,
+            'failed': failed,
+            'missed': missed,
+            'required': self.required_nodes,
+            'total': total,
+            'failures': self._failures
+        }
 
 
 class ReporterMaker:
@@ -142,12 +88,7 @@ class ReporterMaker:
     __slots__ = 'components', 'required_nodes', 'failure_handlers',
 
     def __init__(self, chainable: Chainable) -> None:
-        """
-        Initializes new ReporterMaker object with the given information.
-
-        :param chainable: chainables that will be reporting.
-        :type chainable: Iterable[Chainable]
-        """
+        """prepares the new report factory with common information"""
         if not isinstance(chainable, Chainable):
             raise TypeError("chainable must be an instance of Chainable subclass")
         nodes = self.get_nodes(chainable)
@@ -157,16 +98,8 @@ class ReporterMaker:
     @classmethod
     def get_nodes(cls, chainable: Chainable, required: bool = True) -> dict[Node, bool]:
         """
-        extracts all the chain nodes and determine if they are required or optional
-        depending on their roots, they are considered required if neither
-        they nor their parents are optional.
-
-        :param chainable: Chainable subclass instance.
-        :type chainable: Node | Collection
-        :param required: holds previous required state when recusing
-        :type required: bool
-        :return: dict mapping nodes to their required state.
-        :rtype: dict[Node, bool]
+        extracts all the chain nodes and maps them to a boolean that tells
+        whether they are from an optional branch or not.
         """
         required = required and not chainable.optional
         nodes: dict[Node, bool] = dict()
@@ -178,5 +111,44 @@ class ReporterMaker:
         return nodes
 
     def __call__(self) -> Reporter:
-        """creates a new Reporter object with the previously specified information."""
+        """creates a new reporter with the presented information"""
         return Reporter(self.components, self.required_nodes)
+
+
+class LoggingHandler:
+    logger: logging.Logger
+    print_stats: bool
+    __slots__ = ('logger', 'print_stats')
+
+    def __init__(self, logger: logging.Logger | None, print_stats: bool):
+        if logger is None:
+            logger = logging.getLogger('fastchain')
+        else:
+            if not isinstance(logger, logging.Logger):
+                raise TypeError(f'logger must be an instance of {logging.Logger}')
+        self.logger = logger
+        self.print_stats = print_stats
+
+    def _handle_failure(self, failure: FailureDetails) -> None:
+        source, input, error = failure['source'], failure['input'], failure['error']
+        level = logging.ERROR if failure['fatal'] else logging.INFO
+        message = f"{source} raised {error!r} when receiving {type(input)!r}: {input!r}"
+        self.logger.log(level, message)
+
+    def _handle_stats(self, report: ReportDetails) -> None:
+        if not self.print_stats:
+            return
+        print("-- STATS -----------------------------",
+              f"\tsuccess percentage:        {round(report['rate'] * 100)}%",
+              f"\tsuccessful operations:     {report['succeeded']}",
+              f"\tunsuccessful operations:   {report['failed']}",
+              f"\tunreached nodes:           {report['missed']}",
+              f"\trequired nodes:            {report['required']}",
+              f"\ttotal number of nodes:     {report['total']}",
+              "--------------------------------------",
+              sep='\n')
+
+    def handle_report(self, report: ReportDetails) -> None:
+        self._handle_stats(report)
+        for failure in report['failures']:
+            self._handle_failure(failure)

@@ -6,6 +6,7 @@ in a specific format.
 """
 from abc import ABC
 from typing import TypeVar, overload, Any, Generator
+
 from .base import Chainable
 from .._abc import ReporterBase
 
@@ -43,7 +44,7 @@ class Collection(Chainable, ABC):
         return sum(len(member) for member in self.members)
 
     def set_title(self, root: str | None = None, branch: str | None = None):
-        super(Collection, self).set_title(root, branch)
+        super().set_title(root, branch)
         for branch, member in zip(self.branches, self.members):
             member.set_title(self.title, branch)
 
@@ -53,7 +54,7 @@ class Sequence(Collection):
     chain's sequence is a chainable collection that processes data sequentially
     from a member to the next in the same order passed to the constructor.
 
-    the chain's sequence ignores failures from optional members and forwards
+    the chain's sequence ignores failed from optional members and forwards
     their input to the next member as it is, however if a required
     member fails, the sequence fails and returns that member's default value.
     """

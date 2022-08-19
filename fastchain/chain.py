@@ -1,29 +1,24 @@
 """
 This module implements the chain object class,
 the main object used to define data processing pipelines.
-and ChainMaker a factory that produces chains
+and ChainGroup a factory that produces chains
 needed to be grouped and controlled together.
 
-Chain and ChainMaker can be directly imported from fastchain.
+Chain and ChainGroup can be directly imported from fastchain.
 """
-import enum
 import re
-import logging
-import functools
 import typing as tp
 
+from ._abc import ReportDetails
 from .chainables import Chainable
 from .factory import CHAINABLES, parse
-from .monitoring import ReporterMaker, ReportStatistics, FailureDetails
-from .handlers import logger as logging_handler
+from .monitoring import LoggingHandler, ReporterMaker
 
 T = tp.TypeVar('T')
-
-
 CHAIN_NAME: tp.Pattern[str] = re.compile(r'^[a-z_](?:\w+[_-]?)+?$', re.IGNORECASE)
 
 
-def validate_chain_name(name: str, var_name: str = 'name') -> str:
+def validate_name(name: str, var_name: str = 'name') -> str:
     """validates the chain's name and returns it
 
     this function only allows names (str of course)
@@ -51,18 +46,23 @@ def validate_chain_name(name: str, var_name: str = 'name') -> str:
     return name
 
 
-class Event(enum.Enum):
-    failures: 'failures'
-    statistics: 'statistics'
-
-
 class Chain:
     """
     Chain objects can be created and initialized globally (at module level) and used as functions,
     it chains the given functions and wraps them in nodes that capture any error and decide
-    whether to continue or stop based one the result, and report the process statistics and failures.
+    whether to continue or stop based one the result, and report the process statistics and failed.
     """
-    __slots__ = '__name', '__core', '__get_reporter', '__len', '__handlers'
+    __name: str
+    __core: Chainable
+    __len: int
+    __get_reporter: ReporterMaker
+    __report_handler: dict[bool, list[tp.Callable[[ReportDetails], None]]]
+
+    __slots__ = ('__name',
+                 '__core',
+                 '__len',
+                 '__get_reporter',
+                 '__report_handler')
 
     def __init__(self, name: str, *chainables: CHAINABLES, **kwargs) -> None:
         """
@@ -74,51 +74,38 @@ class Chain:
         {chain_args}
         {chain_keywords}
         """
-        validate_chain_name(name)
+        validate_name(name)
         if 'namespace' in kwargs:
-            namespace = validate_chain_name(namespace, 'namespace')
+            namespace = validate_name(kwargs['namespace'], 'namespace')
             if kwargs.get('concatenate_namespace', True):
                 name = f'{namespace}_{name}'
-        self.__name: str = name
-        self.__core: Chainable = parse(chainables)
-        self.__len: int = len(self.__core)
-        self.__handlers: dict[str, list[tp.Callable]] = {}
-        for event, use_log_handler, logger, default, handler in (
-            (Event.failures, 'log_failures', 'failures_logger', True, logging_handler.handle_failure),
-            (Event.statistics, 'log_statistics', 'statistics_logger', True, logging_handler.handle_stats)
-        ):
-            if kwargs.get(use_log_handler, default):
-                if logger in kwargs:
-                    if not isinstance(logger, logging.Logger):
-                        raise TypeError(f'logger must be an instance of {logging.Logger}')
-                    handler = functools.partial(handler, logger=logger)
-                self._add_handler(event, handler)
-        self.__get_reporter: ReporterMaker = ReporterMaker(self.__core)
+        self.__name = name
+        self.__core = parse(chainables)
+        self.__len = len(self.__core)
+        self.__report_handler = {True: [], False: []}
+        if kwargs.get('log_failures', True):
+            logging_handler = LoggingHandler(kwargs.get('logger'), kwargs.get('print_stats', True))
+            self.add_report_handler(logging_handler.handle_report)
+        self.__get_reporter = ReporterMaker(self.__core)
 
-    def add_failures_handler(self, handler: tp.Callable[[tp.Iterable[FailureDetails]], None]): 
-        self._add_handler(Event.failures, handler)
+    def add_report_handler(
+            self,
+            handler: tp.Callable[[ReportDetails], None],
+            event: tp.Literal['failed_only', 'always'] = 'always'
+    ) -> None:
+        """
+        registers the handler to the chain
 
-    def add_statistics_handler(self, handler: tp.Callable[[tp.Iterable[ReportStatistics]], None]):
-        self._add_handler(Event.statistics, handler)
-
-    def _add_handler(self, event: Event, handler: tp.Callable[..., None]) -> None:
-        """subscribes an event handler to a specific event"""
-        if not callable(handler):
-            raise TypeError("handler must be a callable")
-        if event in self.__handlers:
-            self.__handlers[event].append(handler)
-        else:
-            self.__handlers[event] = [handler, ]
-
-    def _dispatch(self, event: Event, *args, **kwargs) -> None:
-        """calls a series of handlers subscribed the event with the given arguments"""
-        for handler in self.__handlers.get(event, ()):
-            handler(*args, **kwargs)
+        {report_details}
+        """
+        if event == 'always':
+            self.__report_handler[True].append(handler)
+        self.__report_handler[False].append(handler)
 
     @property
     def name(self) -> str:
         """gets the name of the chain - readonly"""
-        self.__name
+        return self.__name
 
     def __repr__(self) -> str:
         """representation string of the chain"""
@@ -128,41 +115,53 @@ class Chain:
         """number of nodes the chain has"""
         return self.__len
 
-    def __call__(self, input: tp.Any):
+    def __call__(self, input):
         """
         processes the given input and returns the result,
         the chain creates its reporter and only registers it
         if reports is not None.
-
-        :param input: the entry data to be processed
-        :return: the result result from given input.
         """
         reporter = self.__get_reporter()
-        result = self.__core.process(input, reporter)[1]
-        if self.__handlers.get(Event.statistics, None):
-            self._dispatch(Event.statistics, reporter.statistics())
-        if self.__handlers.get(Event.failures, None) and reporter._failures:
-            self._dispatch(Event.failures, reporter._failures)
+        success, result = self.__core.process(input, reporter)
+        handlers = self.__report_handler[success]
+        if handlers:
+            report = reporter.report()
+            for handler in handlers:
+                handler(report)
         return result
 
 
-class ChainMaker:
-    """Utility object for making a group of chains with the same configuration and same prefix."""
+class ChainGroup:
+    """utility object for making a group of chains with the same configuration and name prefix"""
     __slots__ = '__name', '__kwargs', '__registered_chains__'
 
     def __init__(self, name: str, **kwargs):
         """
+        initializes the new chain group object with a name and configuration
 
         :param name: the group name that identifies a collection of chains
         {chain_keywords}
         """
-        self.__name: str = validate_chain_name(name)
+        self.__name: str = validate_name(name)
         self.__kwargs: dict[str, tp.Any] = kwargs
         self.__registered_chains__: dict[str, Chain] = {}
 
     def name(self) -> str:
-        """gets the name of the chain-group - readonly"""
+        """gets the name of the chain group - readonly"""
         return self.__name
+
+    def add_report_handler(
+            self,
+            handler: tp.Callable[[ReportDetails], None],
+            event: tp.Literal['failed_only', 'always'] = 'always'
+    ) -> None:
+        """
+        registers the handler to every chain of this group
+
+        {report_details}
+        """
+        for chain in self.__registered_chains__.values():
+            chain.add_report_handler(handler, event)
 
     def __contains__(self, name: str) -> bool:
         return name in self.__registered_chains__
@@ -195,19 +194,54 @@ class ChainMaker:
 
 
 # update docs
- 
 for method in (
-    Chain.__init__,
-    ChainMaker.__init__,
-    ChainMaker.__call__,
+        Chain.__init__,
+        Chain.add_report_handler,
+        ChainGroup.__init__,
+        ChainGroup.__call__,
+        ChainGroup.add_report_handler,
 ):
     method.__doc__ = method.__doc__.format_map({
         'chain_args': """:param name: name that identifies the chain (should be unique)
         :param chainables: a callable any chainable object""",
         'chain_keywords': """:keyword namespace: name of the chain's group name (default None)
         :keyword concatenate_namespace: if True the chain's name will be <namespace>_<name> else <name> (default True)
-        :keyword log_failures: whether to log failures with standard logging (default True)
-        :keyword failures_logger: custom logger to handle logging failures (default fastchain_logger)
-        :keyword log_statistics: whether to log statistics with standard logging (default True)
-        :keyword statistics_logger: custom logger to handle logging statistics (default fastchain_logger)"""
+        :keyword logger: a custom logger to be used in logging (default logger('fastchain'))
+        :keyword log_failures: whether to log failed with standard logging (default True)
+        :keyword print_stats: whether to print statistics at the end of each call""",
+        'report_details': """report handlers will be called with a report (dict)
+        containing the following information;
+        
+        **rate** *(float)*
+            represents a ratio (between 0.0 and 1.0) of successful operations over the total.
+        
+        **succeeded** *(int)*
+            number of successful operations (from different or same nodes).
+            
+        **failed** *(int)*
+            number of unsuccessful operations (from different or same nodes).
+        
+        **missed** *(int)*
+            number of unreached nodes.
+            
+        **required** *(int)*
+            number of non optional nodes from non optional branches.
+            
+        **total** *(int)*
+            number of nodes in total.
+        
+        **failed** *(list[dict])*
+            list for registered failed with the following details:
+                + source (str): the title of the failing component.
+                + input (Any): the value that caused the failure.
+                + error (Exception): the error raised causing the failure.
+                + fatal (bool): True if the component is not optional. 
+        
+        :param handler: function that only takes the report dict
+        :type handler: (ReportDetails) -> None
+        :param event: 'failed_only' to triggered the handler only when the chain process fails or 
+                      'always' (default 'always')
+        :type event: str
+        :return: None
+        """
     })

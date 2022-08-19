@@ -1,13 +1,13 @@
 import pytest
 from fastchain import *
-from fastchain.chain import validate_chain_name
+from fastchain.chain import validate_name
 
 
 # test name validation  -------------------------------------------------------------------------------------------------
 @pytest.mark.parametrize('name', [None, 6, object()])
 def test_type_validation(name: str):
     with pytest.raises(TypeError):
-        validate_chain_name(name)
+        validate_name(name)
 
 
 @pytest.mark.parametrize('name', [
@@ -24,7 +24,7 @@ def test_type_validation(name: str):
 ])
 def test_forbidden_names(name):
     with pytest.raises(ValueError):
-        validate_chain_name(name)
+        validate_name(name)
 
 
 @pytest.mark.parametrize('name', [
@@ -38,7 +38,7 @@ def test_forbidden_names(name):
     '___my_chain',
 ])
 def test_validate_name_allowed_names(name):
-    assert validate_chain_name(name) is name
+    assert validate_name(name) is name
 
 
 # fixtures --------------------------------------------------------------------------------------------------------------
@@ -91,6 +91,5 @@ class CallableObj:
 ])
 def test_input_output(body, input, output):
     chain = Chain('test', *eval(body))
-    reports = {}
-    res = chain(input, reports)
+    res = chain(input)
     assert res == output

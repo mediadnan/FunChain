@@ -3,32 +3,31 @@ from typing import Any, TypedDict
 
 
 class FailureDetails(TypedDict):
-    """standard failure details dictionary"""
+    """standard fd details dictionary"""
     source: str
     input: Any
     error: Exception
     fatal: bool
 
 
-class ReportStatistics(TypedDict):
+class ReportDetails(TypedDict):
     """standard reporter statistics dictionary"""
     rate: float
-    successes: int
-    failures: int
-    total: int
-    required: int
+    succeeded: int
+    failed: int
     missed: int
+    required: int
+    total: int
+    failures: list[FailureDetails]
 
 
 class ReporterBase(ABC):
     @abstractmethod
-    def __call__(self, component, success: bool) -> None: ...
+    def mark(self, node: 'ChainableBase', success: bool) -> None: ...
     @abstractmethod
-    def register_failure(self, source: str, input, error: Exception, fatal: bool = False) -> None: ...
+    def report_failure(self, source: 'ChainableBase', input, error: Exception) -> None: ...
     @abstractmethod
-    def statistics(self) -> ReportStatistics: ...
-    @abstractmethod
-    def _failures(self) -> tuple[FailureDetails]: ...
+    def report(self) -> ReportDetails: ...
 
 
 class ChainableBase(ABC):

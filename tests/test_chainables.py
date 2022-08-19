@@ -66,23 +66,22 @@ def test_optional_option(chainable, func_str):
     assert chainable.optional is True, "chainable.optional still False after applying option '?'"
 
 
-def test_chainable_base_failure(chainable, test_reporter):
-    inp, err = None, Exception()
-    expected_failures = {chainable_name: dict(source=chainable.title, input=inp, error=err, fatal=True)}
-    assert test_reporter.failures == {}, "reporter failures wasn't empty"
-    chainable.failure(inp, err, test_reporter)
-    assert test_reporter.failures == expected_failures, "chainable didn't register failure as expected"
-    chainable.optional = True
-    chainable.failure(inp, err, test_reporter)
-    expected_failures[chainable_name]['fatal'] = False
-    assert test_reporter.failures == expected_failures, "chainable registered failure as fatal even when optional"
+def test_chainable_base_failure(chainable, basic_reporter, fake_error):
+    assert basic_reporter.failures == []
+    chainable.failure(None, fake_error, basic_reporter)
+    assert basic_reporter.failures == [{
+        'source': chainable.title,
+        'input': None,
+        'error': fake_error,
+        'fatal': not chainable.optional
+    }]
 
 
 # testing leaf nodes ----------------------------------------------------------------------------------------------------
 
-def test_pass_call(test_reporter):
+def test_pass_call(basic_reporter):
     inp = object()
-    result = PASS.process(inp, test_reporter)
+    result = PASS.process(inp, basic_reporter)
     assert result == (True, inp), "PASS result wasn't as expected"
     title = PASS.title
     PASS.set_title('root', 'branch')
@@ -187,29 +186,27 @@ def test_node_get_qualname(function, name):
     assert Node.get_qualname(function) == name, f"qualname wasn't guessed for {function}"
 
 
-def test_node_successful_processing_method(increment, test_reporter):
+def test_node_successful_processing_method(increment, basic_reporter):
     node = Node(increment)
-    assert not test_reporter.counter, "reporter's counter reg wasn't empty"
-    assert not test_reporter.failures, "reporter's failures reg wasn't empty"
-    assert node.process(5, test_reporter) == (True, 6), "the processing result wasn't as expected"
-    assert test_reporter.counter[node] == [True], "node success wasn't registered"
-    assert not test_reporter.failures, "reporter's failures reg was filled, it shouldn't"
+    assert not basic_reporter.counter, "reporter's counter reg wasn't empty"
+    assert not basic_reporter.failures, "reporter's failed reg wasn't empty"
+    assert node.process(5, basic_reporter) == (True, 6), "the processing result wasn't as expected"
+    assert basic_reporter.counter[node] == [True], "node success wasn't registered"
+    assert not basic_reporter.failures, "reporter's failed reg was filled, it shouldn't"
 
 
-def test_node_unsuccessful_processing_method(fail, fake_error, test_reporter):
+def test_node_unsuccessful_processing_method(fail, fake_error, basic_reporter):
     node = Node(fail)
-    assert not test_reporter.counter, "reporter's counter reg wasn't empty"
-    assert not test_reporter.failures, "reporter's failures reg wasn't empty"
-    assert node.process(5, test_reporter) == (False, None), "the processing result wasn't as expected"
-    assert test_reporter.counter[node] == [False], "node fail wasn't registered"
-    assert test_reporter.failures == {
-        node.title: {
-            'source': node.title,
-            'input': 5,
-            'error': fake_error,
-            'fatal': True
-        }
-    }, "reporter's failures reg still empty, it shouldn't"
+    assert not basic_reporter.counter, "reporter's counter reg wasn't empty"
+    assert not basic_reporter.failures, "reporter's failed reg wasn't empty"
+    assert node.process(5, basic_reporter) == (False, None), "the processing result wasn't as expected"
+    assert basic_reporter.counter[node] == [False], "node fail wasn't registered"
+    assert basic_reporter.failures == [{
+        'source': node.title,
+        'input': 5,
+        'error': fake_error,
+        'fatal': True
+    }], "reporter's failed reg still empty, it shouldn't"
 
 
 # test node collections -------------------------------------------------------------------------------------------------
@@ -398,7 +395,7 @@ def generate_collection_cases():
 @pytest.mark.parametrize('source, input, result', generate_collection_cases())
 def test_collection_failure_combination(
         source: str,
-        test_reporter,
+        basic_reporter,
         increment,
         double,
         fail,
@@ -407,7 +404,7 @@ def test_collection_failure_combination(
 ):
     coll: Collection = eval(source)
     coll.set_title()
-    assert coll.process(input, test_reporter) == result
+    assert coll.process(input, basic_reporter) == result
 
 
 @pytest.mark.parametrize('input, Error', [
@@ -419,13 +416,13 @@ def test_collection_failure_combination(
     "items more than members",
     "non_iterable object",
 ])
-def test_match_specific_failures(increment, double, test_reporter, input, Error: Type[Exception]):
+def test_match_specific_failures(increment, double, basic_reporter, input, Error: Type[Exception]):
     chain_match = Match(Node(increment), Node(double))
-    success, result = chain_match.process(input, test_reporter)
+    success, result = chain_match.process(input, basic_reporter)
     assert not success
     assert result == (None, None)
-    assert True not in itertools.chain(*test_reporter.counter.values())
-    registered_error = test_reporter.failures[chain_match.title]['error']
+    assert True not in itertools.chain(*basic_reporter.counter.values())
+    registered_error = basic_reporter.failures[-1]['error']
     assert isinstance(registered_error, Error)
 
 
@@ -437,16 +434,16 @@ def test_applying_option(option_symbol: str, chainable):
     assert chainable_ is OptionMap[option_symbol](chainable)
 
 
-def test_for_each_option(chain_node_inc, test_reporter):
+def test_for_each_option(chain_node_inc, basic_reporter):
     node = for_each(chain_node_inc)
-    success, result = node.process((2, 5, 8), test_reporter)
+    success, result = node.process((2, 5, 8), basic_reporter)
     assert success
     assert tuple(result) == (3, 6, 9)
 
 
-def test_for_each_option_failure(chain_node_inc, test_reporter):
+def test_for_each_option_failure(chain_node_inc, basic_reporter):
     node = for_each(chain_node_inc)
-    success, result = node.process(3, test_reporter)
+    success, result = node.process(3, basic_reporter)
     assert not success
     assert result == ()
-    assert isinstance(test_reporter.failures[node.title]['error'], TypeError)
+    assert isinstance(basic_reporter.failures[-1]['error'], TypeError)
