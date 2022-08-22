@@ -120,9 +120,11 @@ class LoggingHandler:
     print_stats: bool
     __slots__ = ('logger', 'print_stats')
 
-    def __init__(self, logger: logging.Logger | None, print_stats: bool):
+    def __init__(self, logger: logging.Logger | str | None, print_stats: bool):
         if logger is None:
             logger = logging.getLogger('fastchain')
+        elif isinstance(logger, str):
+            logger = logging.getLogger(logger)
         else:
             if not isinstance(logger, logging.Logger):
                 raise TypeError(f'logger must be an instance of {logging.Logger}')

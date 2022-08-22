@@ -14,7 +14,11 @@ def test_logging_handler_bad_args_creation(print_stats):
 
 
 @pytest.mark.parametrize('print_stats', (True, False))
-@pytest.mark.parametrize('input, logger', ((None, getLogger('fastchain')), (getLogger('test'), getLogger('test'))))
+@pytest.mark.parametrize('input, logger', (
+        (None, getLogger('fastchain')),
+        (getLogger('test'), getLogger('test')),
+        ('test', getLogger('test'))
+))
 def test_logging_handler_creation(input, logger, print_stats):
     lh = LoggingHandler(input, print_stats)
     assert lh.logger is logger
