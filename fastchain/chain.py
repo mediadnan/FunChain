@@ -78,27 +78,27 @@ class Chain:
         if 'namespace' in kwargs:
             namespace = validate_name(kwargs['namespace'], 'namespace')
             if kwargs.get('concatenate_namespace', True):
-                name = f'{namespace}_{name}'
+                name = f'{namespace}::{name}'
         self.__name = name
         self.__core = parse(chainables)
         self.__len = len(self.__core)
         self.__report_handler = {True: [], False: []}
         if kwargs.get('log_failures', True):
-            logging_handler = LoggingHandler(kwargs.get('logger'), kwargs.get('print_stats', True))
+            logging_handler = LoggingHandler(kwargs.get('logger'), kwargs.get('print_stats', False))
             self.add_report_handler(logging_handler.handle_report)
         self.__get_reporter = ReporterMaker(self.__core)
 
     def add_report_handler(
             self,
             handler: tp.Callable[[ReportDetails], None],
-            event: tp.Literal['failed_only', 'always'] = 'always'
+            always: bool = False
     ) -> None:
         """
         registers the handler to the chain
 
         {report_details}
         """
-        if event == 'always':
+        if always:
             self.__report_handler[True].append(handler)
         self.__report_handler[False].append(handler)
 
@@ -146,6 +146,7 @@ class ChainGroup:
         self.__kwargs: dict[str, tp.Any] = kwargs
         self.__registered_chains__: dict[str, Chain] = {}
 
+    @property
     def name(self) -> str:
         """gets the name of the chain group - readonly"""
         return self.__name
@@ -153,7 +154,7 @@ class ChainGroup:
     def add_report_handler(
             self,
             handler: tp.Callable[[ReportDetails], None],
-            event: tp.Literal['failed_only', 'always'] = 'always'
+            always: bool = False,
     ) -> None:
         """
         registers the handler to every chain of this group
@@ -161,14 +162,12 @@ class ChainGroup:
         {report_details}
         """
         for chain in self.__registered_chains__.values():
-            chain.add_report_handler(handler, event)
+            chain.add_report_handler(handler, always)
 
-    def __contains__(self, name: str) -> bool:
+    def __contains__(self, name: str | Chain) -> bool:
         return name in self.__registered_chains__
 
     def __getitem__(self, name: str) -> Chain:
-        if not isinstance(name, str):
-            raise TypeError("name must be str")
         try:
             return self.__registered_chains__[name]
         except KeyError:
@@ -188,6 +187,7 @@ class ChainGroup:
         if name in self:
             raise ValueError("a chain with the same name already been registered.")
         kwargs.update(self.__kwargs)
+        kwargs['namespace'] = self.name
         new_chain = Chain(name, *chainables, **kwargs)
         self.__registered_chains__[name] = new_chain
         return new_chain
