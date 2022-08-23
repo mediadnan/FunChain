@@ -1,30 +1,25 @@
 """
-This package contains the implementation of elementary chain components
-that perform the processing.
-
-Users are not expected to interact directly with those components and
-that should be handled by the chain and other helper function
-in factory.py module.
+This sub-package contains a collection of elementary chain components that perform a specific data processing,
+users are not expected to interact directly with those components but that should be handled by the chain
+and other helper function in factory.py module.
 """
 
-from .base import CHAINABLE, ChainableObject, Chainable, Node, Pass
+from .base import CHAINABLE, ChainableObject, Chainable, Node, PASS
 from .collections import ChainableCollection, Collection, Sequence, DictModel, ListModel, Match
 from .options import OptionMap
 
 
-PASS: Pass = Pass('pass')
-
 __all__ = (
     'CHAINABLE',
+    'ChainableObject',
+    'ChainableCollection',
     'Chainable',
     'Node',
+    'PASS',
     'Collection',
     'Sequence',
     'DictModel',
     'ListModel',
     'Match',
-    'PASS',
-    'ChainableObject',
-    'ChainableCollection',
     'OptionMap',
 )

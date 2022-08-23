@@ -1,24 +1,21 @@
 """
-This module implements Chainable collections, those are containers
-containing node components or another nested containers, they process
-data by passing the input to their members and return the results
-in a specific format.
+This module implement different types of chainable collections,
+those are node-like objects that contain multiple nodes or/and also
+other nested collection, they all share similar properties and process
+data by passing it to their branches and bundle results in a specific structure.
 """
 from abc import ABC
-from typing import TypeVar, overload, Any, Generator
+from typing import TypeVar, overload, Any, Generator, Iterable
 
 from .base import Chainable
 from .._abc import ReporterBase
+
 
 ChainableCollection = TypeVar('ChainableCollection', bound='Collection', covariant=True)
 
 
 class Collection(Chainable, ABC):
-    """
-    Collection is the base class for all chainable-collection objects,
-    and those are objects that contain another chainables that actually
-    do the processing and the collection only orchestrates this process.
-    """
+    """abstract base class for all the chainable collections"""
     __slots__ = 'branches', 'members',
 
     @overload
@@ -27,20 +24,20 @@ class Collection(Chainable, ABC):
     def __init__(self, **members: Chainable) -> None: ...
 
     def __init__(self, *args, **kwargs):
+        """populates the collection with the given members either with or without branch names"""
         super(Collection, self).__init__()
         if args and kwargs:
             raise ValueError("cannot pass positional and keyword members together")
         elif not (args or kwargs):
             raise ValueError(f"{self.NAME} cannot be created without members")
-
         branches, members = zip(*enumerate(args)) if args else zip(*kwargs.items())
-
         if not all((isinstance(member, Chainable) for member in members)):
             raise TypeError("all members must be of type chainable")
         self.branches: tuple[str, ...] = tuple(map(str, branches))
         self.members: tuple[Chainable, ...] = tuple(members)
 
     def __len__(self):
+        """collection size is defined by how many nodes it contains (recursively)"""
         return sum(len(member) for member in self.members)
 
     def set_title(self, root: str | None = None, branch: str | None = None):
@@ -51,12 +48,12 @@ class Collection(Chainable, ABC):
 
 class Sequence(Collection):
     """
-    chain's sequence is a chainable collection that processes data sequentially
-    from a member to the next in the same order passed to the constructor.
+    The sequence is a chainable that processes data sequentially
+    piping results from one member to the next in the same order passed to the constructor.
 
-    the chain's sequence ignores failed from optional members and forwards
+    the sequence ignores failures from optional members and forwards
     their input to the next member as it is, however if a required
-    member fails, the sequence fails and returns that member's default value.
+    member fails, the sequence fails and returns that member's default.
     """
 
     def default_factory(self) -> Any:
@@ -69,6 +66,19 @@ class Sequence(Collection):
         return default
 
     def process(self, input, reporter: ReporterBase) -> tuple[bool, Any]:
+        """
+        pipes the input from a member to the next by chaining .process
+        calls until the last one.
+
+        It uses the given reporter to report failures if they occur.
+
+        :param input: initial value to start a chain of process calls
+        :type input: Any
+        :param reporter: reporter that holds the current execution info
+        :type reporter: ReporterBase
+        :return: success state and the last result (or default in case of failures)
+        :rtype: tuple[bool, Any]
+        """
         success_set: set[bool] = set()
         for node in self.members:
             success, result = node.process(input, reporter)
@@ -82,13 +92,13 @@ class Sequence(Collection):
 
 class Match(Collection):
     """
-    chain's match is a chainable collection that provides different processing
+    The match is a chainable that provides different processing
     branch for each item in the given input, it is stricter than the rest of
     it siblings (Collection) and requires you to know exactly what data you're
     going to get, if it gets a non-iterable object or an iterable with a different
     size than its members (branches) it immediately fails.
 
-    chain's match object processes data by iterating over input items and its
+    the match object processes data by iterating over input items and its
     internal members simultaneously and passes each item to the corresponding
     member, the processing will also fail any member has failed.
     """
@@ -109,7 +119,17 @@ class Match(Collection):
                 states.add(success)
                 yield result
 
-    def process(self, args, reporter: ReporterBase) -> tuple[bool, tuple]:
+    def process(self, args: Iterable, reporter: ReporterBase) -> tuple[bool, tuple]:
+        """
+        passes each arg from args to a specific member with the same order
+
+        :param args: an iterable object (list, tuple, set, ...)
+        :type args: Iterable
+        :param reporter: reporter that holds the current execution info
+        :type reporter: ReporterBase
+        :return: success state and a tuple of results with the same order
+        :rtype: tuple[bool, tuple]
+        """
         states: set[bool] = set()
         results: tuple = tuple(self._process(args, reporter, states))
         success = (states == {True})
@@ -122,12 +142,16 @@ class Model(Collection, ABC):
     the processing result with the same structure as
     it was defined, a dict_model returns a dict, list_model
     returns a list ...
+
+    This base class does nothing currently, but it's a logical
+    ancestor for all models if they need to share functionality
+    in the future.
     """
 
 
 class ListModel(Model):
     """
-    chain's list-model is a chainable collection that processes
+    The list-model is a chainable that processes
     the input by passing it to each of it members and returns
     the list of results with the same definition order.
 
@@ -153,7 +177,7 @@ class ListModel(Model):
 
 class DictModel(Model):
     """
-    chain's dict-model is a chainable collection that processes
+    The dict-model is a chainable that processes
     the input by passing it to each of it members and returns
     the dict mapping each key to its results.
 

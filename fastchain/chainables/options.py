@@ -1,9 +1,12 @@
 """
-this module implement option functions, those are functions that get applied
-to chainables and either alter their properties or modify some behaviour.
+This module define functions that customize a chainable object by mutating
+its attribute(s) to either change a property or a behaviour.
 
-the module also contains a mapping of symbols to specific functions
-to serve as shortcuts to those functions.
+Users should not bother with this low level details, and those functions
+are not more than helper function for the parser to apply an option.
+
+The only object that acts as an interface for this module is 'OptionMap',
+a mapping that gets a specific option_function from its specific symbol.
 """
 from types import MappingProxyType
 from typing import Iterable, Callable
@@ -19,7 +22,7 @@ def optional(self: ChainableObject) -> ChainableObject:
 
 
 def for_each(chainable: ChainableObject) -> ChainableObject:
-    """modifies chainable process method to be applied in iteration"""
+    """makes chainable process method to be applied in iteration"""
     def _process_each(inputs, reporter):
         for input in inputs:
             success, result = _process(input, reporter)
