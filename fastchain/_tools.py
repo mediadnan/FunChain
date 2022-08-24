@@ -1,5 +1,7 @@
+"""This module contains general purpose utility functions used by the FastChain"""
+
 import re
-from typing import Callable, TypeVar, Any
+from typing import Callable, Any
 
 
 def camel_to_snake(name: str) -> str:
@@ -16,10 +18,7 @@ def camel_to_snake(name: str) -> str:
     return name.lower()
 
 
-T = TypeVar('T')
-
-
-def bind(obj: T, method: Callable[[T, ...], Any], method_name: str | None = None) -> None:
+def bind(obj, method: Callable[..., Any], method_name: str | None = None) -> None:
     """dynamically assign or re-assign a method to an object.
 
     :param obj: Any mutable object that allows 'setattr'

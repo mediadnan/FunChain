@@ -1,8 +1,12 @@
 """
-This module implements the chain object class,
-the main object used to define data processing pipelines.
-and ChainGroup a factory that produces chains
-needed to be grouped and controlled together.
+This module implements the Chain class, the main class
+used by FastChain users to define data processing pipelines
+and use them as regular functions.
+
+The module also implements a ChainGroup class
+for chain-group objects for chains that are related
+or considered in the same category and share
+configuration.
 
 Chain and ChainGroup can be directly imported from fastchain.
 """
@@ -11,7 +15,7 @@ import typing as tp
 
 from ._abc import ReportDetails
 from .chainables import Chainable
-from .factory import CHAINABLES, parse
+from .factory import parse
 from .monitoring import LoggingHandler, ReporterMaker
 
 T = tp.TypeVar('T')
@@ -48,7 +52,13 @@ def validate_name(name: str, var_name: str = 'name') -> str:
 
 class Chain:
     """
-    Chain objects can be created and initialized globally (at module level) and used as functions,
+    The chain is created globally (at module level) and used as regular functions,
+    it takes a name and a structure (functions usually) that will be called
+    sequentially (or simultaneously also) depending on the defined structure.
+
+    The chain can store any number of report handlers, those are functions that take
+    a dictionary containing execution details, and do with that whatever needed.
+
     it chains the given functions and wraps them in nodes that capture any error and decide
     whether to continue or stop based one the result, and report the process statistics and failed.
     """
@@ -64,15 +74,50 @@ class Chain:
                  '__get_reporter',
                  '__report_handler')
 
-    def __init__(self, name: str, *chainables: CHAINABLES, **kwargs) -> None:
+    def __init__(self, name: str, *chainables, **kwargs) -> None:
         """
-        chains required a name and a couple of functions
-        in the correct order that will be chained, although
-        it's possible to define structures using a dict or
-        a list of functions.
+        a chain is defined with a name and a body from a given structure, supported chainables for the body are:
 
-        {chain_args}
-        {chain_keywords}
+        + functions (or any callable), multiple functions (tuple of functions) will be composed
+
+            >>> chain = Chain('name', f1, f2, f3)  # or Chain('name', (f1, f2, f3))
+            >>> chain(arg)  # is equivalent to f3(f2(f1(arg)))
+
+        + functions wrapped with chainable or from a funfact (check chainable and funfact documentation)
+
+        + dictionary of functions will return a dictionary of the same keys mapped to results
+
+            >>> chain = Chain('name', {'key1': f1, 'key2': f2})
+            >>> chain(arg)  # is equivalent to {'key1': f1(arg), 'key2': f2(arg)}
+
+        + list of functions will return a list of results
+
+            >>> chain = Chain('name', [f1, f2])
+            >>> chain(arg)  # is equivalent to [f1(arg), f2(arg)]
+
+        + match(func1, func2, ...) applied to an iterable (arg1, arg2, ...) will return (func1(arg1), func2(arg2), ...)
+
+            >>> chain = Chain('name', match(f1, f2))
+            >>> chain([arg1, arg2])  # is equivalent to (f1(arg1), f2(arg2))
+
+        + option characters ('*' or '?') are placed before functions, '*' for iteration and '?' to make nodes optional
+
+            >>> chain = Chain('name', '*', f1, f2)
+            >>> chain((arg1, arg2, arg3))  # is equivalent to f2((f1(arg1), f1(arg2), f1(arg3)))
+
+        + In addition, all the strucutres listed above could be nested as deep as needed
+
+            >>> chain = Chain('name', f1, {'k1': (f2, f3), 'k2': [f4, (f5, f6)]}, f7)
+            >>> chain(arg)  # same as f7({'k1': f3(f2(f1(arg))), 'k2': [f4(f1(arg)), f6(f5(f1(arg)))}])
+
+        :param name: name that identifies the chain (should be unique)
+        :type name: str
+        :param chainables: a callable or any supported structure
+        :type chainables: callable | tuple | dict | list | str | Chainable
+        :keyword namespace: name of the chain's group name (default None)
+        :keyword logger: a custom logger to be used in logging (default logger('fastchain'))
+        :keyword log_failures: whether to log failed with standard logging (default True)
+        :keyword print_stats: whether to print statistics at the end of each call
         """
         validate_name(name)
         if 'namespace' in kwargs:
@@ -85,18 +130,46 @@ class Chain:
         self.__report_handler = {True: [], False: []}
         if kwargs.get('log_failures', True):
             logging_handler = LoggingHandler(kwargs.get('logger'), kwargs.get('print_stats', False))
-            self.add_report_handler(logging_handler.handle_report)
+            self.add_report_handler(logging_handler.handle_report, True)
         self.__get_reporter = ReporterMaker(self.__core)
 
-    def add_report_handler(
-            self,
-            handler: tp.Callable[[ReportDetails], None],
-            always: bool = False
-    ) -> None:
+    def add_report_handler(self, handler: tp.Callable[[ReportDetails], None], always: bool = False) -> None:
         """
-        registers the handler to the chain
+        registers the report handler to the chain.
 
-        {report_details}
+        report handlers will be called with a report (dict) containing the following information:
+
+        **rate** *(float)*
+            represents a ratio (between 0.0 and 1.0) of successful operations over the total.
+
+        **succeeded** *(int)*
+            number of successful operations (from different or same nodes).
+
+        **failed** *(int)*
+            number of unsuccessful operations (from different or same nodes).
+
+        **missed** *(int)*
+            number of unreached nodes.
+
+        **required** *(int)*
+            number of non optional nodes from non optional branches.
+
+        **total** *(int)*
+            number of nodes in total.
+
+        **failed** *(list[dict])*
+            list for registered failed with the following details:
+                + source (str): the title of the failing component.
+                + input (Any): the value that caused the failure.
+                + error (Exception): the error raised causing the failure.
+                + fatal (bool): True if the component is not optional.
+
+        :param handler: function that only takes the report dict
+        :type handler: (ReportDetails) -> None
+        :param always: if False, the handler will be triggered only when the chain fails, otherwise
+                      it will always be triggered (default False)
+        :type always: bool
+        :return: None
         """
         if always:
             self.__report_handler[True].append(handler)
@@ -112,14 +185,15 @@ class Chain:
         return f'<chain {self.__name!r}>'
 
     def __len__(self) -> int:
-        """number of nodes the chain has"""
+        """chain size is the number of nodes it contains"""
         return self.__len
 
-    def __call__(self, input):
+    def __call__(self, input: tp.Any) -> tp.Any:
         """
-        processes the given input and returns the result,
-        the chain creates its reporter and only registers it
-        if reports is not None.
+        processes the given input through its internal nodes defined when the chain was created
+
+        :param input: the initial data to be processed, it will be passed to the first function.
+        :returns: the output of the last function
         """
         reporter = self.__get_reporter()
         success, result = self.__core.process(input, reporter)
@@ -133,16 +207,22 @@ class Chain:
 
 class ChainGroup:
     """utility object for making a group of chains with the same configuration and name prefix"""
-    __slots__ = '__name', '__kwargs', '__registered_chains__'
+    __slots__ = '__name', '__kwargs', '__concatenate_namespace', '__registered_chains__'
 
-    def __init__(self, name: str, **kwargs):
+    def __init__(self, name: str, *, concatenate_namespace: bool = True, **kwargs):
         """
-        initializes the new chain group object with a name and configuration
+        new chain groups are defined with a name and optionally common chain configurations
 
-        :param name: the group name that identifies a collection of chains
-        {chain_keywords}
+        :param name: name that identifies a group of chains
+        :type name: str
+        :param concatenate_namespace: if True the chain's name will be <namespace>::<name> else <name> (default True)
+        :type concatenate_namespace: bool
+        :keyword log_failures: whether to log failed with standard logging (default True)
+        :keyword logger: custom logger to be used in logging (default logger('fastchain'))
+        :keyword print_stats: whether to print statistics at the end of each call
         """
         self.__name: str = validate_name(name)
+        self.__concatenate_namespace: bool = concatenate_namespace
         self.__kwargs: dict[str, tp.Any] = kwargs
         self.__registered_chains__: dict[str, Chain] = {}
 
@@ -151,15 +231,43 @@ class ChainGroup:
         """gets the name of the chain group - readonly"""
         return self.__name
 
-    def add_report_handler(
-            self,
-            handler: tp.Callable[[ReportDetails], None],
-            always: bool = False,
-    ) -> None:
+    def add_report_handler(self, handler: tp.Callable[[ReportDetails], None], always: bool = False) -> None:
         """
-        registers the handler to every chain of this group
+        registers the report handler to every chain of this group.
 
-        {report_details}
+        report handlers will be called with a report (dict) containing the following information:
+
+        **rate** *(float)*
+            represents a ratio (between 0.0 and 1.0) of successful operations over the total.
+
+        **succeeded** *(int)*
+            number of successful operations (from different or same nodes).
+
+        **failed** *(int)*
+            number of unsuccessful operations (from different or same nodes).
+
+        **missed** *(int)*
+            number of unreached nodes.
+
+        **required** *(int)*
+            number of non optional nodes from non optional branches.
+
+        **total** *(int)*
+            number of nodes in total.
+
+        **failed** *(list[dict])*
+            list for registered failed with the following details:
+                + source (str): the title of the failing component.
+                + input (Any): the value that caused the failure.
+                + error (Exception): the error raised causing the failure.
+                + fatal (bool): True if the component is not optional.
+
+        :param handler: function that only takes the report dict
+        :type handler: (ReportDetails) -> None
+        :param always: if False, the handler will be triggered only when the chain fails, otherwise
+                      it will always be triggered (default False)
+        :type always: bool
+        :return: None
         """
         for chain in self.__registered_chains__.values():
             chain.add_report_handler(handler, always)
@@ -173,13 +281,17 @@ class ChainGroup:
         except KeyError:
             raise KeyError(f"no chain is registered with the name {name!r}")
 
-    def __call__(self, name: str, *chainables: CHAINABLES, **kwargs) -> Chain:
+    def __call__(self, name: str, *chainables, **kwargs) -> Chain:
         """
         creates and registers a new chain and merges the newly defined
         configuration to the previously defined.
 
-        {chain_args}
-        {chain_keywords}
+        :param name: name that identifies the chain (should be unique)
+        :param chainables: a callable or any supported structure
+        :keyword namespace: name of the chain's group name (default None)
+        :keyword logger: a custom logger to be used in logging (default logger('fastchain'))
+        :keyword log_failures: whether to log failed with standard logging (default True)
+        :keyword print_stats: whether to print statistics at the end of each call
         :raises ValueError: when trying to create a chain with a same name as a previously registered chain
         :return: new chain
         :rtype: Chain
@@ -187,61 +299,8 @@ class ChainGroup:
         if name in self:
             raise ValueError("a chain with the same name already been registered.")
         kwargs.update(self.__kwargs)
-        kwargs['namespace'] = self.name
+        if self.__concatenate_namespace:
+            kwargs['namespace'] = self.name
         new_chain = Chain(name, *chainables, **kwargs)
         self.__registered_chains__[name] = new_chain
         return new_chain
-
-
-# update docs
-for method in (
-        Chain.__init__,
-        Chain.add_report_handler,
-        ChainGroup.__init__,
-        ChainGroup.__call__,
-        ChainGroup.add_report_handler,
-):
-    method.__doc__ = method.__doc__.format_map({
-        'chain_args': """:param name: name that identifies the chain (should be unique)
-        :param chainables: a callable any chainable object""",
-        'chain_keywords': """:keyword namespace: name of the chain's group name (default None)
-        :keyword concatenate_namespace: if True the chain's name will be <namespace>_<name> else <name> (default True)
-        :keyword logger: a custom logger to be used in logging (default logger('fastchain'))
-        :keyword log_failures: whether to log failed with standard logging (default True)
-        :keyword print_stats: whether to print statistics at the end of each call""",
-        'report_details': """report handlers will be called with a report (dict)
-        containing the following information;
-        
-        **rate** *(float)*
-            represents a ratio (between 0.0 and 1.0) of successful operations over the total.
-        
-        **succeeded** *(int)*
-            number of successful operations (from different or same nodes).
-            
-        **failed** *(int)*
-            number of unsuccessful operations (from different or same nodes).
-        
-        **missed** *(int)*
-            number of unreached nodes.
-            
-        **required** *(int)*
-            number of non optional nodes from non optional branches.
-            
-        **total** *(int)*
-            number of nodes in total.
-        
-        **failed** *(list[dict])*
-            list for registered failed with the following details:
-                + source (str): the title of the failing component.
-                + input (Any): the value that caused the failure.
-                + error (Exception): the error raised causing the failure.
-                + fatal (bool): True if the component is not optional. 
-        
-        :param handler: function that only takes the report dict
-        :type handler: (ReportDetails) -> None
-        :param event: 'failed_only' to triggered the handler only when the chain process fails or 
-                      'always' (default 'always')
-        :type event: str
-        :return: None
-        """
-    })

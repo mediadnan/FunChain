@@ -11,17 +11,17 @@ a mapping that gets a specific option_function from its specific symbol.
 from types import MappingProxyType
 from typing import Iterable, Callable
 
-from .base import ChainableObject
+from . import Chainable
 from .._abc import ReporterBase
 
 
-def optional(self: ChainableObject) -> ChainableObject:
+def optional(self: Chainable) -> Chainable:
     """sets the chainable as optional"""
     self.optional = True
     return self
 
 
-def for_each(chainable: ChainableObject) -> ChainableObject:
+def for_each(chainable: Chainable) -> Chainable:
     """makes chainable process method to be applied in iteration"""
     def _process_each(inputs, reporter):
         for input in inputs:
@@ -29,7 +29,7 @@ def for_each(chainable: ChainableObject) -> ChainableObject:
             if success:
                 yield result
 
-    def process(self: ChainableObject, inputs, reporter: ReporterBase) -> tuple[bool, Iterable]:
+    def process(self: Chainable, inputs, reporter: ReporterBase) -> tuple[bool, Iterable]:
         try:
             iter(inputs)
         except TypeError as error:
@@ -41,7 +41,7 @@ def for_each(chainable: ChainableObject) -> ChainableObject:
     return chainable
 
 
-OptionMap: MappingProxyType[str, Callable[[ChainableObject], ChainableObject]] = MappingProxyType({
+OptionMap: MappingProxyType[str, Callable[[Chainable], Chainable]] = MappingProxyType({
     '?': optional,
     '*': for_each
 })

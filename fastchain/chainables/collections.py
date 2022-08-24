@@ -5,13 +5,10 @@ other nested collection, they all share similar properties and process
 data by passing it to their branches and bundle results in a specific structure.
 """
 from abc import ABC
-from typing import TypeVar, overload, Any, Generator, Iterable
+from typing import overload, Any, Generator, Iterable
 
 from .base import Chainable
 from .._abc import ReporterBase
-
-
-ChainableCollection = TypeVar('ChainableCollection', bound='Collection', covariant=True)
 
 
 class Collection(Chainable, ABC):

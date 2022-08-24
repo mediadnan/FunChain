@@ -4,15 +4,13 @@ users are not expected to interact directly with those components but that shoul
 and other helper function in factory.py module.
 """
 
-from .base import CHAINABLE, ChainableObject, Chainable, Node, PASS
-from .collections import ChainableCollection, Collection, Sequence, DictModel, ListModel, Match
+from .base import CHAINABLE, Chainable, Node, PASS
+from .collections import Collection, Sequence, DictModel, ListModel, Match
 from .options import OptionMap
 
 
 __all__ = (
     'CHAINABLE',
-    'ChainableObject',
-    'ChainableCollection',
     'Chainable',
     'Node',
     'PASS',

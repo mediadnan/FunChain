@@ -7,7 +7,7 @@ import operator
 import typing as tp
 import warnings
 
-from fastchain._abc import ReporterBase, FailureDetails, ReportDetails
+from fastchain._abc import ReporterBase, FailureDetails, ReportDetails, ChainableBase
 from fastchain.chainables import Chainable, Node, Collection
 
 
@@ -24,12 +24,12 @@ class Reporter(ReporterBase):
     """
     __slots__ = 'counter', 'required_nodes', '_failures',
 
-    def __init__(self, components: frozenset[Node], required_nodes: int) -> None:
-        self.counter: dict[Node, list[bool]] = {component: [] for component in components}
+    def __init__(self, components: frozenset[ChainableBase], required_nodes: int) -> None:
+        self.counter: dict[ChainableBase, list[bool]] = {component: [] for component in components}
         self.required_nodes: int = required_nodes
         self._failures: list[FailureDetails] = []
 
-    def mark(self, node: Node, success: bool) -> None:
+    def mark(self, node: ChainableBase, success: bool) -> None:
         """marks the node processing success stat"""
         try:
             self.counter[node].append(success)
@@ -41,7 +41,7 @@ class Reporter(ReporterBase):
                 source=self
             )
 
-    def report_failure(self, source: Chainable, input: tp.Any, error: Exception) -> None:
+    def report_failure(self, source: ChainableBase, input: tp.Any, error: Exception) -> None:
         """registers the failure to be reported"""
         self._failures.append({'source': source.title, 'input': input, 'error': error, 'fatal': not source.optional})
 
@@ -141,12 +141,12 @@ class LoggingHandler:
         if not self.print_stats:
             return
         print("-- STATS -----------------------------",
-              f"\tsuccess percentage:        {round(report['rate'] * 100)}%",
-              f"\tsuccessful operations:     {report['succeeded']}",
-              f"\tunsuccessful operations:   {report['failed']}",
-              f"\tunreached nodes:           {report['missed']}",
-              f"\trequired nodes:            {report['required']}",
-              f"\ttotal number of nodes:     {report['total']}",
+              f"   success percentage:        {round(report['rate'] * 100)}%",
+              f"   successful operations:     {report['succeeded']}",
+              f"   unsuccessful operations:   {report['failed']}",
+              f"   unreached nodes:           {report['missed']}",
+              f"   required nodes:            {report['required']}",
+              f"   total number of nodes:     {report['total']}",
               "--------------------------------------",
               sep='\n')
 

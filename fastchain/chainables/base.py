@@ -13,7 +13,6 @@ from .._tools import camel_to_snake
 
 T = TypeVar('T')
 RT = TypeVar('RT')
-ChainableObject = TypeVar('ChainableObject', bound='Chainable', covariant=True)  # preserves the same chainable type
 FEEDBACK: TypeAlias = tuple[bool, T]
 CHAINABLE: TypeAlias = Callable[[Any], Any]
 
@@ -53,11 +52,11 @@ class Chainable(ChainableBase, ABC):
         self.optional = False
         self.required = True
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         """gets the component's string representation"""
         return f'<Chain{type(self).__name__}: {self.name}>'
 
-    def __len__(self):
+    def __len__(self) -> int:
         """gets the component's size"""
         return 0
 
@@ -105,13 +104,11 @@ class Pass(Chainable):
     def __repr__(self) -> str:
         return '<chain-pass>'
 
-    def set_title(self, root: str | None = None, branch: str | None = None):
+    def set_title(self, root: str | None = None, branch: str | None = None) -> None:
         """PASS ignores title modification"""
-        pass
 
     def default_factory(self) -> None:
         """this will never be used"""
-        pass
 
 
 PASS = Pass('pass')  # chains only need one instance of Pass (singleton)
@@ -126,7 +123,7 @@ class Node(Chainable):
     """
     __slots__ = 'function', 'default'
 
-    def __init__(self, function: Callable[..., RT], *, name: str | None = None, default: T = None) -> None:
+    def __init__(self, function: Callable[[T], RT], *, name: str | None = None, default: Any = None) -> None:
         """sets the main function to be wrapped and optionally a name and a default value
 
         :param function: 1-argument function to be wrapped
@@ -145,10 +142,10 @@ class Node(Chainable):
         if not callable(function):
             raise TypeError(f"node's function must be callable with signature (Any) -> Any, not {type(function)}")
         super().__init__(name)
-        self.function = function
-        self.default: T = default
+        self.function: Callable[[T], RT] = function
+        self.default: Any = default
 
-    def default_factory(self) -> T:
+    def default_factory(self) -> Any:
         """generates the default value, None by default"""
         return self.default
 
@@ -166,7 +163,7 @@ class Node(Chainable):
         else:
             return f"{getattr(type(function), '__qualname__')}_object"
 
-    def process(self, input, reporter: ReporterBase) -> tuple[True, RT] | tuple[False, T]:
+    def process(self, input: T, reporter: ReporterBase) -> tuple[Literal[True], RT] | tuple[Literal[False], Any]:
         """
         runs function(input) in isolation and returns the result
         or the default if any error occurs,

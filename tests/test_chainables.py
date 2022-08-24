@@ -26,8 +26,8 @@ def chainable():
 
 @pytest.mark.parametrize('params, expected_default_name', [
     param({}, 'chainable_sub_class', id="no keywords provided"),
-    param({'type_name': None}, 'chainable_sub_class', id="explicit None as type_name"),
-    param({'type_name': 'my_custom_name'}, 'my_custom_name', id="custom type_name"),
+    param({'default_name': None}, 'chainable_sub_class', id="explicit None as default_name"),
+    param({'default_name': 'my_custom_name'}, 'my_custom_name', id="custom default_name"),
 ])
 def test_chainable_default_name(params: dict[str, Any], expected_default_name: str):
     class ChainableSubClass(Chainable, **params): pass  # noqa

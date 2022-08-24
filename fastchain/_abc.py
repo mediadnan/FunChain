@@ -1,3 +1,8 @@
+"""
+This module should be used internally by the FastChain library to define
+contracts and interfaces used in its modules to lower the coupling and circular dependencies.
+"""
+
 from abc import ABC, abstractmethod
 from typing import Any, TypedDict
 

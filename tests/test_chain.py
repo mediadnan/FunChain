@@ -43,11 +43,17 @@ def test_validate_name_allowed_names(name):
     assert validate_name(name) is name
 
 
+def test_chain_representation(increment):
+    chain = Chain('test_chain', increment)
+    assert repr(chain) == "<chain 'test_chain'>"
+
+
+# Chain functionalities -------------------------------------------------------------------------------------------------
+
 class CallableObj:
     def __call__(self, arg): return [arg]
 
 
-# Chain functionalities -------------------------------------------------------------------------------------------------
 @pytest.mark.parametrize("body, length, input, output", [
     # single function setups
     ("increment,", 1, 3, 4),
