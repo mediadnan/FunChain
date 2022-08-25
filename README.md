@@ -1,5 +1,5 @@
 <div align="center" id="heading">
-  <h1><img src="./docs/_static/favicon/favicon-light.svg" alt="logo" width="24" height="24" /> FastChain</h1>
+  <h1><img src="./docs/_static/favicon/favicon.svg" alt="logo" width="24" height="24" /> FastChain</h1>
   <strong style="">chain functions easily and safely</strong>
   <div>
     <br/>
