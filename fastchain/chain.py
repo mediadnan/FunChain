@@ -125,7 +125,7 @@ class Chain:
             if kwargs.get('concatenate_namespace', True):
                 name = f'{namespace}::{name}'
         self.__name = name
-        self.__core = parse(chainables)
+        self.__core = parse(chainables, name)
         self.__len = len(self.__core)
         self.__report_handler = {True: [], False: []}
         if kwargs.get('log_failures', True):
