@@ -1,8 +1,12 @@
+.. _best-practices:
+
 ==============
 Best practices
 ==============
-
 This page contains some advices and and best practices to be followed to take the best out of FastChain features.
+
+Optimization
+============
 
 #. **Separate configuration from input value**
     When designing your chains, try to isolate as much as you can configuration values from usage values.
@@ -23,3 +27,12 @@ This page contains some advices and and best practices to be followed to take th
 .. And note that creating a chain with a single node is considered a misuse and a waist of functionalities *(it is merely allowed for testing and examples purposes)*.
 
 .. pure functions
+
+.. chains are designed *(and supposed)* to be defined globally and be used as functions.
+.. So the impact of initialization only happen once your program is run and be ready for usage
+.. low-latency use in favour of cold-starts.
+.. With that in mind, it is not optimized to use it in systems that start your program each time their called.
+
+Conventions
+===========
+TODO

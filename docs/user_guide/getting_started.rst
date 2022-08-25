@@ -1,83 +1,139 @@
 ===============
 Getting started
 ===============
-
-.. functions composition
+In this chapter we will be making our first steps and discover FastChain and its basic API and features,
+advance topics will be covered on next chapters.
 
 Installation
 ============
+To start using it we need first to install from PyPI
 
-Installing from PyPI *(recommended)*
-------------------------------------
-Make sure to download and install FastChain from PyPI to start using it,
-and that by running the following command
+.. code-block:: shell
 
-.. tab-set::
+   pip install fastchain
 
-    .. tab-item:: Linux/MacOS
-       :sync: unix
+However, if you want to test latest features before releases, you can get the newest instance
+directly from the Github Repository *(not recommended for production)*
 
-       .. code-block:: bash
-           
-          python3 -m pip install fastchain
+.. code-block:: shell
 
-    .. tab-item:: Windows
-       :sync: windows
+   pip install git+https://github.com/mediadnan/fastchain.git#egg=fastchain
 
-       .. code-block:: bat
-          
-          py -m pip install fastchain
+We can check if the installation went as expected by running :code:`pip show fastchain`,
+and after making sure it was correctly installed we can start using it.
 
-To make sure that the package is installed and available, run the command
+Creating a chain
+================
+The main entrypoint for using fastchain tools is to create a chain object, it can be created the same way one would
+create a function that does some processing and then call it.
+The difference between having a regular function responsible for performing multiple processing steps and
+a chain is that chains treat each step as a unit and keeps track of each one whether it succeeded or not.
 
-.. tab-set::
+A similar behaviour could be achieved in functions wrapping steps that could have side effects *(raise exception)*
+in try...except blogs and handle those exceptions in a more specialized manner, that will be more optimized of course,
+but for most cases this becomes a constant pattern one wants to automate it.
 
-    .. tab-item:: Linux/MacOS
-       :sync: unix
+Basic usage
+-----------
+To get our hands dirty let's start by an example, our chain will calculates the average from numbers given in string,
+more specifically `chain('12.5 56.33 54.7 29.65') -> 38.295`
 
-       .. code-block:: bash
-           
-          python3 -m pip show fastchain
+for that we will be importing a builtin function `statistics.mean <https://docs.python.org/3/library/statistics.html#statistics.mean>`_
+and then import :code:`fastchain.Chain`
 
-    .. tab-item:: Windows
-       :sync: windows
+.. code-block:: python3
 
-       .. code-block:: bat
-          
-          py -m pip show fastchain
+   >>> from fastchain import Chain
+   >>> from statistics import mean
+   >>> chain = Chain('my_chain', str.split, '*', float, mean)
 
-Installing from repository
---------------------------
+The first argument we passed to the chain constructor was its name `'my_chain'`,
+let's us skip taking about the rest of arguments as that will be covered in details on the next chapter
+and check some few properties of the chain
 
-.. tab-set::
+.. code-block:: python3
 
-    .. tab-item:: Linux/MacOS
-       :sync: unix
+   >>> chain  # the chain representation
+   <chain 'my_chain'>
+   >>> chain.name  # the chain name
+   'my_chain'
+   >>> len(chain)  # chain size (str.split, float, mean)
+   3
 
-       .. code-block:: bash
-           
-          python3 -m pip install git+https://github.com/mediadnan/fastchain.git#egg=fastchain
+Naming chains is mandatory and helps a lot to identify them from reports when you have many chains,
+Now if we want to use our chain all we have to do is call it with the input value
 
-    .. tab-item:: Windows
-       :sync: windows
+.. code-block:: python3
 
-       .. code-block:: bat
-          
-          py -m pip install git+https://github.com/mediadnan/fastchain.git#egg=fastchain
+   >>> chain('12.5 56.33 54.7 29.65')
+   38.295
 
-Create a chain
-==============
-Chains are the main object of this package, objects that encapsulates a sequence of functions and takes care of piping
-results from a function to another isolating potential exceptions that can be raised.
+Perfect, but nothing special about this and it can be achieved in a single line
 
-A chain can be defined by creating and instance of fastchain.Chain globally *(module scope)* and be called with
-an input argument.
+.. code-block:: python3
 
+   >>> from statistics import mean
+   >>> simpler_chain = lambda numbers: mean(map(float, numbers.split()))
+   >>> simpler_chain('12.5 56.33 54.7 29.65')
+   38.295
+
+Well sure, but chains are used for cases when the process might fail at any point of the code,
+so let's try some few scenarios
+
+.. code-block:: python3
+
+   >>> chain(['12.5', '56.33', '54.7', '29.65'])
+   sequence[0]/str.split raised TypeError("descriptor 'split' for 'str' objects doesn't apply to a 'list' object") when receiving <class 'list'>: ['12.5', '56.33', '54.7', '29.65']
+
+Of course our chain doesn't expect lists, and this example shows that this exception was handled and logged
+pointing out the source (syntax will be covered on :ref:`reports chapter <reports>`) the error and the input,
+this information is handy when your app hosted that will continue running.
+
+In addition especially when testing, you can tell the chain to print report statistics:
+
+.. code-block:: python3
+
+   >>> chain = Chain('my_chain', str.split, '*', float, mean, print_stats=True)
+   >>> result = chain(['12.5', '56.33', '54.7', '29.65'])
+   -- STATS -----------------------------
+      success percentage:        0%
+      successful operations:     0
+      unsuccessful operations:   1
+      unreached nodes:           2
+      required nodes:            3
+      total number of nodes:     3
+   --------------------------------------
+   sequence[0]/str.split raised TypeError("descriptor 'split' for 'str' objects doesn't apply to a 'list' object") when receiving <class 'list'>: ['12.5', '56.33', '54.7', '29.65']
+   >>> repr(result)
+   'None'
+
+Lets try another exception in a different step
+
+.. code-block:: python3
+
+   >>> result = chain('12.5 abc 54.7 29.65')
+   -- STATS -----------------------------
+      success percentage:        92%
+      successful operations:     5
+      unsuccessful operations:   1
+      unreached nodes:           0
+      required nodes:            3
+      total number of nodes:     3
+   --------------------------------------
+   sequence[1]/float raised ValueError("could not convert string to float: 'abc'") when receiving <class 'str'>: 'abc'
+   >>> result
+   32.28333333333333
+
+Of course logging can be turned off :code:`chain = Chain('chain_name', str.split, ..., log_failures=False)`
+and other handlers can be added to handle reports `chain.add_report_handler(my_handler)` (learn more about :ref:`reports <reports>`)
+or keep logging but with a custom logger `..., logger='my_logger')`
+by passing the name of that logger `'my_logger'` or even passing the logger itself `..., logger=logger)`
+if `logger` an instance of the builtin `logging.Logger <https://docs.python.org/3/library/logging.html#logging.Logger>`_
 
 
 Chain API
-=========
+---------
 
-.. autoclass:: fastchain::Chain
-   :members:
-   :special-members: __call__
+.. autoclass:: fastchain.Chain
+   :members: name, add_report_handler
+
