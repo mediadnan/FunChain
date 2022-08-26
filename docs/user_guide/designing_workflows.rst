@@ -63,12 +63,15 @@ can be represented like so:
    D2 --> |NO| N
    N --> Z
 
-Now before diving into details about sequences, we will first talk about how to control the process flow
-using *options*;
+.. note::
+
+   Obviously a chain sequence will fail when any of its *(required)* nodes fail.
+
+Before diving into further details, let's first talk about controlling the process flow using *options*.
 
 Options
 -------
-We can customize a node processing behaviour or property by placing a string *(symbol)* directly before,
+We can customize a node processing behaviour or properties by placing a string *(symbol)* directly before,
 nothing needs to be imported, and we achieve it with easy, declarative and clean syntax.
 
 ``FastChain`` currently offers the following options:
@@ -95,6 +98,7 @@ Let us bring back the previous example to analyze it:
 .. code-block:: python3
 
    >>> from fastchain import Chain
+   >>> from statistics import mean
    >>> chain = Chain('my_chain', str.split, '*', float, mean)
    >>> chain('12.5 56.33 54.7 29.65')
    38.295
@@ -114,7 +118,7 @@ not the entire list, the chain processes its data like follows:
        M --> |'29.65'| B4[float] -->|29.65| C
        C[mean] --> |38.295| END((end))
 
-It's important to mention that chain iteration is **lazy** and it wasn't evaluated until ``mean``
+It's important to mention that the chain iteration is **lazy** and it wasn't evaluated until ``statistics.mean``
 used it, ``('*', float)`` returned a generator not a list, and we can check that
 
 .. code-block:: python3
@@ -212,7 +216,7 @@ And with that said, let's illustrate how the chain interpreted this failure:
 As this chart shows, an optional node is ignored if it fails and its input is passed to the next
 node, but if it succeed the result is passed to the next node.
 
-Which made our chain able to process both ``'12.5 56.33 54.7 29.65'`` and ``['12.5', '56.33', '54.7', '29.65'``.
+Which made our chain able to process both ``'12.5 56.33 54.7 29.65'`` and ``['12.5', '56.33', '54.7', '29.65']``.
 
 Grouping nodes
 --------------
