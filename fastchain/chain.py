@@ -76,44 +76,20 @@ class Chain:
 
     def __init__(self, name: str, *chainables, **kwargs) -> None:
         """
-        a chain is defined with a name and a body from a given structure, supported chainables for the body are:
+        a chain is defined with a name and a body from a given structure, supported chainables objects for the body are:
 
-        + functions (or any callable), multiple functions (tuple of functions) will be composed
-
-            >>> chain = Chain('name', f1, f2, f3)  # or Chain('name', (f1, f2, f3))
-            >>> chain(arg)  # is equivalent to f3(f2(f1(arg)))
-
+        + functions (or any callables), multiple functions (or tuple of functions) will be composed (f3(f2(f1(arg))))
         + functions wrapped with chainable or from a funfact (check chainable and funfact documentation)
-
         + dictionary of functions will return a dictionary of the same keys mapped to results
-
-            >>> chain = Chain('name', {'key1': f1, 'key2': f2})
-            >>> chain(arg)  # is equivalent to {'key1': f1(arg), 'key2': f2(arg)}
-
         + list of functions will return a list of results
-
-            >>> chain = Chain('name', [f1, f2])
-            >>> chain(arg)  # is equivalent to [f1(arg), f2(arg)]
-
         + match(func1, func2, ...) applied to an iterable (arg1, arg2, ...) will return (func1(arg1), func2(arg2), ...)
-
-            >>> chain = Chain('name', match(f1, f2))
-            >>> chain([arg1, arg2])  # is equivalent to (f1(arg1), f2(arg2))
-
         + option characters ('*' or '?') are placed before functions, '*' for iteration and '?' to make nodes optional
 
-            >>> chain = Chain('name', '*', f1, f2)
-            >>> chain((arg1, arg2, arg3))  # is equivalent to f2((f1(arg1), f1(arg2), f1(arg3)))
-
-        + In addition, all the strucutres listed above could be nested as deep as needed
-
-            >>> chain = Chain('name', f1, {'k1': (f2, f3), 'k2': [f4, (f5, f6)]}, f7)
-            >>> chain(arg)  # same as f7({'k1': f3(f2(f1(arg))), 'k2': [f4(f1(arg)), f6(f5(f1(arg)))}])
+        all the structures listed above could be nested as deep as needed
 
         :param name: name that identifies the chain (should be unique)
         :type name: str
         :param chainables: a callable or any supported structure
-        :type chainables: callable | tuple | dict | list | str | Chainable
         :keyword namespace: name of the chain's group name (default None)
         :keyword logger: a custom logger to be used in logging (default logger('fastchain'))
         :keyword log_failures: whether to log failed with standard logging (default True)
@@ -135,37 +111,24 @@ class Chain:
 
     def add_report_handler(self, handler: tp.Callable[[ReportDetails], None], always: bool = False) -> None:
         """
-        registers the report handler to the chain.
+        adds the given report handler to the chain,
+        it will be called after the execution with a report *(dict)* containing the following info:
 
-        report handlers will be called with a report (dict) containing the following information:
+        + **rate** *(float)*: represents a ratio (between 0.0 and 1.0) of successful operations over the total.
+        + **succeeded** *(int)*: number of successful operations (from different or same nodes).
+        + **failed** *(int)*: number of unsuccessful operations (from different or same nodes).
+        + **missed** *(int)*: number of unreached nodes.
+        + **required** *(int)*: number of non optional nodes from non optional branches.
+        + **total** *(int)*: number of nodes in total.
+        + **failed** *(list[dict])*: list for registered failed with the following details:
 
-        **rate** *(float)*
-            represents a ratio (between 0.0 and 1.0) of successful operations over the total.
+            + **source** *(str)*: the title of the failing component.
+            + **input** *(Any)*: the value that caused the failure.
+            + **error** *(Exception)*: the error raised causing the failure.
+            + **fatal** *(bool)*: True if the component is not optional.
 
-        **succeeded** *(int)*
-            number of successful operations (from different or same nodes).
-
-        **failed** *(int)*
-            number of unsuccessful operations (from different or same nodes).
-
-        **missed** *(int)*
-            number of unreached nodes.
-
-        **required** *(int)*
-            number of non optional nodes from non optional branches.
-
-        **total** *(int)*
-            number of nodes in total.
-
-        **failed** *(list[dict])*
-            list for registered failed with the following details:
-                + source (str): the title of the failing component.
-                + input (Any): the value that caused the failure.
-                + error (Exception): the error raised causing the failure.
-                + fatal (bool): True if the component is not optional.
-
-        :param handler: function that only takes the report dict
-        :type handler: (ReportDetails) -> None
+        :param handler: function that takes the report dict (only)
+        :type handler: Callable[[ReportDetails], None]
         :param always: if False, the handler will be triggered only when the chain fails, otherwise
                       it will always be triggered (default False)
         :type always: bool
@@ -192,7 +155,7 @@ class Chain:
         """
         processes the given input through its internal nodes defined when the chain was created
 
-        :param input: the initial data to be processed, it will be passed to the first function.
+        :param input: the initial data to be processed, it will be passed to the first function
         :returns: the output of the last function
         """
         reporter = self.__get_reporter()
@@ -233,34 +196,8 @@ class ChainGroup:
 
     def add_report_handler(self, handler: tp.Callable[[ReportDetails], None], always: bool = False) -> None:
         """
-        registers the report handler to every chain of this group.
-
-        report handlers will be called with a report (dict) containing the following information:
-
-        **rate** *(float)*
-            represents a ratio (between 0.0 and 1.0) of successful operations over the total.
-
-        **succeeded** *(int)*
-            number of successful operations (from different or same nodes).
-
-        **failed** *(int)*
-            number of unsuccessful operations (from different or same nodes).
-
-        **missed** *(int)*
-            number of unreached nodes.
-
-        **required** *(int)*
-            number of non optional nodes from non optional branches.
-
-        **total** *(int)*
-            number of nodes in total.
-
-        **failed** *(list[dict])*
-            list for registered failed with the following details:
-                + source (str): the title of the failing component.
-                + input (Any): the value that caused the failure.
-                + error (Exception): the error raised causing the failure.
-                + fatal (bool): True if the component is not optional.
+        registers the report handler to every chain of this group,
+        for more details try help(Chain.add_report_handler)
 
         :param handler: function that only takes the report dict
         :type handler: (ReportDetails) -> None

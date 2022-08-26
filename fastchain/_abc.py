@@ -1,6 +1,6 @@
 """
-This module should be used internally by the FastChain library to define
-contracts and interfaces used in its modules to lower the coupling and circular dependencies.
+This module is used internally by the FastChain modules to define
+contracts and interfaces to lower the coupling and circular dependencies.
 """
 
 from abc import ABC, abstractmethod

@@ -1,11 +1,12 @@
-"""This module contains general purpose utility functions used by the FastChain"""
+"""This module contains shared utility functions used by the FastChain modules"""
 
 import re
 from typing import Callable, Any
 
 
 def camel_to_snake(name: str) -> str:
-    """converts CamelCase (class name style) to snake_case (instance name style)
+    """
+    converts CamelCase (class name style) to snake_case (instance name style)
 
     :param name: CamelCase name
     :type name: str
@@ -19,7 +20,8 @@ def camel_to_snake(name: str) -> str:
 
 
 def bind(obj, method: Callable[..., Any], method_name: str | None = None) -> None:
-    """dynamically assign or re-assign a method to an object.
+    """
+    dynamically assign a method to an object.
 
     :param obj: Any mutable object that allows 'setattr'
     :param method: a function with signature (self, ...) -> Any
