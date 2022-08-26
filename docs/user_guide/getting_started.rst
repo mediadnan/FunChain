@@ -29,7 +29,7 @@ create a function that does some processing and then call it.
 The difference between having a regular function responsible for performing multiple processing steps and
 a chain is that chains treat each step as a unit and keeps track of each one whether it succeeded or not.
 
-A similar behaviour could be achieved in functions wrapping steps that could have side effects *(raise exception)*
+A similar behaviour could be achieved in functions wrapping steps that could raise exceptions
 in try...except blogs and handle those exceptions in a more specialized manner, that will be more optimized of course,
 but for most cases this becomes a constant pattern one wants to automate it.
 
