@@ -1,12 +1,10 @@
 name: Tests
 
-on:
-  - push
-  - pull_request
+on: [push, pull_request]
 
 jobs:
   test:
-    name: test
+    name: Tests 🧪
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -15,17 +13,17 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
-      - name: Set up Python ${{ matrix.python-version }}
+      - name: Set up Python ${{ matrix.python-version }} 🐍
         uses: actions/setup-python@v3
         with:
           python-version: ${{ matrix.python-version }}
-      - name: Install Dev Dependencies
+      - name: Install Dev Dependencies 📥
         run: |
           python -m pip install --upgrade pip
           pip install tox tox-gh-actions
-      - name : Test with Tox
+      - name : Test with Tox 🧪
         run: tox
-      - name: Upload Coverage to Codecov
+      - name: Upload Coverage to Codecov ☂️
         uses: codecov/codecov-action@v3
         with:
           name: codecov-umbrella
