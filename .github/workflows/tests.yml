@@ -23,10 +23,17 @@ jobs:
           pip install tox tox-gh-actions
       - name : Test with Tox 🧪
         run: tox
+
+  code-cov:
+    name: Code Coverage ☂
+    runs-on: ubuntu-latest
+    needs: test
+
+    steps:
+      - uses: actions/checkout@v3
       - name: Upload Coverage to Codecov ☂️
         uses: codecov/codecov-action@v3
         with:
           name: codecov-umbrella
           env_vars: OS,PYTHON
-          fail_ci_if_error: true
           verbose: true
