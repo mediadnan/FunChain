@@ -220,11 +220,92 @@ Which made our chain able to process both ``'12.5 56.33 54.7 29.65'`` and ``['12
 
 Grouping nodes
 --------------
-TODO
+It is useful in many cases to group a sequences of steps together to be treated as a block, and that what we do
+always when we place a series of instructions inside a function or a loop etc... And to achieve using chains,
+we simply wrap nodes with ``()``, the chain interprets that group of nodes as a single node when performing
+a chain of calls and the group itself is a sub-chain that does the same in a deeper layer and so on.
+We now have an idea about chain options, one may ask how can we apply an option to a sequence of nodes as a whole?
+That where grouping comes in.
+
+Consider the following scenario: We need our chain in the previous example to take a string containing numbers
+and calculate the average of the **square roots** this time, both parsing floats and evaluating the square roots
+are part of the same block inside a loop, and to make it happen the definition will become as follows:
+
+.. code-block:: python3
+
+   >>> from fastchain import Chain
+   ... from statistics import mean
+   ... from math import sqrt
+   >>> chain = Chain('my_chain', str.split, '*', (float, sqrt), mean)
+   >>> chain('12.5 56.33 54.7 29.65')
+   5.970497883795522
+
+Note that ``(float, sqrt)`` is now a sub sequence, the main sequence contains 3 units
+``str.split``, ``(float, sqrt)`` and ``mean``, the second unit itself has two units ``float`` and ``sqrt``,
+hopefully this gives us a better abstract idea.
+And to understand the processing step by step let's visualize it with another flowchart
+
+.. mermaid::
+
+   flowchart TD
+       START((start))
+       END((end))
+       A[str.split]
+       M([*])
+       subgraph iteration 0
+       B1[float]
+       C1[sqrt]
+       end
+       subgraph iteration 1
+       B2[float]
+       C2[sqrt]
+       end
+       subgraph iteration 2
+       B3[float]
+       C3[sqrt]
+       end
+       subgraph iteration 3
+       B4[float]
+       C4[sqrt]
+       end
+       D[mean]
+
+       START --> |"'12.5 56.33 54.7 29.65'"| A
+       A --> |"['12.5', '56.33', '54.7', '29.65']"| M
+       M --> |'12.5'| B1 --> |12.5| C1 --> |3.535...| D
+       M --> |'56.33'| B2 --> |56.33| C2 --> |7.505...| D
+       M --> |'54.7'| B3 --> |54.7| C3 --> |7.395...| D
+       M --> |'29.65'| B4 --> |29.65| C4 --> |5.445...| D
+       D --> |5.970...| END
+
+.. warning::
+
+   It is not allowed to pass and empty group, trying it will cause a ``ValueError``, same as
+   trying to create a chain with no functions
+
+   .. code-block:: python3
+
+      >>> from fastchain import Chain
+      >>> Chain('empty')
+      Traceback (most recent call last):
+        ...
+      ValueError: a sequence must contain at least one node
+      >>> Chain('my_chain', str, ())
+      Traceback (most recent call last):
+        ...
+      ValueError: a sequence must contain at least one node
+
+.. note::
+
+   ``()`` are not always used for sub-sequencing, but sometimes only to wrap a single function together with
+   an option or multiple options for branches in particular (*explained bellow* :ref:`Chain models <chain-models>`),
+   and for completeness know that ``('*', float)`` will be parsed to a single node and not a sequence.
 
 Chainable
 ---------
 TODO
+
+.. _chain-models:
 
 Chain model
 ===========
