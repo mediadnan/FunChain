@@ -276,11 +276,5 @@ It's all handled and the program is still running, note that a healthy branch is
 and did make it to the end``[19.14]``, and the errors logged are pointing out directly to source of failure
 with its absolute location and name.
 
-### Process flow illustration
-Stripping out all the implementation details, the journey from ``'523.5814, 74.2347, 366.3606'``
-to ``[22.88, 8.62, 19.14]`` can be visualized like the following:
-
-<div align="center"><img src="docs/_static/diagrams/mermaid_flowchart_rounded_sqrts.svg" alt="mermaid_flowchart"/></div>
-
 # Maintainers
 - [MARSO Adnan](https://github.com/mediadnan) *(author)*
