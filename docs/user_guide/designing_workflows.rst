@@ -303,10 +303,55 @@ And to understand the processing step by step let's visualize it with another fl
 
 Chainable
 ---------
-TODO
+FastChain provide a utility that let us customize nodes called ``fastchain.chainable``, it wraps
+functions *(or any callables)* and adds some metadata for chains to create nodes with the specified properties,
+We'll learn more about this utility in different use cases.
+
+Naming nodes
+~~~~~~~~~~~~
+``fastchain.chainable`` can be used is to name nodes, we'll see in the next chapter (:ref:`reports`) how important names
+are when it comes to failure reports. Of course as we saw earlier,
+naming nodes is optional and chains take the function's ``__qualname__`` as a default node name,
+but sometimes this default behaviour is not very helpful especially when working with anonymous ``lambda`` functions.
+
+To see that in action let's create a chain that does the following:
+
++ evaluate the cube of a given number
++ return a templated string saying 'the cube is ...'
+
+As far as we know those steps are slightly specific and no builtin function offers a template
+'the cube is ...' for example, so either we implement a function ourselves ``def cube_string(number): ...``
+or as simple as this task is, we use a ``lambda`` function.
+
+.. code-block:: python3
+
+   >>> from fastchain import Chain
+   >>> cube = Chain('cube-number', lambda x: x ** 3, lambda x: f"the cube is {x}")
+   >>> cube(4)
+   'the cube is 64'
+
+Now watch what gets reported in case of failure
+
+.. code-block:: python3
+
+   >>> cube(None)
+   cube-number/sequence[0]/<lambda> raised TypeError...
+
+The title said that a <lambda> function raised an exception and that wasn't super helpful *(although we can still identify it from the sequence index)*,
+it can be confusing since we are using more than one lambda.
+A better way to do this is by using ``chainable``:
+
+   >>> from fastchain import Chain, chainable
+   >>> cube = Chain('cube-number',
+   ...              chainable(lambda x: x ** 3, name="cube_evaluation"),
+   ...              chainable(lambda x: f"the cube is {x}", name="cube_representation"))
+   >>> cube(None)
+   cube-number/sequence[0]/cube_evaluation raised TypeError...
 
 .. _chain-models:
 
 Chain model
 ===========
 TODO
+
+
