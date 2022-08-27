@@ -95,7 +95,7 @@ comprehension.
 
 Let us bring back the previous example to analyze it:
 
-.. code-block:: python3
+.. code-block:: pycon
 
    >>> from fastchain import Chain
    >>> from statistics import mean
@@ -121,7 +121,7 @@ not the entire list, the chain processes its data like follows:
 It's important to mention that the chain iteration is **lazy** and it wasn't evaluated until ``statistics.mean``
 used it, ``('*', float)`` returned a generator not a list, and we can check that
 
-.. code-block:: python3
+.. code-block:: pycon
 
    >>> from fastchain import Chain
    >>> chain = Chain('test_iter', '*', float)
@@ -131,16 +131,15 @@ used it, ``('*', float)`` returned a generator not a list, and we can check that
 
 And if we need it to be list, we need to specify that:
 
-.. code-block:: python3
+.. code-block:: pycon
 
    >>> chain = Chain('test_iter', '*', float, list)
    >>> result = chain(['2.1', '5.3'])
    >>> type(result)
    <class 'list'>
 
-This behaviour is intentional to optimize memory usage when dealing with big chunks of data in one hand, similar to how
-`map <https://docs.python.org/3/library/functions.html#map>`_, `filter <https://docs.python.org/3/library/functions.html#filter>`_
-and many other builtins evaluate, and in the other hand it gives users the freedom to choose how to wrap these items
+This behaviour is intentional to optimize memory usage when dealing with big chunks of data in one hand, similar to how |map_docs|,
+|filter_docs| and many other builtins evaluate, and in the other hand it gives users the freedom to choose how to wrap these items
 (``list``, ``tuple``, ``set``, ...) quickly or process it without converting it like we did with ``mean``
 
 .. warning::
@@ -174,7 +173,7 @@ to fail when trying to access that key because we kind of expecting that.
 Let comeback to the previous example and make it flexible enough to process a list of strings,
 but first let's remember that it failed:
 
-.. code-block:: python3
+.. code-block:: pycon
 
    >>> chain = Chain('my_chain', str.split, '*', float, mean)
    >>> chain(['12.5', '56.33', '54.7', '29.65'])
@@ -182,7 +181,7 @@ but first let's remember that it failed:
 
 We can tell the chain that ``str.split`` is just an optional step like so:
 
-.. code-block:: python3
+.. code-block:: pycon
 
    >>> chain = Chain('my_chain', '?', str.split, '*', float, mean)
    >>> chain(['12.5', '56.33', '54.7', '29.65'])
@@ -192,7 +191,7 @@ It works now even when the first step fails. Before analyzing how does this work
 should be mentioned that the failure is still captured but not considered fatal,
 and always logged but with a lower level of severity:
 
-.. code-block:: python3
+.. code-block:: pycon
 
    >>> from logging import basicConfig, INFO
    >>> basicConfig(level=INFO)
@@ -231,7 +230,7 @@ Consider the following scenario: We need our chain in the previous example to ta
 and calculate the average of the **square roots** this time, both parsing floats and evaluating the square roots
 are part of the same block inside a loop, and to make it happen the definition will become as follows:
 
-.. code-block:: python3
+.. code-block:: pycon
 
    >>> from fastchain import Chain
    ... from statistics import mean
@@ -283,7 +282,7 @@ And to understand the processing step by step let's visualize it with another fl
    It is not allowed to pass and empty group, trying it will cause a ``ValueError``, same as
    trying to create a chain with no functions
 
-   .. code-block:: python3
+   .. code-block:: pycon
 
       >>> from fastchain import Chain
       >>> Chain('empty')
@@ -323,7 +322,7 @@ As far as we know those steps are slightly specific and no builtin function offe
 'the cube is ...' for example, so either we implement a function ourselves ``def cube_string(number): ...``
 or as simple as this task is, we use a ``lambda`` function.
 
-.. code-block:: python3
+.. code-block:: pycon
 
    >>> from fastchain import Chain
    >>> cube = Chain('cube-number', lambda x: x ** 3, lambda x: f"the cube is {x}")
@@ -332,7 +331,7 @@ or as simple as this task is, we use a ``lambda`` function.
 
 Now watch what gets reported in case of failure
 
-.. code-block:: python3
+.. code-block:: pycon
 
    >>> cube(None)
    cube-number/sequence[0]/<lambda> raised TypeError...
@@ -340,6 +339,8 @@ Now watch what gets reported in case of failure
 The title said that a <lambda> function raised an exception and that wasn't super helpful *(although we can still identify it from the sequence index)*,
 it can be confusing since we are using more than one lambda.
 A better way to do this is by using ``chainable``:
+
+.. code-block:: pycon
 
    >>> from fastchain import Chain, chainable
    >>> cube = Chain('cube-number',
@@ -359,7 +360,7 @@ explicitly set a default value to whatever it needs to be and the syntax is ``ch
 
 Take for example a chain expected to return a number
 
-.. code-block:: python3
+.. code-block:: pycon
 
    >>> from fastchain import Chain, chainable
    >>> chain = Chain('double', chainable(lambda x: x * 2, default=0))
@@ -389,7 +390,7 @@ provides an alternative keyword ``default_factory`` which takes a 0 argument fun
 
 We can demonstrate it with this example:
 
-.. code-block:: python3
+.. code-block:: pycon
 
    >>> chain = Chain('split-by-commas', chainable(lambda s: s.split(','), default_factory=list))
    >>> result = chain('a,b,c,d')
@@ -411,7 +412,57 @@ We can demonstrate it with this example:
 
 Partial argument
 ~~~~~~~~~~~~~~~~
-TODO
+Functions *(callables in general)* that could be chained are functions that only take a single argument and return something,
+more specifically a function that takes only one required poitional argument at most but takes a positional argument at least,
+*that where the name 'chainable' got inspired*. With that in mind, functions that required more than one argument must
+partially take the remaining ones before use.
+
+Let's say that we want to round a number to two decimal places, we can do it in many ways:
+
+.. code-block:: python3
+
+   # define a function the use it
+   def round_2d(number):
+      return round(number, 2)
+   Chain('round_example', round_2d)
+
+   # use lambda function
+   Chain('round_example', lambda n: round(n, 2))
+
+   # use functools.partial
+   from functools import partial
+   Chain('round_example', partial(round, ndigits=2))
+
+But the same can be done by ``chainable``
+
+.. code-block:: python3
+
+   Chain('round_example', chainable(round, name='round_2d', ndigits=2))
+
+``chainable(function, *args, **kwargs)`` acts exactly like |functools.partial_docs|
+when it gets positional and/or keyword arguments, actually it uses ``functools.partial`` under the hood,
+and note that positional argument will be applied before the chain argument.
+
+Let's end this section with an example:
+
+.. code-block:: pycon
+
+   >>> from fastchain import Chain, chainable
+   >>> from statistics import mean
+   >>> chain = Chain('my_chain',
+   ...               chainable(str.split, sep=',', name='split-by-commas'),
+   ...               '*',
+   ...               float,
+   ...               mean,
+   ...               chainable(round, ndigits=2, name='round-2d'))
+   >>> chain('12.23, 54.56, 41.88')
+   36.22
+
+.. note::
+
+   ``chainable`` is not a replacement for ``functools.partial`` but just a superset for a cleaner code.
+   if no name or default needs to be set, one can simply use the builtin ``functools.partial``.
+
 
 .. _chain-models:
 
@@ -420,3 +471,14 @@ Chain model
 TODO
 
 
+.. |functools.partial_docs| raw:: html
+
+   <a href="https://docs.python.org/3/library/functools.html#functools.partial" target="_blank">functools.partial</a>
+
+.. |filter_docs| raw:: html
+
+   <a href="https://docs.python.org/3/library/functions.html#filter" target="_blank">filter</a>
+
+.. |map_docs| raw:: html
+
+   <a href="https://docs.python.org/3/library/functions.html#map" target="_blank">map</a>

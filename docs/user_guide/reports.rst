@@ -4,6 +4,6 @@
 Reports
 =======
 
-Reporter interpretation
+Report interpretation
 =====================
 TODO

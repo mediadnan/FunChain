@@ -38,10 +38,9 @@ Basic usage
 To get our hands dirty let's start by an example, our chain will calculates the average from numbers given in string,
 more specifically `chain('12.5 56.33 54.7 29.65') -> 38.295`
 
-for that we will be importing a builtin function `statistics.mean <https://docs.python.org/3/library/statistics.html#statistics.mean>`_
-and then import :code:`fastchain.Chain`
+for that we will be importing a builtin function |statistics.mean_docs| and then import :code:`fastchain.Chain`
 
-.. code-block:: python3
+.. code-block:: pycon
 
    >>> from fastchain import Chain
    >>> from statistics import mean
@@ -51,7 +50,7 @@ The first argument we passed to the chain constructor was its name `'my_chain'`,
 let's us skip taking about the rest of arguments as that will be covered in details on the next chapter
 and check some few properties of the chain
 
-.. code-block:: python3
+.. code-block:: pycon
 
    >>> chain  # the chain representation
    <chain 'my_chain'>
@@ -63,14 +62,14 @@ and check some few properties of the chain
 Naming chains is mandatory and helps a lot to identify them from reports when you have many chains,
 Now if we want to use our chain all we have to do is call it with the input value
 
-.. code-block:: python3
+.. code-block:: pycon
 
    >>> chain('12.5 56.33 54.7 29.65')
    38.295
 
 Perfect, but nothing special about this and it can be achieved in a single line
 
-.. code-block:: python3
+.. code-block:: pycon
 
    >>> from statistics import mean
    >>> simpler_chain = lambda numbers: mean(map(float, numbers.split()))
@@ -80,7 +79,7 @@ Perfect, but nothing special about this and it can be achieved in a single line
 Well sure, but chains are used for cases when the process might fail at any point of the code,
 so let's try some few scenarios
 
-.. code-block:: python3
+.. code-block:: pycon
 
    >>> chain(['12.5', '56.33', '54.7', '29.65'])
    sequence[0]/str.split raised TypeError("descriptor 'split' for 'str' objects doesn't apply to a 'list' object") when receiving <class 'list'>: ['12.5', '56.33', '54.7', '29.65']
@@ -91,7 +90,7 @@ this information is handy when your app hosted that will continue running.
 
 In addition especially when testing, you can tell the chain to print report statistics:
 
-.. code-block:: python3
+.. code-block:: pycon
 
    >>> chain = Chain('my_chain', str.split, '*', float, mean, print_stats=True)
    >>> result = chain(['12.5', '56.33', '54.7', '29.65'])
@@ -109,7 +108,7 @@ In addition especially when testing, you can tell the chain to print report stat
 
 Lets try another exception in a different step
 
-.. code-block:: python3
+.. code-block:: pycon
 
    >>> result = chain('12.5 abc 54.7 29.65')
    -- STATS -----------------------------
@@ -128,7 +127,7 @@ Of course logging can be turned off :code:`chain = Chain('chain_name', str.split
 and other handlers can be added to handle reports `chain.add_report_handler(my_handler)` (learn more about :ref:`reports <reports>`)
 or keep logging but with a custom logger `..., logger='my_logger')`
 by passing the name of that logger `'my_logger'` or even passing the logger itself `..., logger=logger)`
-if `logger` an instance of the builtin `logging.Logger <https://docs.python.org/3/library/logging.html#logging.Logger>`_
+if `logger` an instance of the builtin |logging.Logger_docs|
 
 
 Chain API
@@ -137,3 +136,10 @@ Chain API
 .. autoclass:: fastchain.Chain
    :members: name, add_report_handler
 
+.. |statistics.mean_docs| raw:: html
+
+   <a href="https://docs.python.org/3/library/functools.html#functools.partial" target="_blank">statistics.mean</a>
+
+.. |logging.Logger_docs| raw:: html
+
+   <a href="https://docs.python.org/3/library/logging.html#logging.Logger" target="_blank">Logger</a>
