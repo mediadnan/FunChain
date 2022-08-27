@@ -303,9 +303,9 @@ And to understand the processing step by step let's visualize it with another fl
 
 Chainable
 ---------
-FastChain provide a utility that let us customize nodes called ``fastchain.chainable``, it wraps
-functions *(or any callables)* and adds some metadata for chains to create nodes with the specified properties,
-We'll learn more about this utility in different use cases.
+FastChain comes with a utility to customize nodes, namey the ``fastchain.chainable`` function
+that takes a function *(or any callable)* as first argument and adds metadata to create nodes with specific properties,
+In this section, we'll be covering some of its use cases.
 
 Naming nodes
 ~~~~~~~~~~~~
@@ -347,6 +347,71 @@ A better way to do this is by using ``chainable``:
    ...              chainable(lambda x: f"the cube is {x}", name="cube_representation"))
    >>> cube(None)
    cube-number/sequence[0]/cube_evaluation raised TypeError...
+
+No doubt that this log was more helpful than the previous, but naming nodes is not exclusively related
+to lambda functions and can be used for all functions to give more specific names to a processing unit.
+
+Defult value
+~~~~~~~~~~~~
+``fastchain.chainable`` can define the node's default value, a value that will be returned in case any error occurs,
+by default that value is ``None``, but when the consumer of our pipeline strictly expectes a specific type we can
+explicitly set a default value to whatever it needs to be and the syntax is ``chainable(<functions>, default=<default>)``
+
+Take for example a chain expected to return a number
+
+.. code-block:: python3
+
+   >>> from fastchain import Chain, chainable
+   >>> chain = Chain('double', chainable(lambda x: x * 2, default=0))
+   >>> result = chain(5)
+   >>> result
+   10
+   >>> result = chain(None)
+   double/<lambda> raised TypeError...
+   >>> result
+   0
+
+.. note::
+   
+   This concept is more useful for :ref:`models <chain-models>` but now as we're dealing with sequences,
+   it is important to note that when a failure occurs, the sequence returns the **last required node's default**.
+
+   .. code-block:: python3
+
+      Chain('testing_default', chainable(func1, default=default1), chainable(func2, default=default2))
+      # in case of any failure (func1 or func2) default2 is returned
+
+      Chain('testing_default', chainable(func1, default=default1), '?', chainable(func2, default=default2))
+      # in case of any failure (func1 or func2) default1 is returned
+
+For default values that need to be freshly generated for each call *(especially for mutable objects)*, ``fastchain.chainable``
+provides an alternative keyword ``default_factory`` which takes a 0 argument function that returns a default value.
+
+We can demonstrate it with this example:
+
+.. code-block:: python3
+
+   >>> chain = Chain('split-by-commas', chainable(lambda s: s.split(','), default_factory=list))
+   >>> result = chain('a,b,c,d')
+   >>> result
+   ['a', 'b', 'c', 'd']
+   >>> result = chain(None)
+   split-by-commas/<lambda> raised AttributeError...
+   >>> result
+   []
+
+.. note::
+
+   To summarize, when a failure occurs this is what happens:
+
+   + If no default or default_factory are specified, ``None`` gets returned,
+   + If default is specified, ``default`` is returned,
+   + If default_factory is specified, ``default_factory()`` is returned,
+   + And if both default and default_factory are specified, the default will be ignored.
+
+Partial argument
+~~~~~~~~~~~~~~~~
+TODO
 
 .. _chain-models:
 
