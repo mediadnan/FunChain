@@ -496,6 +496,9 @@ Matching inputs
 ---------------
 TODO
 
+Nesting structures
+==================
+TODO
 
 .. |functools.partial_docs| raw:: html
 
