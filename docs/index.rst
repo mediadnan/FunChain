@@ -83,7 +83,7 @@ This document contains the following pages
 
 .. toctree::
    :includehidden:
-   :maxdepth: 3
+   :maxdepth: 2
    :caption: User Guide
 
    user_guide/getting_started
