@@ -8,10 +8,6 @@ In this chapter we will walk through each one of those few options in details an
 but first let's keep in mind that chains are wrappers around our functions and only add functionalities and coordinates
 between them and does nothing by its own, and those functions *(callables in general)* are converted to chain nodes.
 
-Nothing prevents us from creating chains with a single node like :code:`Chain('twice', lambda x: x*2)`
-but that will only add unnecessary complications for a simple task like this,
-for this reason we first need to understand where and when chains are useful, and the first use case is function chaining.
-
 Function chaining
 =================
 Composing functions is necessary to perform any kind of data processing especially in functional programing paradime,
@@ -83,6 +79,10 @@ nothing needs to be imported, and we achieve it with easy, declarative and clean
 +-------------------------------------+-----------------------+----------------------------------------------+
 |  :ref:`optional <optional-option>`  |  .. centered:: ``?``  |             .. centered :: 0.1.0             |
 +-------------------------------------+-----------------------+----------------------------------------------+
+
+.. note::
+
+   New options might be introduced in future versions to simplify common use cases.
 
 .. _iterate-option:
 
@@ -302,7 +302,7 @@ And to understand the processing step by step let's visualize it with another fl
 
 Chainable
 ---------
-FastChain comes with a utility to customize nodes, namey the ``fastchain.chainable`` function
+FastChain comes with a utility to customize nodes, namely the ``fastchain.chainable`` function
 that takes a function *(or any callable)* as first argument and adds metadata to create nodes with specific properties,
 In this section, we'll be covering some of its use cases.
 
@@ -352,10 +352,10 @@ A better way to do this is by using ``chainable``:
 No doubt that this log was more helpful than the previous, but naming nodes is not exclusively related
 to lambda functions and can be used for all functions to give more specific names to a processing unit.
 
-Defult value
-~~~~~~~~~~~~
+Default value
+~~~~~~~~~~~~~
 ``fastchain.chainable`` can define the node's default value, a value that will be returned in case any error occurs,
-by default that value is ``None``, but when the consumer of our pipeline strictly expectes a specific type we can
+by default that value is ``None``, but when the consumer of our pipeline strictly expects a specific type we can
 explicitly set a default value to whatever it needs to be and the syntax is ``chainable(<functions>, default=<default>)``
 
 Take for example a chain expected to return a number
@@ -413,7 +413,7 @@ We can demonstrate it with this example:
 Partial argument
 ~~~~~~~~~~~~~~~~
 Functions *(callables in general)* that could be chained are functions that only take a single argument and return something,
-more specifically a function that takes only one required poitional argument at most but takes a positional argument at least,
+more specifically a function that takes only one required positional argument at most but takes a positional argument at least,
 *that where the name 'chainable' got inspired*. With that in mind, functions that required more than one argument must
 partially take the remaining ones before use.
 
@@ -439,11 +439,20 @@ But the same can be done by ``chainable``
 
    Chain('round_example', chainable(round, name='round_2d', ndigits=2))
 
-``chainable(function, *args, **kwargs)`` acts exactly like |functools.partial_docs|
-when it gets positional and/or keyword arguments, actually it uses ``functools.partial`` under the hood,
-and note that positional argument will be applied before the chain argument.
+``chainable`` acts exactly like |functools.partial_docs|
+when it gets positional and/or keyword arguments, actually it uses ``functools.partial`` under the hood.
 
-Let's end this section with an example:
+Keep in mind that positional argument will be passed before the chain argument and keyword arguments after.
+
+.. code-block:: python3
+
+   chain = Chain('name', chainable(function, arg1, arg2, key1=arg3, key2=arg4))
+   chain(arg) # calls function(arg1, arg2, arg, key1=arg3, key2=arg4)
+
+And the following keywords (``name``, ``default``, ``default_factory``) are reserved by ``chainable`` and
+will not be partially passed.
+
+Finally let's end with a usage example:
 
 .. code-block:: pycon
 
@@ -460,7 +469,7 @@ Let's end this section with an example:
 
 .. note::
 
-   ``chainable`` is not a replacement for ``functools.partial`` but just a superset for a cleaner code.
+   ``chainable`` is not a replacement for ``functools.partial`` but a superset for a cleaner code.
    if no name or default needs to be set, one can simply use the builtin ``functools.partial``.
 
 
@@ -468,6 +477,23 @@ Let's end this section with an example:
 
 Chain model
 ===========
+FastChain simplifies the way we specify the return structure by providing a model of functions with the same structure,
+this concept makes it easier and faster to create result models in a very declarative way.
+
+The components covered in this section share one same concept, **branching**, and this is when the component gets
+an input it passes it to each of it members and the results are packed into a single structure again.
+Unlike how results have been sequentially processed, an input can take multiple paths *simultaneously* for models.
+
+List model
+----------
+TODO
+
+Dict model
+----------
+TODO
+
+Matching inputs
+---------------
 TODO
 
 
