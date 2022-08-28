@@ -47,7 +47,7 @@ this process can be decomposed to the following steps:
 5. Return a list of those numbers
 
 > **Note**
-> Of course this too simple to be practical and only serves as example.
+> Of course this is too simple to be practical and only serves as example.
 
 This can be easily implemented like so
 
