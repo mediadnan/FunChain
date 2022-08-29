@@ -230,6 +230,10 @@ when when branching, as the same input is taken by multiple functions and mutati
 the other functions. Unless of course, your intentionally want to mutate it and that will not affect anything
 in your workflow.
 
+Do not mute reports
+-------------------
+.. TODO
+
 .. .. .. .. .. .. .. .. .. .. .. .. .. .. .. .. .. .. .. .. .. .. .. .. .. .. .. .. .. .. .. .. .. .. .. .. .. .. .. ..
 
 .. |lxml| raw:: html
