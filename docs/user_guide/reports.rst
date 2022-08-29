@@ -283,7 +283,7 @@ the chain failed earlier.
 Required
 --------
 The number of required *(non-optional)* nodes, by default, if not node or collection of nodes is marked
-as optional *(with ``?`` option)* all nodes are required. However, this metric is useful when we have a bigger
+as optional *(with* ``?`` *option)* all nodes are required. However, this metric is useful when we have a bigger
 structure with a mix of required and optional branches and nodes.
 
 This example shows the report of two successful chain calls:
@@ -382,10 +382,9 @@ it tells whether this failure broke the processing sequence and caused a chain f
 Components title
 ================
 The component title holds information about its location and name relatively to the host chain,
-the syntax shares similarities with a file path, that can look like ``<chain>/<node>``,
-``<chain>/<collection>[<index>]/<node>``, ``<chain>/<collection>[<index>]/<sub-collection>[<index>]/<node>``,
-and so on depending on the chain's structure.
-To better understand it we need first to understand how chains recursively parse nodes.
+the syntax shares similarities with a file path, it puts the component's name after its parent
+components up to the chain's name, the title follows this syntax ``<chain>/<collection>[<index>]/<sub-collection>[<index>]/.../<node>``.
+And to better understand it we need first to understand how chains recursively parse nodes.
 
 The simplest scenario is a chain with a single node :code:`Chain('single-node', func)`
 

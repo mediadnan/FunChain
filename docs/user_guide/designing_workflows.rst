@@ -10,7 +10,7 @@ between them and does nothing by its own, and those functions *(callables in gen
 
 Function chaining
 =================
-Composing functions is necessary to perform any kind of data processing especially in functional programing paradime,
+Composing functions is necessary to perform any kind of data processing especially in functional programing paradigm,
 but that comes with a cost as functions could fail and composing them raises the probability of failure exponentially.
 And of course like any other problem in computer science this one has several solutions like the *Monadic pattern*
 and *The railway oriented programing* where functions are handled separately and the functionality is implemented once
@@ -67,7 +67,7 @@ Before diving into further details, let's first talk about controlling the proce
 
 Options
 -------
-We can customize a node processing behaviour or properties by placing a string *(symbol)* directly before,
+We can customize a node processing behavior or properties by placing a string *(symbol)* directly before,
 nothing needs to be imported, and we achieve it with easy, declarative and clean syntax.
 
 ``FastChain`` currently offers the following options:
@@ -246,7 +246,7 @@ And to understand the processing step by step let's visualize it with another fl
 
 .. mermaid::
 
-    flowchart TD
+    flowchart TDparadigm
         START((start))
         END((end))
         A[str.split]
@@ -311,7 +311,7 @@ Naming nodes
 ``fastchain.chainable`` can be used is to name nodes, we'll see in the next chapter (:ref:`reports`) how important names
 are when it comes to failure reports. Of course as we saw earlier,
 naming nodes is optional and chains take the function's ``__qualname__`` as a default node name,
-but sometimes this default behaviour is not very helpful especially when working with anonymous ``lambda`` functions.
+but sometimes this default behavior is not very helpful especially when working with anonymous ``lambda`` functions.
 
 To see that in action let's create a chain that does the following:
 
@@ -496,9 +496,41 @@ Matching inputs
 ---------------
 TODO
 
-Nesting structures
-==================
-TODO
+Chain structures
+================
+The chain can have deeply a nested structure and the definition components are recursively parsed, components
+like chain sequences, models and matches are node collections, they have their internal components that can be either functions
+or/and collections, each of those components have its processing properties but from the outside they all share the 
+same interface and the chain doesn't care much about the type of the component and treats them equally, and it always calls
+a single component then a chain of calls is triggered automatically.
+
+This is the concept about how chains work, but to get a better idea let's analyze few cases from the simplest
+to a more complex
+
+Single node chain
+-----------------
+The simplest structure is a chain can have is a single node, defined like this
+
+.. code-block:: python3
+    
+    chain = Chain('single_node', func)
+
+It has a single processing layer, and when called, the process goes like this
+
+.. mermaid:: 
+
+    sequenceDiagram
+
+        participant a as chain
+        participant b as node(func)
+    
+        a ->> b: input
+        b ->> a: output
+
+
+
+
+.. .. .. .. .. .. .. .. .. .. .. .. .. .. .. .. .. .. .. .. .. .. .. .. .. .. .. .. .. .. .. .. .. .. .. .. .. .. .. .. .. .. .. ..
 
 .. |functools.partial_docs| raw:: html
 
