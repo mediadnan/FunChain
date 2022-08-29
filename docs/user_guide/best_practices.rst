@@ -22,69 +22,69 @@ To get a better understanding about what does this mean, consider this example:
 
 .. code-block:: python3
 
-   from fastchain import Chain
+    from fastchain import Chain
 
-   def some_function(arg):
-       # does something
+    def some_function(arg):
+        # does something
 
-   chain = Chain('some_chain', some_function, some_function)
+    chain = Chain('some_chain', some_function, some_function)
 
 Here we passed the same function ``some_function`` twice, but the chain parses it into two different nodes
 so it can identify which one of them has exactly failed and can control them separately, however
 if we do it like this:
 
 .. code-block:: python3
-   :caption: BAD
+    :caption: BAD
 
-   from fastchain import Chain, chainable
+    from fastchain import Chain, chainable
 
-   def some_function(arg):
-       """does something"""
+    def some_function(arg):
+        """does something"""
 
-   customized = chainable(some_function, name='customized', default='')
+    customized = chainable(some_function, name='customized', default='')
 
-   chain = Chain('some_chain', customized, customized)
+    chain = Chain('some_chain', customized, customized)
 
 The chain will treat both ``customized`` as the same node, and this will **lead to bugs** especially in reports,
 and the way to address this issue is either using chainable inside Chain like this:
 
 .. code-block:: python3
-   :caption: OK
+    :caption: OK
 
-   from fastchain import Chain, chainable
+    from fastchain import Chain, chainable
 
-   def some_function(arg):
-       """does something"""
+    def some_function(arg):
+        """does something"""
 
-   chain = Chain('some_chain',
-                 chainable(some_function, name='customized', default=''),
-                 chainable(some_function, name='customized', default=''))
+    chain = Chain('some_chain',
+                  chainable(some_function, name='customized', default=''),
+                  chainable(some_function, name='customized', default=''))
 
 Or define a reusable components with ``@fastchain.funfact``
 
 .. code-block:: python3
-   :caption: RECOMMENDED
+    :caption: RECOMMENDED
 
-   from fastchain import Chain, funfact
+    from fastchain import Chain, funfact
 
-   @funfact(name='customized', default='')
-   def some_function():
-       def function(arg):
-           """does something"""
-       return function
+    @funfact(name='customized', default='')
+    def some_function():
+        def function(arg):
+            """does something"""
+        return function
 
-   chain = Chain('some_chain', some_function(), some_function())
+    chain = Chain('some_chain', some_function(), some_function())
 
 ``some_function()`` will produce a brand-new node each time with the same *name* and *default*.
 
 And make sure not to fall on the same issue again:
 
 .. code-block:: python3
-   :caption: BAD
+    :caption: BAD
 
-   ...
-   customized = some_function()
-   chain = Chain('some_chain', customized, customized)
+    ...
+    customized = some_function()
+    chain = Chain('some_chain', customized, customized)
 
 Optimization
 ============
@@ -100,25 +100,25 @@ once when we start the program or when we import it and the chain gets cached an
 Hope this abstract example makes the idea clear:
 
 .. code-block:: python3
-   :caption: BAD
-   :emphasize-lines: 4
+    :caption: BAD
+    :emphasize-lines: 4
 
-   # ... code skipped ...
-   @app.get('/items/{id}')
-   def get_items(id):
-       chain = Chain('items_chain', ...)
-       return chain(id)
+    # ... code skipped ...
+    @app.get('/items/{id}')
+    def get_items(id):
+        chain = Chain('items_chain', ...)
+        return chain(id)
 
 .. code-block:: python3
-   :caption: GOOD
-   :emphasize-lines: 2
+    :caption: GOOD
+    :emphasize-lines: 2
 
-   # ... code skipped ...
-   items_chain = Chain('items_chain', ...)
+    # ... code skipped ...
+    items_chain = Chain('items_chain', ...)
 
-   @app.get('/items/{id}')
-   def get_items(id):
-       return items_chain(id)
+    @app.get('/items/{id}')
+    def get_items(id):
+        return items_chain(id)
 
 Cold starts
 -----------
@@ -141,23 +141,23 @@ Consider extracting links from a web page using regular expressions:
 
 .. code-block:: pycon
 
-   >>> import re
-   >>> from fastchain import Chain, chainable
-   >>> from pprint import pp
-   >>> markup = """
-   ... <html>
-   ...     <body>
-   ...         <a href="https://justasimpleexample.com/path1">click here</a>
-   ...         <a href="https://justasimpleexample.com/path2">click here</a>
-   ...         <a href="https://justasimpleexample.com/path3">click here</a>
-   ...     </body>
-   ... </html>
-   ... """
-   >>> chain = Chain('my_chain', chainable(re.findall, r'href="(.+?)"', flags=re.DOTALL, name="extract-links"))
-   >>> pp(chain(markup))
-   ['https://justasimpleexample.com/path1',
-    'https://justasimpleexample.com/path2',
-    'https://justasimpleexample.com/path3']
+    >>> import re
+    >>> from fastchain import Chain, chainable
+    >>> from pprint import pp
+    >>> markup = """
+    ... <html>
+    ...     <body>
+    ...         <a href="https://justasimpleexample.com/path1">click here</a>
+    ...         <a href="https://justasimpleexample.com/path2">click here</a>
+    ...         <a href="https://justasimpleexample.com/path3">click here</a>
+    ...     </body>
+    ... </html>
+    ... """
+    >>> chain = Chain('my_chain', chainable(re.findall, r'href="(.+?)"', flags=re.DOTALL, name="extract-links"))
+    >>> pp(chain(markup))
+    ['https://justasimpleexample.com/path1',
+     'https://justasimpleexample.com/path2',
+     'https://justasimpleexample.com/path3']
 
 We can see that everything works as expected, but here :regexp:`href="(.+?)"` is compiled
 every time ``my_chain`` is called while it can be compiled once and used many times which is
@@ -173,23 +173,23 @@ And use it like this
 
 .. code-block:: pycon
 
-   >>> from pprint import pp
-   >>> from fastchain import Chain
-   >>> from components import regex_findall
-   >>> markup = """
-   ... <html>
-   ...     <body>
-   ...         <a href="https://justasimpleexample.com/path1">click here</a>
-   ...         <a href="https://justasimpleexample.com/path2">click here</a>
-   ...         <a href="https://justasimpleexample.com/path3">click here</a>
-   ...     </body>
-   ... </html>
-   ... """
-   >>> chain = Chain('my_chain', regex_findall(r'href="(.+?)"'))
-   >>> pp(chain(markup))
-   ['https://justasimpleexample.com/path1',
-    'https://justasimpleexample.com/path2',
-    'https://justasimpleexample.com/path3']
+    >>> from pprint import pp
+    >>> from fastchain import Chain
+    >>> from components import regex_findall
+    >>> markup = """
+    ... <html>
+    ...     <body>
+    ...         <a href="https://justasimpleexample.com/path1">click here</a>
+    ...         <a href="https://justasimpleexample.com/path2">click here</a>
+    ...         <a href="https://justasimpleexample.com/path3">click here</a>
+    ...     </body>
+    ... </html>
+    ... """
+    >>> chain = Chain('my_chain', regex_findall(r'href="(.+?)"'))
+    >>> pp(chain(markup))
+    ['https://justasimpleexample.com/path1',
+     'https://justasimpleexample.com/path2',
+     'https://justasimpleexample.com/path3']
 
 We get the same result but now the pattern is compiled once, this optimizes resources usage and
 result in a faster processing.
@@ -198,6 +198,27 @@ result in a faster processing.
 
    The previous example is not practical and there are libraries best suited to extract data from
    markups HTML/XML like |lxml|, |beautifulsoup|, |parsel| and |scrapy| just to name a few.
+
+.. _optimization_beware_of_report_handling:
+
+Beware of report handling
+-------------------------
+When setting custom handlers to a chain, we must keep in mind that those handlers will all be called
+**before returning the result**, and it's easy for us to slow down the chain performance.
+To better get an idea, go and try this
+
+.. literalinclude:: ../examples/slow_report_handling.py
+   :language: python
+
+Even while ``lambda x: x`` should be instantaneous, the chain took about 2s to return the same input.
+With that in mind, we have two options to fix this:
+
++ If the consumer needs the result as soon as it gets generated, the report handler should either store
+  the report somewhere to be interpreted after delivering the result or interpret it in the
+  background *(a different thread or process ...)*
+
++ If the report needs to be analysed before returning the result *(maybe for a decision making)*, the handler
+  should be optimized as much as possible to match the expected performance.
 
 Conventions
 ===========
@@ -229,10 +250,6 @@ like changing state from an outer scope or **mutating the input**, this might po
 when when branching, as the same input is taken by multiple functions and mutating it in one place affects
 the other functions. Unless of course, your intentionally want to mutate it and that will not affect anything
 in your workflow.
-
-Do not mute reports
--------------------
-.. TODO
 
 .. .. .. .. .. .. .. .. .. .. .. .. .. .. .. .. .. .. .. .. .. .. .. .. .. .. .. .. .. .. .. .. .. .. .. .. .. .. .. ..
 

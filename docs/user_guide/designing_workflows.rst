@@ -23,13 +23,13 @@ To analyze how chains execute a sequence of functions let's come up with an abst
 
 .. code-block:: python3
 
-   def func1(x):
-       """does something..."""
+    def func1(x):
+        """does something..."""
 
-   def func2(x):
-       """does another thing..."""
+    def func2(x):
+        """does another thing..."""
 
-   chain = Chain('my_chain', func1, func2)
+    chain = Chain('my_chain', func1, func2)
 
 The chain fist converts those two functions into two nodes wrapped inside a node-like object called ``Sequence``
 as orchestrator that executes them, and when we call our chain with an input the execution flow
@@ -37,31 +37,31 @@ can be represented like so:
 
 .. mermaid::
 
-   flowchart LR
-   A((start))
-   F1[func1]
-   F2[func2]
-   D1{success?}
-   D2{success?}
-   N([default value])
-   INP([input])
-   O1([result 1])
-   O2([result 2])
-   Z((end))
-   classDef input fill:#1b1c1c,color:#ffffff;
-   A --> INP:::input
-   INP --> F1
-   F1 --> D1
-   D1 --> |YES| O1:::input --> F2
-   D1 --> |NO| N
-   F2 --> D2
-   D2 --> |YES| O2:::input --> Z
-   D2 --> |NO| N
-   N --> Z
+    flowchart LR
+    A((start))
+    F1[func1]
+    F2[func2]
+    D1{success?}
+    D2{success?}
+    N([default value])
+    INP([input])
+    O1([result 1])
+    O2([result 2])
+    Z((end))
+    classDef input fill:#1b1c1c,color:#ffffff;
+    A --> INP:::input
+    INP --> F1
+    F1 --> D1
+    D1 --> |YES| O1:::input --> F2
+    D1 --> |NO| N
+    F2 --> D2
+    D2 --> |YES| O2:::input --> Z
+    D2 --> |NO| N
+    N --> Z
 
 .. note::
 
-   Obviously a chain sequence will fail when any of its *(required)* nodes fail.
+    Obviously a chain sequence will fail when any of its *(required)* nodes fail.
 
 Before diving into further details, let's first talk about controlling the process flow using *options*.
 
@@ -82,7 +82,7 @@ nothing needs to be imported, and we achieve it with easy, declarative and clean
 
 .. note::
 
-   New options might be introduced in future versions to simplify common use cases.
+    New options might be introduced in future versions to simplify common use cases.
 
 .. _iterate-option:
 
@@ -97,11 +97,11 @@ Let us bring back the previous example to analyze it:
 
 .. code-block:: pycon
 
-   >>> from fastchain import Chain
-   >>> from statistics import mean
-   >>> chain = Chain('my_chain', str.split, '*', float, mean)
-   >>> chain('12.5 56.33 54.7 29.65')
-   38.295
+    >>> from fastchain import Chain
+    >>> from statistics import mean
+    >>> chain = Chain('my_chain', str.split, '*', float, mean)
+    >>> chain('12.5 56.33 54.7 29.65')
+    38.295
 
 The body of 'my_chain' was define with this structure ``(str.split, '*', float, mean)``, here we indicate that
 ``float`` will receive an iterable *(namely a list of strings)* and we want to convert each of those strings to float
@@ -109,34 +109,34 @@ not the entire list, the chain processes its data like follows:
 
 .. mermaid::
 
-   flowchart TB
-       START((start)) --> |"'12.5 56.33 54.7 29.65'"| A
-       A[str.strip] --> |"['12.5', '56.33', '54.7', '29.65']"| M
-       M([*]) --> |'12.5'| B1[float] -->|12.5| C
-       M --> |'56.33'| B2[float] -->|56.33| C
-       M --> |'54.7'| B3[float] -->|54.7| C
-       M --> |'29.65'| B4[float] -->|29.65| C
-       C[mean] --> |38.295| END((end))
+    flowchart TB
+        START((start)) --> |"'12.5 56.33 54.7 29.65'"| A
+        A[str.strip] --> |"['12.5', '56.33', '54.7', '29.65']"| M
+        M([*]) --> |'12.5'| B1[float] -->|12.5| C
+        M --> |'56.33'| B2[float] -->|56.33| C
+        M --> |'54.7'| B3[float] -->|54.7| C
+        M --> |'29.65'| B4[float] -->|29.65| C
+        C[mean] --> |38.295| END((end))
 
 It's important to mention that the chain iteration is **lazy** and it wasn't evaluated until ``statistics.mean``
 used it, ``('*', float)`` returned a generator not a list, and we can check that
 
 .. code-block:: pycon
 
-   >>> from fastchain import Chain
-   >>> chain = Chain('test_iter', '*', float)
-   >>> result = chain(['2.1', '5.3'])
-   >>> type(result)
-   <class 'generator'>
+    >>> from fastchain import Chain
+    >>> chain = Chain('test_iter', '*', float)
+    >>> result = chain(['2.1', '5.3'])
+    >>> type(result)
+    <class 'generator'>
 
 And if we need it to be list, we need to specify that:
 
 .. code-block:: pycon
 
-   >>> chain = Chain('test_iter', '*', float, list)
-   >>> result = chain(['2.1', '5.3'])
-   >>> type(result)
-   <class 'list'>
+    >>> chain = Chain('test_iter', '*', float, list)
+    >>> result = chain(['2.1', '5.3'])
+    >>> type(result)
+    <class 'list'>
 
 This behaviour is intentional to optimize memory usage when dealing with big chunks of data in one hand, similar to how |map_docs|,
 |filter_docs| and many other builtins evaluate, and in the other hand it gives users the freedom to choose how to wrap these items
@@ -144,16 +144,16 @@ This behaviour is intentional to optimize memory usage when dealing with big chu
 
 .. warning::
 
-   Nodes with *iteration option* will fail immediately when receiving non-iterable objects.
+    Nodes with *iteration option* will fail immediately when receiving non-iterable objects.
 
 .. note::
 
-   If some or all items of the iteration fail, the failures will be reported but the process will continue
-   even with an empty iterable as result. This might be a feature and flexibility for some use cases and a limitation for others,
-   the truth is that this is a trade off for the previously mentioned optimization *(generator)* as it has no way
-   to check for success without evaluating it.
-   But this can be fixed with and middle function that checks the previous result and raises and error if not met,
-   or can be implemented in the next function.
+    If some or all items of the iteration fail, the failures will be reported but the process will continue
+    even with an empty iterable as result. This might be a feature and flexibility for some use cases and a limitation for others,
+    the truth is that this is a trade off for the previously mentioned optimization *(generator)* as it has no way
+    to check for success without evaluating it.
+    But this can be fixed with and middle function that checks the previous result and raises and error if not met,
+    or can be implemented in the next function.
 
 .. _optional-option:
 
@@ -175,17 +175,17 @@ but first let's remember that it failed:
 
 .. code-block:: pycon
 
-   >>> chain = Chain('my_chain', str.split, '*', float, mean)
-   >>> chain(['12.5', '56.33', '54.7', '29.65'])
-   my_chain/sequence[0]/str.split raised TypeError...
+    >>> chain = Chain('my_chain', str.split, '*', float, mean)
+    >>> chain(['12.5', '56.33', '54.7', '29.65'])
+    my_chain/sequence[0]/str.split raised TypeError...
 
 We can tell the chain that ``str.split`` is just an optional step like so:
 
 .. code-block:: pycon
 
-   >>> chain = Chain('my_chain', '?', str.split, '*', float, mean)
-   >>> chain(['12.5', '56.33', '54.7', '29.65'])
-   38.295
+    >>> chain = Chain('my_chain', '?', str.split, '*', float, mean)
+    >>> chain(['12.5', '56.33', '54.7', '29.65'])
+    38.295
 
 It works now even when the first step fails. Before analyzing how does this work, it's
 should be mentioned that the failure is still captured but not considered fatal,
@@ -193,24 +193,24 @@ and always logged but with a lower level of severity:
 
 .. code-block:: pycon
 
-   >>> from logging import basicConfig, INFO
-   >>> basicConfig(level=INFO)
-   >>> chain(['12.5', '56.33', '54.7', '29.65'])
-   INFO:fastchain:my_chain/sequence[0]/str.split raised TypeError...
-   38.295
+    >>> from logging import basicConfig, INFO
+    >>> basicConfig(level=INFO)
+    >>> chain(['12.5', '56.33', '54.7', '29.65'])
+    INFO:fastchain:my_chain/sequence[0]/str.split raised TypeError...
+    38.295
 
 And with that said, let's illustrate how the chain interpreted this failure:
 
 .. mermaid::
 
-   flowchart LR
-       START([input]) --> A
-       A["optional node"] --> D
-       D{success?} --> |Yes| OUT
-       D{success?} --> |No| IN
-       IN([forward input]) --> B
-       OUT([return result]) --> B
-       B["next node"]
+    flowchart LR
+        START([input]) --> A
+        A["optional node"] --> D
+        D{success?} --> |Yes| OUT
+        D{success?} --> |No| IN
+        IN([forward input]) --> B
+        OUT([return result]) --> B
+        B["next node"]
 
 As this chart shows, an optional node is ignored if it fails and its input is passed to the next
 node, but if it succeed the result is passed to the next node.
@@ -232,12 +232,12 @@ are part of the same block inside a loop, and to make it happen the definition w
 
 .. code-block:: pycon
 
-   >>> from fastchain import Chain
-   ... from statistics import mean
-   ... from math import sqrt
-   >>> chain = Chain('my_chain', str.split, '*', (float, sqrt), mean)
-   >>> chain('12.5 56.33 54.7 29.65')
-   5.970497883795522
+    >>> from fastchain import Chain
+    ... from statistics import mean
+    ... from math import sqrt
+    >>> chain = Chain('my_chain', str.split, '*', (float, sqrt), mean)
+    >>> chain('12.5 56.33 54.7 29.65')
+    5.970497883795522
 
 Note that ``(float, sqrt)`` is now a sub sequence, the main sequence contains 3 units
 ``str.split``, ``(float, sqrt)`` and ``mean``, the second unit itself has two units ``float`` and ``sqrt``,
@@ -246,59 +246,59 @@ And to understand the processing step by step let's visualize it with another fl
 
 .. mermaid::
 
-   flowchart TD
-       START((start))
-       END((end))
-       A[str.split]
-       M([*])
-       subgraph iteration 0
-       B1[float]
-       C1[sqrt]
-       end
-       subgraph iteration 1
-       B2[float]
-       C2[sqrt]
-       end
-       subgraph iteration 2
-       B3[float]
-       C3[sqrt]
-       end
-       subgraph iteration 3
-       B4[float]
-       C4[sqrt]
-       end
-       D[mean]
+    flowchart TD
+        START((start))
+        END((end))
+        A[str.split]
+        M([*])
+        subgraph iteration 0
+        B1[float]
+        C1[sqrt]
+        end
+        subgraph iteration 1
+        B2[float]
+        C2[sqrt]
+        end
+        subgraph iteration 2
+        B3[float]
+        C3[sqrt]
+        end
+        subgraph iteration 3
+        B4[float]
+        C4[sqrt]
+        end
+        D[mean]
 
-       START --> |"'12.5 56.33 54.7 29.65'"| A
-       A --> |"['12.5', '56.33', '54.7', '29.65']"| M
-       M --> |'12.5'| B1 --> |12.5| C1 --> |3.535...| D
-       M --> |'56.33'| B2 --> |56.33| C2 --> |7.505...| D
-       M --> |'54.7'| B3 --> |54.7| C3 --> |7.395...| D
-       M --> |'29.65'| B4 --> |29.65| C4 --> |5.445...| D
-       D --> |5.970...| END
+        START --> |"'12.5 56.33 54.7 29.65'"| A
+        A --> |"['12.5', '56.33', '54.7', '29.65']"| M
+        M --> |'12.5'| B1 --> |12.5| C1 --> |3.535...| D
+        M --> |'56.33'| B2 --> |56.33| C2 --> |7.505...| D
+        M --> |'54.7'| B3 --> |54.7| C3 --> |7.395...| D
+        M --> |'29.65'| B4 --> |29.65| C4 --> |5.445...| D
+        D --> |5.970...| END
 
 .. warning::
 
-   It is not allowed to pass and empty group, trying it will cause a ``ValueError``, same as
-   trying to create a chain with no functions
+    It is not allowed to pass and empty group, trying it will cause a ``ValueError``, same as
+    trying to create a chain with no functions
 
-   .. code-block:: pycon
+    .. code-block:: pycon
 
-      >>> from fastchain import Chain
-      >>> Chain('empty')
-      Traceback (most recent call last):
-        ...
-      ValueError: a sequence must contain at least one node
-      >>> Chain('my_chain', str, ())
-      Traceback (most recent call last):
-        ...
-      ValueError: a sequence must contain at least one node
+        >>> from fastchain import Chain
+        >>> Chain('empty')
+        Traceback (most recent call last):
+          ...
+        ValueError: a sequence must contain at least one node
+        >>> Chain('my_chain', str, ())
+        Traceback (most recent call last):
+          ...
+        ValueError: a sequence must contain at least one node
 
 .. note::
 
-   ``()`` are not always used for sub-sequencing, but sometimes only to wrap a single function together with
-   an option or multiple options for branches in particular (*explained bellow* :ref:`Chain models <chain-models>`),
-   and for completeness know that ``('*', float)`` will be parsed to a single node and not a sequence.
+    ``()`` are not always used for sub-sequencing, but sometimes only to wrap a single function together with
+    an option or multiple options for branches in particular (*explained bellow* :ref:`Chain models <chain-models>`),
+    and for completeness know that ``('*', float)`` will be parsed to a single node and not a sequence.
 
 Chainable
 ---------
@@ -324,17 +324,17 @@ or as simple as this task is, we use a ``lambda`` function.
 
 .. code-block:: pycon
 
-   >>> from fastchain import Chain
-   >>> cube = Chain('cube-number', lambda x: x ** 3, lambda x: f"the cube is {x}")
-   >>> cube(4)
-   'the cube is 64'
+    >>> from fastchain import Chain
+    >>> cube = Chain('cube-number', lambda x: x ** 3, lambda x: f"the cube is {x}")
+    >>> cube(4)
+    'the cube is 64'
 
 Now watch what gets reported in case of failure
 
 .. code-block:: pycon
 
-   >>> cube(None)
-   cube-number/sequence[0]/<lambda> raised TypeError...
+    >>> cube(None)
+    cube-number/sequence[0]/<lambda> raised TypeError...
 
 The title said that a <lambda> function raised an exception and that wasn't super helpful *(although we can still identify it from the sequence index)*,
 it can be confusing since we are using more than one lambda.
@@ -342,12 +342,12 @@ A better way to do this is by using ``chainable``:
 
 .. code-block:: pycon
 
-   >>> from fastchain import Chain, chainable
-   >>> cube = Chain('cube-number',
-   ...              chainable(lambda x: x ** 3, name="cube_evaluation"),
-   ...              chainable(lambda x: f"the cube is {x}", name="cube_representation"))
-   >>> cube(None)
-   cube-number/sequence[0]/cube_evaluation raised TypeError...
+    >>> from fastchain import Chain, chainable
+    >>> cube = Chain('cube-number',
+    ...              chainable(lambda x: x ** 3, name="cube_evaluation"),
+    ...              chainable(lambda x: f"the cube is {x}", name="cube_representation"))
+    >>> cube(None)
+    cube-number/sequence[0]/cube_evaluation raised TypeError...
 
 No doubt that this log was more helpful than the previous, but naming nodes is not exclusively related
 to lambda functions and can be used for all functions to give more specific names to a processing unit.
@@ -362,28 +362,28 @@ Take for example a chain expected to return a number
 
 .. code-block:: pycon
 
-   >>> from fastchain import Chain, chainable
-   >>> chain = Chain('double', chainable(lambda x: x * 2, default=0))
-   >>> result = chain(5)
-   >>> result
-   10
-   >>> result = chain(None)
-   double/<lambda> raised TypeError...
-   >>> result
-   0
+    >>> from fastchain import Chain, chainable
+    >>> chain = Chain('double', chainable(lambda x: x * 2, default=0))
+    >>> result = chain(5)
+    >>> result
+    10
+    >>> result = chain(None)
+    double/<lambda> raised TypeError...
+    >>> result
+    0
 
 .. note::
    
-   This concept is more useful for :ref:`models <chain-models>` but now as we're dealing with sequences,
-   it is important to note that when a failure occurs, the sequence returns the **last required node's default**.
+    This concept is more useful for :ref:`models <chain-models>` but now as we're dealing with sequences,
+    it is important to note that when a failure occurs, the sequence returns the **last required node's default**.
 
-   .. code-block:: python3
+    .. code-block:: python3
 
-      Chain('testing_default', chainable(func1, default=default1), chainable(func2, default=default2))
-      # in case of any failure (func1 or func2) default2 is returned
+        Chain('testing_default', chainable(func1, default=default1), chainable(func2, default=default2))
+        # in case of any failure (func1 or func2) default2 is returned
 
-      Chain('testing_default', chainable(func1, default=default1), '?', chainable(func2, default=default2))
-      # in case of any failure (func1 or func2) default1 is returned
+        Chain('testing_default', chainable(func1, default=default1), '?', chainable(func2, default=default2))
+        # in case of any failure (func1 or func2) default1 is returned
 
 For default values that need to be freshly generated for each call *(especially for mutable objects)*, ``fastchain.chainable``
 provides an alternative keyword ``default_factory`` which takes a 0 argument function that returns a default value.
@@ -392,23 +392,23 @@ We can demonstrate it with this example:
 
 .. code-block:: pycon
 
-   >>> chain = Chain('split-by-commas', chainable(lambda s: s.split(','), default_factory=list))
-   >>> result = chain('a,b,c,d')
-   >>> result
-   ['a', 'b', 'c', 'd']
-   >>> result = chain(None)
-   split-by-commas/<lambda> raised AttributeError...
-   >>> result
-   []
+    >>> chain = Chain('split-by-commas', chainable(lambda s: s.split(','), default_factory=list))
+    >>> result = chain('a,b,c,d')
+    >>> result
+    ['a', 'b', 'c', 'd']
+    >>> result = chain(None)
+    split-by-commas/<lambda> raised AttributeError...
+    >>> result
+    []
 
 .. note::
 
-   To summarize, when a failure occurs this is what happens:
+    To summarize, when a failure occurs this is what happens:
 
-   + If no default or default_factory are specified, ``None`` gets returned,
-   + If default is specified, ``default`` is returned,
-   + If default_factory is specified, ``default_factory()`` is returned,
-   + And if both default and default_factory are specified, the default will be ignored.
+    + If no default or default_factory are specified, ``None`` gets returned,
+    + If default is specified, ``default`` is returned,
+    + If default_factory is specified, ``default_factory()`` is returned,
+    + And if both default and default_factory are specified, the default will be ignored.
 
 Partial argument
 ~~~~~~~~~~~~~~~~
@@ -421,23 +421,23 @@ Let's say that we want to round a number to two decimal places, we can do it in 
 
 .. code-block:: python3
 
-   # define a function the use it
-   def round_2d(number):
-      return round(number, 2)
-   Chain('round_example', round_2d)
+    # define a function the use it
+    def round_2d(number):
+       return round(number, 2)
+    Chain('round_example', round_2d)
 
-   # use lambda function
-   Chain('round_example', lambda n: round(n, 2))
+    # use lambda function
+    Chain('round_example', lambda n: round(n, 2))
 
-   # use functools.partial
-   from functools import partial
-   Chain('round_example', partial(round, ndigits=2))
+    # use functools.partial
+    from functools import partial
+    Chain('round_example', partial(round, ndigits=2))
 
 But the same can be done by ``chainable``
 
 .. code-block:: python3
 
-   Chain('round_example', chainable(round, name='round_2d', ndigits=2))
+    Chain('round_example', chainable(round, name='round_2d', ndigits=2))
 
 ``chainable`` acts exactly like |functools.partial_docs|
 when it gets positional and/or keyword arguments, actually it uses ``functools.partial`` under the hood.
@@ -446,8 +446,8 @@ Keep in mind that positional argument will be passed before the chain argument a
 
 .. code-block:: python3
 
-   chain = Chain('name', chainable(function, arg1, arg2, key1=arg3, key2=arg4))
-   chain(arg) # calls function(arg1, arg2, arg, key1=arg3, key2=arg4)
+    chain = Chain('name', chainable(function, arg1, arg2, key1=arg3, key2=arg4))
+    chain(arg) # calls function(arg1, arg2, arg, key1=arg3, key2=arg4)
 
 And the following keywords (``name``, ``default``, ``default_factory``) are reserved by ``chainable`` and
 will not be partially passed.
@@ -456,21 +456,21 @@ Finally let's end with a usage example:
 
 .. code-block:: pycon
 
-   >>> from fastchain import Chain, chainable
-   >>> from statistics import mean
-   >>> chain = Chain('my_chain',
-   ...               chainable(str.split, sep=',', name='split-by-commas'),
-   ...               '*',
-   ...               float,
-   ...               mean,
-   ...               chainable(round, ndigits=2, name='round-2d'))
-   >>> chain('12.23, 54.56, 41.88')
-   36.22
+    >>> from fastchain import Chain, chainable
+    >>> from statistics import mean
+    >>> chain = Chain('my_chain',
+    ...               chainable(str.split, sep=',', name='split-by-commas'),
+    ...               '*',
+    ...               float,
+    ...               mean,
+    ...               chainable(round, ndigits=2, name='round-2d'))
+    >>> chain('12.23, 54.56, 41.88')
+    36.22
 
 .. note::
 
-   ``chainable`` is not a replacement for ``functools.partial`` but a superset for a cleaner code.
-   if no name or default needs to be set, one can simply use the builtin ``functools.partial``.
+    ``chainable`` is not a replacement for ``functools.partial`` but a superset for a cleaner code.
+    if no name or default needs to be set, one can simply use the builtin ``functools.partial``.
 
 
 .. _chain-models:

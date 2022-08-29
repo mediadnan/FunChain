@@ -14,6 +14,7 @@ release = '0.1.0'
 
 extensions = [
     "sphinx.ext.autodoc",
+    "sphinx.ext.mathjax",
     "sphinxcontrib.mermaid",
 ]
 
@@ -27,7 +28,7 @@ master_doc = 'index'
 
 html_theme = 'furo'
 
-html_title = f"{project} (v{version}) docs"
+html_title = f"{project} {version}"
 
 html_short_title = f"{project} docs"
 
