@@ -11,7 +11,7 @@ And makes it easy to introduce another to capture reports or even multiple handl
 Default handler
 ===============
 By default chains come with a **report handler**, the one that logs failures.
-It uses the standard |logging.Logger_docs| to report failures with a level ``logging.ERROR`` for fatal failures
+It uses the standard |logging.Logger| to report failures with a level ``logging.ERROR`` for fatal failures
 *(from required components)* and ``logging.INFO`` for expected ones *(from optional components)*.
 
 .. code-block:: pycon
@@ -389,10 +389,3 @@ And to better understand it we need first to understand how chains recursively p
 The simplest scenario is a chain with a single node :code:`Chain('single-node', func)`
 
 .. TODO
-
-
-.. .. .. .. .. .. .. .. .. .. .. .. .. .. .. .. .. .. .. .. .. .. .. .. .. .. .. .. .. .. .. .. .. .. .. .. .. ..
-
-.. |logging.Logger_docs| raw:: html
-
-   <a href="https://docs.python.org/3/library/logging.html#logging.Logger" target="_blank">logging.Logger</a>

@@ -3,7 +3,7 @@ FastChain's Documentation
 =========================
 
 Introduction
-------------
+============
 FastChain is a python based development tool aiming to ease chaining functions by safely
 passing results from a function to the next and safely handle error and report it source, input and the error details.
 
@@ -74,20 +74,33 @@ And finally, it's supposed to give it users the following benefits:
   features and bug-fixing either discovered by me or anyone using it.
 
 Audience
---------
+========
 This library is targeting python developers that do some kind of data processing remotely in particular.
+
+Installation
+============
+Installing FastChain from PyPI ::
+
+    pip install fastchain
 
 Content
 -------
 This document contains the following pages
 
 .. toctree::
-   :includehidden:
-   :maxdepth: 2
-   :caption: User Guide
+    :includehidden:
+    :maxdepth: 2
+    :caption: User Guide
 
-   user_guide/getting_started
-   user_guide/designing_workflows
-   user_guide/reports
-   user_guide/bigger_projects
-   user_guide/best_practices
+    user_guide/getting_started
+    user_guide/designing_workflows/index
+    user_guide/custom_nodes
+    user_guide/reports
+    user_guide/chain_groups
+    user_guide/best_practices
+
+.. toctree::
+    :maxdepth: 2
+    :caption: reference
+
+    api_reference.rst

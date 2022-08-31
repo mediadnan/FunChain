@@ -4,26 +4,8 @@ Getting started
 In this chapter we will be making our first steps and discover FastChain and its basic API and features,
 advance topics will be covered on next chapters.
 
-Installation
-============
-To start using it we need first to install from PyPI
-
-.. code-block:: shell
-
-    pip install fastchain
-
-However, if you want to test latest features before releases, you can get the newest instance
-directly from the Github Repository *(not recommended for production)*
-
-.. code-block:: shell
-
-    pip install git+https://github.com/mediadnan/fastchain.git#egg=fastchain
-
-We can check if the installation went as expected by running :code:`pip show fastchain`,
-and after making sure it was correctly installed we can start using it.
-
-Creating a chain
-================
+Creating our first chain
+========================
 The main entrypoint for using fastchain tools is to create a chain object, it can be created the same way one would
 create a function that does some processing and then call it.
 The difference between having a regular function responsible for performing multiple processing steps and
@@ -38,7 +20,7 @@ Basic usage
 To get our hands dirty let's start by an example, our chain will calculates the average from numbers given in string,
 more specifically `chain('12.5 56.33 54.7 29.65') -> 38.295`
 
-for that we will be importing a builtin function |statistics.mean_docs| and then import :code:`fastchain.Chain`
+for that we will be importing a builtin function |statistics.mean| and then import :ref:`fastchain.Chain <fastchain.Chain>`
 
 .. code-block:: pycon
 
@@ -123,23 +105,8 @@ Lets try another exception in a different step
     >>> result
     32.28333333333333
 
-Of course logging can be turned off :code:`chain = Chain('chain_name', str.split, ..., log_failures=False)`
-and other handlers can be added to handle reports `chain.add_report_handler(my_handler)` (learn more about :ref:`reports <reports>`)
+Of course logging can be turned off ``chain = Chain('chain_name', str.split, ..., log_failures=False)``
+and other handlers can be added to handle reports ``chain.add_report_handler(my_handler)`` (learn more about :ref:`reports <reports>`)
 or keep logging but with a custom logger `..., logger='my_logger')`
 by passing the name of that logger `'my_logger'` or even passing the logger itself `..., logger=logger)`
-if `logger` an instance of the builtin |logging.Logger_docs|
-
-
-Chain API
----------
-
-.. autoclass:: fastchain.Chain
-   :members: name, add_report_handler
-
-.. |statistics.mean_docs| raw:: html
-
-   <a href="https://docs.python.org/3/library/functools.html#functools.partial" target="_blank">statistics.mean</a>
-
-.. |logging.Logger_docs| raw:: html
-
-   <a href="https://docs.python.org/3/library/logging.html#logging.Logger" target="_blank">Logger</a>
+if `logger` an instance of the builtin |logging.Logger|
