@@ -123,7 +123,7 @@ def test_configuration_namespace(chain_args):
 def test_configuration_namespace_from_chaing_roup(chain_args):
     assert ChainGroup('testgroup')(*chain_args).name == 'testgroup::chain'
     assert ChainGroup('testgroup')(*chain_args, namespace="blabla").name == 'testgroup::chain'
-    assert ChainGroup('testgroup', concatenate_namespace=False)(*chain_args).name == 'chain'
+    assert ChainGroup('testgroup', prefix=False)(*chain_args).name == 'chain'
 
 
 @pytest.mark.parametrize('lf_kwargs, failures_logged', [

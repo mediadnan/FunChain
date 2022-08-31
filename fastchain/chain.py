@@ -170,22 +170,22 @@ class Chain:
 
 class ChainGroup:
     """utility object for making a group of chains with the same configuration and name prefix"""
-    __slots__ = '__name', '__kwargs', '__concatenate_namespace', '__registered_chains__'
+    __slots__ = '__name', '__kwargs', '__prefix', '__registered_chains__'
 
-    def __init__(self, name: str, *, concatenate_namespace: bool = True, **kwargs):
+    def __init__(self, name: str, *, prefix: bool = True, **kwargs):
         """
         new chain groups are defined with a name and optionally common chain configurations
 
         :param name: name that identifies a group of chains
         :type name: str
-        :param concatenate_namespace: if True the chain's name will be <namespace>::<name> else <name> (default True)
-        :type concatenate_namespace: bool
+        :param prefix: if True the chain's name will be <namespace>::<name> else <name> (default True)
+        :type prefix: bool
         :keyword log_failures: whether to log failed with standard logging (default True)
         :keyword logger: custom logger to be used in logging (default logger('fastchain'))
         :keyword print_stats: whether to print statistics at the end of each call
         """
         self.__name: str = validate_name(name)
-        self.__concatenate_namespace: bool = concatenate_namespace
+        self.__prefix: bool = prefix
         self.__kwargs: dict[str, tp.Any] = kwargs
         self.__registered_chains__: dict[str, Chain] = {}
 
@@ -236,7 +236,7 @@ class ChainGroup:
         if name in self:
             raise ValueError("a chain with the same name already been registered.")
         kwargs.update(self.__kwargs)
-        if self.__concatenate_namespace:
+        if self.__prefix:
             kwargs['namespace'] = self.name
         new_chain = Chain(name, *chainables, **kwargs)
         self.__registered_chains__[name] = new_chain

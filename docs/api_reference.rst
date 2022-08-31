@@ -8,8 +8,14 @@ API reference
 
 Chain object
 ============
-
 .. autoclass:: fastchain.Chain
     :members:
-    :inherited-members:
+    :special-members: __call__
 
+.. _fastchain.ChainGroup:
+
+Chain factory
+=============
+.. autoclass:: fastchain.ChainGroup
+    :members:
+    :special-members: __call__
