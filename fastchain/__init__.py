@@ -7,8 +7,7 @@ and it reports statistics and failures after each execution.
 Learn more by visiting the documentation page: https://fast-chain.readthedocs.io/
 And visit our source repository on GitHub: https://github.com/mediadnan/FastChain
 """
-from .chain import Chain, ChainGroup
-from .factory import funfact, chainable, match
-
-__version__ = '0.1.0'
-__all__ = 'ChainGroup', 'Chain', 'funfact', 'chainable', 'match'
+# from .factory import funfact, chainable, match
+#
+# __version__ = '0.1.0'
+# __all__ = 'funfact', 'chainable', 'match'

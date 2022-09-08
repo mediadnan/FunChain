@@ -36,6 +36,24 @@ and check some few properties of the chain
 
     >>> chain  # the chain representation
     <chain 'my_chain'>
+    >>> chain.NAME  # the chain name
+    'my_chain'
+    >>> len(chain)  # chain size (str.split, float, mean)
+    3
+
+Naming chains is mandatory and helps a lot to identify them from reports when you have many chains,
+Now if we want to use our chain all we have to do is call it with the input value
+    >>> chain  # the chain representation
+    <chain 'my_chain'>
+    >>> chain.NAME  # the chain name
+    'my_chain'
+    >>> len(chain)  # chain size (str.split, float, mean)
+    3
+
+Naming chains is mandatory and helps a lot to identify them from reports when you have many chains,
+Now if we want to use our chain all we have to do is call it with the input value
+    >>> chain  # the chain representation
+    <chain 'my_chain'>
     >>> chain.name  # the chain name
     'my_chain'
     >>> len(chain)  # chain size (str.split, float, mean)

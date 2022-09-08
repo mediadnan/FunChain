@@ -2,7 +2,7 @@
 Custom nodes
 ============
 
-Chainable
+Node
 =========
 FastChain comes with a utility to customize nodes, namely the ``fastchain.chainable`` function
 that takes a function *(or any callable)* as first argument and adds metadata to create nodes with specific properties,
