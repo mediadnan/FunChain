@@ -75,7 +75,7 @@ class Reporter:
 def print_report(report: Report) -> None:
     """prints report metrics using print()"""
     print("-- STATS -----------------------------",
-          f"   success percentage:        {round(report['rate'] * 100)}%",
+          f"   success percentage:        {report['rate']:.0%}",
           f"   successful operations:     {report['succeeded']}",
           f"   unsuccessful operations:   {report['failed']}",
           f"   unreached nodes:           {report['missed']}",

@@ -12,13 +12,14 @@ from .nodes import (Node,
                     ListModel)
 from .options import OPTIONS, set_default
 
-PASS = Pass()  # fastchain only needs one instance of Pass
+
+PASS = Pass()
 
 
 class NodeFactory(abc.ABC):
     @abc.abstractmethod
     def __call__(self) -> Node:
-        """Returns a brand-new node each time called"""
+        """Returns a new node each time called"""
 
 
 class match(NodeFactory):  # noqa: used as a function
@@ -33,7 +34,7 @@ class match(NodeFactory):  # noqa: used as a function
         self._branches: tuple = branches
 
     def __call__(self) -> Match:
-        return Match([_parse(member) for member in self._branches], self._name)
+        return Match([parse(member) for member in self._branches], self._name)
 
 
 class chainable(NodeFactory):
@@ -65,7 +66,7 @@ class chainable(NodeFactory):
         return self._set_default(Chainable(self._function, self._name))
 
 
-def _parse(obj) -> Node:
+def parse(obj) -> Node:
     if isinstance(obj, NodeFactory):
         return obj()
     elif callable(obj):
@@ -79,13 +80,14 @@ def _parse(obj) -> Node:
                     raise ValueError(f"Unknown options {item!r}")
                 options.append(OPTIONS[item])
             else:
-                node = _parse(item)
+                node = parse(item)
                 if node is PASS:
                     options = []
                     continue
                 for option in reversed(options):
                     node = option(node)
                 nodes.append(node)
+                options = []
         if len(nodes) == 1:
             return nodes[0]
         return Sequence(nodes)
@@ -100,18 +102,12 @@ def _parse(obj) -> Node:
 
 def _parse_list(objs: Iterable) -> list[Node]:
     """Converts a list of objects into a list of nodes"""
-    return [_parse(obj) for obj in objs]
+    return [parse(obj) for obj in objs]
 
 
 def _parse_dict(objs: Mapping) -> dict[Any, Node]:
     """Converts a dict of objects into a dict of nodes"""
-    return {key: _parse(obj) for key, obj in objs.items()}
-
-
-def parse(obj, root: str | None = None) -> Node:
-    node = _parse(obj)
-    node.set_title(root)
-    return node
+    return {key: parse(obj) for key, obj in objs.items()}
 
 
 Spec = ParamSpec('Spec')

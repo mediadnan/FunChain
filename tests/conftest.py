@@ -1,41 +1,44 @@
-import pytest
-from fastchain.monitoring import Reporter
+from pytest import fixture
+from fastchain import monitoring, chains
 
 
-@pytest.fixture
+@fixture
 def increment():
     """simple function needed for testing"""
-    def inc(number: int) -> int:
+    def func(number: int) -> int:
         return number + 1
-    inc.__qualname__ = 'increment'
-    return inc
+    func.__name__ = 'increment'
+    func.__qualname__ = 'increment'
+    return func
 
 
-@pytest.fixture
+@fixture
 def double():
     """alternative function needed for testing"""
-    def dbl(number: int) -> int:
+    def func(number: int) -> int:
         return number * 2
-    dbl.__qualname__ = 'double'
-    return dbl
+    func.__name__ = 'double'
+    func.__qualname__ = 'double'
+    return func
 
 
-@pytest.fixture
-def fake_error():
-    """exception used for tests"""
-    return Exception('test error')
-
-
-@pytest.fixture
-def fail(fake_error):
+@fixture
+def fail():
     """function that does nothing but raises an exception"""
-    def fl(*_, **__):
-        raise fake_error
-    fl.__qualname__ = 'fail'
-    return fl
+    def func(*_, **__):
+        raise Exception("Failed for test")
+    func.__name__ = 'fail'
+    func.__qualname__ = 'fail'
+    return func
 
 
-@pytest.fixture
+@fixture
 def reporter():
     """returns a new reporter"""
-    return Reporter()
+    return monitoring.Reporter()
+
+
+@fixture
+def mock_registry(monkeypatch):
+    monkeypatch.setattr(chains, 'REGISTER', True)
+    monkeypatch.setattr(chains, '_registry_', {})

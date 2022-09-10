@@ -234,7 +234,6 @@ def test_wrapper_expose(NodeWrapperType):
     wrapper: NodeWrapper = NodeWrapperType(Chainable(func))
 
 
-
 # Test setting title
 set_title_composition = [(), ('root',), ('root', 'branch')]
 
