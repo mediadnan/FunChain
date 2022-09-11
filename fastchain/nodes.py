@@ -2,12 +2,9 @@ import abc
 from functools import partial, partialmethod
 from itertools import chain
 from types import NoneType
-from typing import Any, Generator, TypeVar, Iterable, Callable
+from typing import Any, Generator, Iterable, Callable
 
 from .monitoring import Reporter
-
-
-T = TypeVar('T')
 
 
 # +-+ Abstract base classes +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
@@ -15,12 +12,13 @@ class Node(abc.ABC):
     """Base class for all chain nodes"""
     __slots__ = 'name', 'title', 'core', 'optional'
 
-    core: T
+    core: Any
     name: str
     title: str
     optional: bool
 
-    def __init__(self, core: T, name: str) -> None:
+    def __init__(self, core, name: str) -> None:
+        """Nodes should not be created directly by users"""
         if not isinstance(name, str):
             raise TypeError(f"The {self.__class__.__name__} name must be str")
         self.name = name
@@ -28,16 +26,13 @@ class Node(abc.ABC):
         self.core = core
         self.optional = False
 
-    def __repr__(self) -> str:
-        return f"<{self.__class__.__name__} '{self.name}'>"
-
     @abc.abstractmethod
     def __call__(self, input, reporter: Reporter) -> tuple[bool, Any]:
         """Processes the input and returns the success state and result"""
 
     @property
     @abc.abstractmethod
-    def expose(self) -> dict['Node', bool]:
+    def expose(self) -> dict['Chainable', bool]:
         """Exposes all the functions and whether they are required"""
 
     def default(self) -> Any:
@@ -56,6 +51,32 @@ class Node(abc.ABC):
         if branch is not None:
             root = f'{root}[{branch}]'
         self.title = f'{root}.{self.name}'
+
+
+class NodeWrapper(Node, abc.ABC):
+    """Base class for all the node wrappers"""
+    symbol: str
+    core: Node
+
+    def __init__(self, core: Node) -> None:
+        if not isinstance(core, Node):
+            raise TypeError(f"{self.__class__.__name__} only wraps {Node} instances")
+        super().__init__(core, core.name + self.symbol)
+
+    def failure(self, input, error: Exception, reporter: Reporter) -> None:
+        self.core.failure(input, error, reporter)
+
+    def default(self) -> Any:
+        return self.core.default()
+
+    @property
+    def expose(self) -> dict['Chainable', bool]:
+        return {node: (required and not self.optional)
+                for node, required in self.core.expose.items()}
+
+    def set_title(self, root: str | None = None, branch: Any = None, /) -> None:
+        super(NodeWrapper, self).set_title(root, branch)
+        self.core.set_title(root, branch)
 
 
 class NodeGroup(Node, abc.ABC):
@@ -78,7 +99,7 @@ class NodeGroup(Node, abc.ABC):
         """Returns an iterable of tuples with keys and node members"""
 
     @property
-    def expose(self) -> dict[Node, bool]:
+    def expose(self) -> dict['Chainable', bool]:
         """Returns a dict mapping chainables to whether they're required"""
         return {node: (required and not self.optional)
                 for node, required in
@@ -99,7 +120,7 @@ class NodeSequence(NodeGroup, abc.ABC):
         if not (isinstance(nodes, list) and all(isinstance(node, Node) for node in nodes)):
             raise TypeError(f"{type(self).__name__} nodes must be a list of {Node} objects")
         elif not nodes:
-            raise ValueError(f"Cannot create an empty {type(self).__name__}")
+            raise ValueError(f"Cannot create an empty {type(self).default_name}")
         super().__init__(nodes, name)
 
     @property
@@ -119,7 +140,7 @@ class NodeMapping(NodeGroup, abc.ABC):
         if not (isinstance(nodes, dict) and all(isinstance(node, Node) for node in nodes.values())):
             raise TypeError(f"{type(self).__name__} nodes must be a dict mapping keys to {Node} objects")
         elif not nodes:
-            raise ValueError(f"Cannot create an empty {type(self).__name__}")
+            raise ValueError(f"Cannot create an empty {type(self).default_name}")
         super().__init__(nodes, name)
 
     @property
@@ -129,31 +150,6 @@ class NodeMapping(NodeGroup, abc.ABC):
     @property
     def branches(self) -> Generator[tuple[Any, Node], None, None]:
         yield from self.core.items()
-
-
-class NodeWrapper(Node, abc.ABC):
-    """Base class for all the node wrappers"""
-    core: Node
-
-    def __init__(self, core: Node) -> None:
-        if not isinstance(core, Node):
-            raise TypeError(f"{self.__class__.__name__} only wraps {Node} instances")
-        super().__init__(core, core.name)
-
-    def failure(self, input, error: Exception, reporter: Reporter) -> None:
-        self.core.failure(input, error, reporter)
-
-    def default(self) -> Any:
-        return self.core.default()
-
-    @property
-    def expose(self) -> dict[Node, bool]:
-        return {node: (required and not self.optional)
-                for node, required in self.core.expose.items()}
-
-    def set_title(self, root: str | None = None, branch: Any = None, /) -> None:
-        super(NodeWrapper, self).set_title(root, branch)
-        self.core.set_title(root, branch)
 
 
 # +-+ Nodes section +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
@@ -189,7 +185,7 @@ class Chainable(Node):
         return type(function).__qualname__
 
     @property
-    def expose(self) -> dict[Node, bool]:
+    def expose(self) -> dict['Chainable', bool]:
         return {self: not self.optional}
 
 
@@ -206,7 +202,7 @@ class Pass(Node):
         return True, input
 
     @property
-    def expose(self) -> dict[Node, bool]:
+    def expose(self) -> dict[Chainable, bool]:
         """Returns an empty dict"""
         return {}
 
@@ -223,7 +219,7 @@ class Sequence(NodeSequence):
         """Initializes and validates the sequence"""
         super(Sequence, self).__init__(nodes, name)
         if all((node.optional for node in nodes)):
-            raise ValueError("At least one node must be required, or make the whole Sequence optional")
+            raise ValueError("Cannot create a sequence with only optional nodes")
 
     def __call__(self, input, reporter: Reporter) -> tuple[bool, Any]:
         """Executes the nodes by piping results until the last one"""
@@ -288,7 +284,7 @@ class Match(NodeSequence):
         """Initializes and validates the match nodes"""
         super().__init__(nodes, name)
         if len(nodes) < 2:
-            raise ValueError("The Match should at least contain two branches")
+            raise ValueError("Cannot create a match with a single branch")
 
     def __call__(self, inputs: Iterable, reporter: Reporter) -> tuple[bool, list]:
         """Executes each node branch with a corresponding input"""
@@ -313,6 +309,8 @@ class Match(NodeSequence):
 
 # +-+ Node options section +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 class Loop(NodeWrapper):
+    symbol = '*'
+
     """Wraps a node and executes it for each item of an iterable input"""
     def __call__(self, inputs: Iterable, reporter: Reporter) -> tuple[bool, Generator]:
         """Executes the node for each item of the inputs"""

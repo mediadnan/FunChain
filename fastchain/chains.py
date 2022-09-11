@@ -2,7 +2,7 @@ import itertools
 import re
 from operator import countOf
 from typing import Any, Pattern, Callable, TypeAlias, Union
-from .nodes import Node
+from .nodes import Node, Chainable
 from .factory import parse
 from .monitoring import Reporter, Report, print_report, failures_logger
 
@@ -21,19 +21,24 @@ class Chain:
                  '__nodes',
                  '__report_handlers')
 
-    def __init__(self, core: Node, name: str | None = None) -> None:
+    def __init__(
+            self,
+            core: Node,
+            name: str | None = None,
+            nodes: frozenset[Chainable] | None = None,
+            required_nodes: int | None = None
+    ) -> None:
         """
         Initializes the new chain with a pre parsed core
 
         :param core: A Node or NodeGroup subclass instance
         :param name: An optional chain name (default 'unregistered')
         """
-        nodes = core.expose
         self.__name: str = name if name is not None else 'unregistered'
         self.__core: Node = core
-        self.__nodes: set = set(nodes)
+        self.__nodes: frozenset = nodes
         self.__total_nodes: int = len(nodes)
-        self.__required_nodes: int = countOf(nodes.values(), True)
+        self.__required_nodes: int = required_nodes
         self.__report_handlers: dict[bool, list[ReportHandler]] = {True: [], False: []}
 
     def add_report_handler(self, handler: ReportHandler, always: bool = False) -> None:
@@ -154,8 +159,13 @@ def make(
             if not VALID_NAME.match(name_part):
                 raise ValueError(f"{name_part!r} is not a valid name")
     core = parse(components)
+    nodes = core.expose
+    if not nodes:
+        raise ValueError("Cannot create a chain without nodes")
+    elif not any(nodes.values()):
+        raise ValueError("Cannot create a chain with only optional nodes")
     core.set_title(name)
-    chain = Chain(core, name)
+    chain = Chain(core, name, frozenset(nodes), countOf(nodes.values(), True))
     if log_failures:
         chain.add_report_handler(failures_logger(logger), True)
     if print_stats:

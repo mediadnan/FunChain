@@ -23,18 +23,13 @@ class NodeFactory(abc.ABC):
 
 
 class match(NodeFactory):  # noqa: used as a function
-    __slots__ = '_branches', '_name'
+    __slots__ = '_branches',
 
-    def __init__(self, *branches, name: str | None = None) -> None:
-        if name is None:
-            name = 'match'
-        elif not isinstance(name, str):
-            raise TypeError("The match name must be str")
-        self._name: str = name
+    def __init__(self, *branches) -> None:
         self._branches: tuple = branches
 
     def __call__(self) -> Match:
-        return Match([parse(member) for member in self._branches], self._name)
+        return Match([parse(member) for member in self._branches])
 
 
 class chainable(NodeFactory):
@@ -51,7 +46,7 @@ class chainable(NodeFactory):
 
     def __init__(self, function, /, *args, name=None, default=None, default_factory=None, **kwargs):
         if not callable(function):
-            raise TypeError("The function must be callable")
+            raise TypeError("The chainable's first argument must be callable")
         if args or kwargs:
             function = (partialmethod(function, *args, **kwargs)
                         if ismethod(function) else
@@ -66,15 +61,15 @@ class chainable(NodeFactory):
         return self._set_default(Chainable(self._function, self._name))
 
 
-def parse(obj) -> Node:
-    if isinstance(obj, NodeFactory):
-        return obj()
-    elif callable(obj):
-        return Chainable(obj)
-    elif isinstance(obj, tuple):
+def parse(component) -> Node:
+    if isinstance(component, NodeFactory):
+        return component()
+    elif callable(component):
+        return Chainable(component)
+    elif isinstance(component, tuple):
         nodes = []
         options = []
-        for item in obj:
+        for item in component:
             if isinstance(item, str):
                 if item not in OPTIONS:
                     raise ValueError(f"Unknown options {item!r}")
@@ -91,23 +86,23 @@ def parse(obj) -> Node:
         if len(nodes) == 1:
             return nodes[0]
         return Sequence(nodes)
-    elif isinstance(obj, list):
-        return ListModel(_parse_list(obj))
-    elif isinstance(obj, dict):
-        return DictModel(_parse_dict(obj))
-    elif obj is Ellipsis:
+    elif isinstance(component, list):
+        return ListModel(_parse_list(component))
+    elif isinstance(component, dict):
+        return DictModel(_parse_dict(component))
+    elif component is Ellipsis:
         return PASS
-    raise TypeError(f"Unsupported type {type(obj).__name__}")
+    raise TypeError(f"Unsupported type {type(component).__name__}")
 
 
-def _parse_list(objs: Iterable) -> list[Node]:
+def _parse_list(components: Iterable) -> list[Node]:
     """Converts a list of objects into a list of nodes"""
-    return [parse(obj) for obj in objs]
+    return [parse(obj) for obj in components]
 
 
-def _parse_dict(objs: Mapping) -> dict[Any, Node]:
+def _parse_dict(components: Mapping) -> dict[Any, Node]:
     """Converts a dict of objects into a dict of nodes"""
-    return {key: parse(obj) for key, obj in objs.items()}
+    return {key: parse(obj) for key, obj in components.items()}
 
 
 Spec = ParamSpec('Spec')

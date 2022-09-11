@@ -43,7 +43,7 @@ class Reporter:
     def failure(self, source: str, input, error: Exception, fatal: bool) -> None:
         self.failures.append((source, input, error, fatal))
 
-    def report(self, nodes: set[Any] | None = None, required: int | None = None) -> Report:
+    def report(self, nodes: frozenset[Any] | None = None, required: int | None = None) -> Report:
         """builds a reporter statistics dictionary"""
         completed = 0
         succeeded = 0

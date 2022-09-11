@@ -1,11 +1,11 @@
+"""Collection of tests about the chain creation and validation"""
 from pytest import mark, raises, param
 import fastchain
 
 
-def func(*_, **__): pass
+def func(*_, **__):
+    """Useless function"""
 
-
-# Creation and registration +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 
 @mark.parametrize('name, Error, message', [
     (object(), TypeError, "The name must be str"),
@@ -19,9 +19,40 @@ def func(*_, **__): pass
     ("my[chain]", ValueError, r"'my\[chain\]' is not a valid name"),
     (" my_chain ", ValueError, "' my_chain ' is not a valid name"),
 ])
-def test_chain_naming_validation(name, Error, message):
-    """Tests the chain naming validation"""
+def test_chain_naming_validation(name, Error, message, mock_registry):
+    """Tests preventing bad chain names"""
     with raises(Error, match=message):
+        fastchain.make(func, name=name)
+
+
+@mark.parametrize('args, Error, message', [
+    ((), ValueError, "Cannot create an empty sequence"),
+    ((object(),), TypeError, "Unsupported type object"),
+    ((...,), ValueError, "Cannot create an empty sequence"),
+    (('?',), ValueError, "Cannot create an empty sequence"),
+    (('?', func), ValueError, "Cannot create a chain with only optional nodes"),
+    (('?', '*', func), ValueError, "Cannot create a chain with only optional nodes"),
+    (('*', '?', func), ValueError, "Cannot create a chain with only optional nodes"),
+    (('&', func), ValueError, "Unknown options '&'"),
+    (([],), ValueError, "Cannot create an empty model"),
+    (({},), ValueError, "Cannot create an empty model"),
+    ((fastchain.match(),), ValueError, "Cannot create an empty match"),
+    ((fastchain.match(func),), ValueError, "Cannot create a match with a single branch"),
+])
+def test_core_validation(args, Error, message, mock_registry):
+    with raises(Error, match=message):
+        fastchain.make(*args)
+
+
+@mark.parametrize("name, msg", [
+    ('sub', "The name 'sub' is already registered"),
+    ('sub.sub', "The name 'sub.sub' is already registered"),
+    ('sub.sub.chain', "The name 'sub.sub.chain' is already registered"),
+])
+def test_double_registration(name, msg, mock_registry):
+    """Test preventing chain double registration or override"""
+    fastchain.make(func, name='sub.sub.chain')
+    with raises(ValueError, match=msg):
         fastchain.make(func, name=name)
 
 
@@ -71,15 +102,3 @@ def test_chain_registration_and_retrieve(mock_registry):
     assert fastchain.get("sub.sub") == [chain2, chain3]
     assert fastchain.get("sub.sub.chain1") == [chain2]
     assert fastchain.get("sub.sub.chain2") == [chain3]
-
-
-@mark.parametrize("name, msg", [
-    ('sub', "The name 'sub' is already registered"),
-    ('sub.sub', "The name 'sub.sub' is already registered"),
-    ('sub.sub.chain', "The name 'sub.sub.chain' is already registered"),
-])
-def test_forbidding_double_registration(name, msg, mock_registry):
-    """Test preventing chain double registration or override"""
-    fastchain.make(func, name='sub.sub.chain')
-    with raises(ValueError, match=msg):
-        fastchain.make(func, name=name)
