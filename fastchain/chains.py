@@ -1,21 +1,13 @@
 import itertools
 import re
 from operator import countOf
-from typing import Any, Pattern, Callable, TypeAlias, Union, Literal
+from typing import Any, Pattern, Callable, TypeAlias, Union
 from .nodes import Node
-from .factory import parse, NodeFactory
+from .factory import parse
 from .monitoring import Reporter, Report, print_report, failures_logger
 
 ChainRegistry: TypeAlias = dict[str, Union['Chain', dict]]
 ReportHandler: TypeAlias = Callable[[Report], None]
-SupportedChainables: TypeAlias = Union[
-    Callable[[Any], Any],
-    tuple,
-    dict,
-    list,
-    Literal['?', '*'],
-    NodeFactory
-]
 
 _registry_: ChainRegistry = {}
 VALID_NAME: Pattern[str] = re.compile(r'^[a-z](?:\w+[_-]?)*?$', re.IGNORECASE)
@@ -56,7 +48,7 @@ class Chain:
         self.__report_handlers[False].append(handler)
 
     def clear_report_handlers(self) -> None:
-        """Removes all the previously added handlers, including the default ones."""
+        """Removes all the previously registered handlers, including the default ones"""
         self.__report_handlers = {True: [], False: []}
 
     @property
@@ -99,20 +91,21 @@ def _register(names: list[str], chain: Chain) -> None:
     last = len(names) - 1
     reg = _registry_
     for pos, name_part in enumerate(names):
+        if name_part in reg and (pos == last or not isinstance(reg[name_part], dict)):
+            raise ValueError(f"The name {'.'.join(names[:pos + 1])!r} is already registered")
+        elif pos == last:
+            reg[name_part] = chain
+            return
         if name_part not in reg:
-            if pos == last:
-                reg[name_part] = chain
-                return
             reg[name_part] = {}
-        if isinstance(reg[name_part], dict):
-            reg = reg[name_part]
-        else:
-            raise ValueError(f"A component is already registered under the name {'.'.join(names[:pos + 1])!r}")
+        reg = reg[name_part]
 
 
 def get(name: str | None = None) -> list[Chain]:
-    """Gets all the previously created chain by their dot-separated hierarchical name,
-     or gets all the chains registered chains if no name is given."""
+    """
+    Gets all the previously created chain by their dot-separated hierarchical name,
+    or gets all the chains registered chains if no name is given
+    """
     if name is None:
         names = []
     elif isinstance(name, str):
@@ -128,13 +121,27 @@ def get(name: str | None = None) -> list[Chain]:
 
 
 def make(
-        *components: SupportedChainables,
+        *components,
         name: str | None = None,
         log_failures: bool = True,
         logger: str | None = 'fastchain',
         print_stats: bool = False,
         register: bool = True
         ) -> Chain:
+    """
+    Creates a chain by composing the given components and optionally
+    registers it if a name was given.
+
+    :param components: Functions, dict, list or tuple of functions.
+    :param name: The chain (unique) name, it can be a hierarchical
+                by separating multiple names with dots
+                The names (or each name) must start with a letter
+                and only contain letters, digits, _ and -
+    :param log_failures: whether to log failures or not (default True)
+    :param logger: The name of the logger that will be used, (default: fastchain)
+    :param print_stats: Whether to print process statistics (default: False)
+    :param register: Whether to register the chain globally (default: True)
+    """
     if name is None:
         register = False
     else:
@@ -159,10 +166,23 @@ def make(
 
 
 def add_report_handler(name: str, handler: ReportHandler, always: bool = False) -> None:
+    """
+    Adds the report handler to every chain under the name tree
+
+    :param name: The name of the chain or group of chains
+    :param handler: The function to be called with the report (dict)
+    :param always: If True, it will be called even when the execution is successful,
+                    otherwise it will be called only when it fails
+    """
     for chain in get(name):
         chain.add_report_handler(handler, always)
 
 
 def clear_report_handlers(name: str) -> None:
+    """
+    Removes all the previously registered handlers, including the default ones
+
+    :param name: The name of the chain or group of chains
+    """
     for chain in get(name):
         chain.clear_report_handlers()

@@ -40,5 +40,4 @@ def reporter():
 
 @fixture
 def mock_registry(monkeypatch):
-    monkeypatch.setattr(chains, 'REGISTER', True)
     monkeypatch.setattr(chains, '_registry_', {})

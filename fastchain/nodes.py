@@ -148,7 +148,8 @@ class NodeWrapper(Node, abc.ABC):
 
     @property
     def expose(self) -> dict[Node, bool]:
-        return self.core.expose
+        return {node: (required and not self.optional)
+                for node, required in self.core.expose.items()}
 
     def set_title(self, root: str | None = None, branch: Any = None, /) -> None:
         super(NodeWrapper, self).set_title(root, branch)
