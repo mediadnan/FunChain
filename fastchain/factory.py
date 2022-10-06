@@ -1,6 +1,12 @@
+"""
+This module contains functions and utilities to create node blueprints
+used by 'fastchain.make()' to create custom nodes.
+The module also contains a function that translates the descriptive structure
+into nested functional nodes.
+"""
 import abc
-from functools import partial, update_wrapper, WRAPPER_ASSIGNMENTS, partialmethod
-from inspect import signature, ismethod
+from functools import partial, update_wrapper, WRAPPER_ASSIGNMENTS
+from inspect import signature
 from typing import Any, Callable, overload, Iterable, Mapping, ParamSpec
 
 from .nodes import (Node,
@@ -22,7 +28,7 @@ class NodeFactory(abc.ABC):
         """Returns a new node each time called"""
 
 
-class match(NodeFactory):  # noqa: used as a function
+class match(NodeFactory):
     __slots__ = '_branches',
 
     def __init__(self, *branches) -> None:
@@ -48,9 +54,7 @@ class chainable(NodeFactory):
         if not callable(function):
             raise TypeError("The chainable's first argument must be callable")
         if args or kwargs:
-            function = (partialmethod(function, *args, **kwargs)
-                        if ismethod(function) else
-                        partial(function, *args, **kwargs))
+            function = partial(function, *args, **kwargs)
         self._name: str | None = name
         self._function: Callable[[Any], Any] = function
         self._set_default: Callable[[Node], Node] = partial(set_default,

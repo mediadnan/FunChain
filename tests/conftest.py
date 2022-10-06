@@ -1,5 +1,5 @@
 from pytest import fixture
-from fastchain import monitoring, chains
+from fastchain import reporter, chains
 
 
 @fixture
@@ -35,7 +35,7 @@ def fail():
 @fixture
 def reporter():
     """returns a new reporter"""
-    return monitoring.Reporter()
+    return reporter.Reporter()
 
 
 @fixture

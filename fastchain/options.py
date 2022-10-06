@@ -1,3 +1,6 @@
+"""
+This module contains the implementation of functions that mutates nodes.
+"""
 from typing import Callable, TypeAlias, Any
 
 from .nodes import Node, Loop

@@ -1,10 +1,14 @@
+"""
+This module contains the implementation of chain nodes, the components that
+actually process data the data.
+"""
 import abc
-from functools import partial, partialmethod
+from functools import partial
 from itertools import chain
 from types import NoneType
 from typing import Any, Generator, Iterable, Callable
 
-from .monitoring import Reporter
+from .reporter import Reporter
 
 
 # +-+ Abstract base classes +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
@@ -178,7 +182,7 @@ class Chainable(Node):
     @classmethod
     def qualname(cls, function) -> str:
         """Gets the function's __qualname__"""
-        if isinstance(function, (partial, partialmethod)):
+        if isinstance(function, partial):
             return cls.qualname(function.func)
         elif hasattr(function, '__qualname__'):
             return function.__qualname__

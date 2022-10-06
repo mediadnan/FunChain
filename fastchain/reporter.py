@@ -1,6 +1,6 @@
 """
-This module implements Reporter and ReporterMaker and all the tools to chain's
-process monitoring and handling failed.
+This module contains implementation of the chain's reporting system,
+the concept of reporting errors and statistics to the user without breaking the main program.
 """
 
 from typing import Any, Callable, TypedDict, TypeAlias

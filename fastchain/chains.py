@@ -1,10 +1,15 @@
+"""
+This module contains the implementation of the chain object (the main object used by fastchain),
+together with some useful functions to create and customize those chains.
+"""
+
 import itertools
 import re
 from operator import countOf
 from typing import Any, Pattern, Callable, TypeAlias, Union
 from .nodes import Node, Chainable
 from .factory import parse
-from .monitoring import Reporter, Report, print_report, failures_logger
+from .reporter import Reporter, Report, print_report, failures_logger
 
 ChainRegistry: TypeAlias = dict[str, Union['Chain', dict]]
 ReportHandler: TypeAlias = Callable[[Report], None]

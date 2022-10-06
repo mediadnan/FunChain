@@ -1,4 +1,6 @@
 """Collection of tests about the chain creation and validation"""
+import functools
+
 from pytest import mark, raises, param
 import fastchain
 
@@ -102,3 +104,43 @@ def test_chain_registration_and_retrieve(mock_registry):
     assert fastchain.get("sub.sub") == [chain2, chain3]
     assert fastchain.get("sub.sub.chain1") == [chain2]
     assert fastchain.get("sub.sub.chain2") == [chain3]
+
+
+def increment(a: int) -> int: return a + 1
+def add(a: int, b: int) -> int: return a + b
+
+
+class Adder:
+    def __init__(self, sec: int):
+        self.sec = sec
+
+    def __call__(self, num: int) -> int:
+        return num + self.sec
+
+
+def test_chainable_validation():
+    with raises(TypeError, match="The chainable's first argument must be callable"):
+        fastchain.chainable(object())   # noqa
+
+
+@mark.parametrize("function, args, kwargs, name, default", [
+    (lambda x: x+1, (), {}, "<lambda>", None),
+    (lambda x: x+1, (), {'default': 0}, "<lambda>", 0),
+    (lambda x: x+1, (), {'default_factory': str}, "<lambda>", ''),
+    (lambda x: x+1, (), {'name': 'increment'}, "increment", None),
+    (increment, (), {}, "increment", None),
+    (add, (), {'b': 1}, "add", None),
+    (add, (), {'name': "increment", 'b': 1}, "increment", None),
+    (add, (1,), {'name': "increment", 'default': 0}, "increment", 0),
+    (Adder(1), (), {}, "Adder", None),
+    (Adder(1), (), {'name': 'increment'}, "increment", None),
+    (functools.partial(add, 1), (), {}, "add", None),
+])
+def test_creating_custom_chainable_function(function, args, kwargs, name, default, mock_registry):
+    chainable_fact = fastchain.chainable(function, *args, **kwargs)
+    chainable = chainable_fact()
+    assert chainable is not chainable_fact(), "ensure uniqueness of node each time the factory called"
+    assert chainable.name == name, "ensure the name"
+    assert chainable.default() == default, "ensure the default value or custom default value"
+    chain = fastchain.make(chainable_fact, name='my_chain')
+    assert chain(3) == 4
