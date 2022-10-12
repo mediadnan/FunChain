@@ -19,6 +19,7 @@ VALID_NAME: Pattern[str] = re.compile(r'^[a-z](?:\w+[_-]?)*?$', re.IGNORECASE)
 
 
 class Chain:
+    """Function-like object that performs a series of isolated processing steps through its internal nodes"""
     __slots__ = ('__name',
                  '__core',
                  '__required_nodes',
@@ -34,10 +35,13 @@ class Chain:
             required_nodes: int | None = None
     ) -> None:
         """
-        Initializes the new chain with a pre parsed core
+        The chain should be initialized with a pre-parsed node hierarchy using the parse function,
+        the chain is not meant to be directly created by the user, instead the make() function
+        should be used to create one.
 
-        :param core: A Node or NodeGroup subclass instance
-        :param name: An optional chain name (default 'unregistered')
+        :param core: A Node subclass instance from the parse function
+        :param name: The chain's name (default 'unregistered')
+        :param required_nodes: The number of required nodes (non-optional)
         """
         self.__name: str = name if name is not None else 'unregistered'
         self.__core: Node = core
@@ -47,11 +51,12 @@ class Chain:
         self.__report_handlers: dict[bool, list[ReportHandler]] = {True: [], False: []}
 
     def add_report_handler(self, handler: ReportHandler, always: bool = False) -> None:
-        """Adds a function to capture the execution report.
+        """
+        Adds a function that will be called with the report
 
-        :param handler: A callable that only takes the report dict as parameter.
-        :param always: If True, the handler will always be called, otherwise,
-                       It will only be called in case of failures.
+        :param handler: A callable that only takes the report dict as parameter
+        :param always: The function will be called with the report after each chain call if always=True,
+                        otherwise it will be only called in case of a failure.
         """
         if always:
             self.__report_handlers[True].append(handler)
@@ -69,7 +74,7 @@ class Chain:
     def __repr__(self) -> str:
         """String representation of the chain"""
         return (f'{self.__class__.__name__}(name={self.__name!r}, '
-                f'nodes/required={self.__total_nodes}/{self.__required_nodes})')
+                f'required/nodes={self.__required_nodes}/{self.__total_nodes})')
 
     def __len__(self) -> int:
         """Chain size in nodes"""
@@ -139,8 +144,7 @@ def make(
         register: bool = True
         ) -> Chain:
     """
-    Creates a chain by composing the given components and optionally
-    registers it if a name was given.
+    Creates a chain by composing the given components and optionally registers it if a name was given.
 
     :param components: Functions, dict, list or tuple of functions.
     :param name: The chain (unique) name, it can be a hierarchical
