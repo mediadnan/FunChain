@@ -87,8 +87,8 @@ class FailureData:
     source: str
     description: str
     datetime: datetime
-    severity: Severity = field(default=Severity.INHERIT)
-    details: dict[str, Any] = field(default_factory=dict, repr=False)
+    severity: Severity
+    details: dict[str, Any] = field(repr=False)
 
 
 class FailureLogger:
