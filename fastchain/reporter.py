@@ -113,7 +113,7 @@ class FailureLogger:
                       default is None (which deactivate writing logs to a file)
         :type _file: str | PathLike[str] | None
         :param _write_mode: the writing mode, default 'a' for append, which adds logs to the file,
-                            'r' will override old logs each time called.
+                            'w' will override old logs each time called.
         :type _write_mode: str
         """
         formatter = logging.Formatter(_format, defaults={'failure_source': ''})
