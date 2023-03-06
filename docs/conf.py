@@ -48,3 +48,7 @@ html_theme_options = {
 autoclass_content = "both"
 
 autodoc_class_signature = "mixed"
+
+# mermaid config
+
+mermaid_output_format = "png"

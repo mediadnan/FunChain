@@ -142,6 +142,1592 @@ Consider extracting links from a web page using regular expressions:
 .. code-block:: pycon
 
     >>> import re
+    >>> from fastchain import Chain, node_factory
+    >>> from pprint import pp
+    >>> markup = """
+    ... <html>
+    ...     <body>
+    ...         <a href="https://justasimpleexample.com/path1">click here</a>
+    ...         <a href="https://justasimpleexample.com/path2">click here</a>
+    ...         <a href="https://justasimpleexample.com/path3">click here</a>
+    ...     </body>
+    ... </html>
+    ... """
+    >>> chain = Chain('my_chain', chainable(re.findall, r'href="(.+?)"', flags=re.DOTALL, name="extract-links"))
+    >>> pp(chain(markup))facto
+    >>> from pprint import pp
+    >>> markup = """
+    ... <html>
+    ...     <body>
+    ...         <a href="https://justasimpleexample.com/path1">click here</a>
+    ...         <a href="https://justasimpleexample.com/path2">click here</a>
+    ...         <a href="https://justasimpleexample.com/path3">click here</a>
+    ...     </body>
+    ... </html>
+    ... """
+    >>> chain = Chain('my_chain', chainable(re.findall, r'href="(.+?)"', flags=re.DOTALL, name="extract-links"))
+    >>> pp(chain(markup))
+    ['https://justasimpleexample.com/path1',
+     'https://justasimpleexample.com/path2',
+     'https://justasimpleexample.com/path3']
+
+We can see that everything works as expected, but here
+    >>> import re
+    >>> from fastchain import Chain, nodefac
+    >>> from pprint import pp
+    >>> markup = """
+    ... <html>
+    ...     <body>
+    ...         <a href="https://justasimpleexample.com/path1">click here</a>
+    ...         <a href="https://justasimpleexample.com/path2">click here</a>
+    ...         <a href="https://justasimpleexample.com/path3">click here</a>
+    ...     </body>
+    ... </html>
+    ... """
+    >>> chain = Chain('my_chain', chainable(re.findall, r'href="(.+?)"', flags=re.DOTALL, name="extract-links"))
+    >>> pp(chain(markup))
+    ['https://justasimpleexample.com/path1',
+     'https://justasimpleexample.com/path2',
+     'https://justasimpleexample.com/path3']
+
+We can see that everything works as expected, but here
+    >>> import re
+    >>> from fastchain import Chain, chainable
+    >>> from pprint import pp
+    >>> markup = """
+    ... <html>
+    ...     <body>
+    ...         <a href="https://justasimpleexample.com/path1">click here</a>
+    ...         <a href="https://justasimpleexample.com/path2">click here</a>
+    ...         <a href="https://justasimpleexample.com/path3">click here</a>
+    ...     </body>
+    ... </html>
+    ... """
+    >>> chain = Chain('my_chain', chainable(re.findall, r'href="(.+?)"', flags=re.DOTALL, name="extract-links"))
+    >>> pp(chain(markup))
+    ['https://justasimpleexample.com/path1',
+     'https://justasimpleexample.com/path2',
+     'https://justasimpleexample.com/path3']
+
+We can see that everything works as expected, but here
+    >>> import re
+    >>> from fastchain import Chain, chainable
+    >>> from pprint import pp
+    >>> markup = """
+    ... <html>
+    ...     <body>
+    ...         <a href="https://justasimpleexample.com/path1">click here</a>
+    ...         <a href="https://justasimpleexample.com/path2">click here</a>
+    ...         <a href="https://justasimpleexample.com/path3">click here</a>
+    ...     </body>
+    ... </html>
+    ... """
+    >>> chain = Chain('my_chain', chainable(re.findall, r'href="(.+?)"', flags=re.DOTALL, name="extract-links"))
+    >>> pp(chain(markup))
+    ['https://justasimpleexample.com/path1',
+     'https://justasimpleexample.com/path2',
+     'https://justasimpleexample.com/path3']
+
+We can see that everything works as expected, but here
+    >>> import re
+    >>> from fastchain import Chain, chainable
+    >>> from pprint import pp
+    >>> markup = """
+    ... <html>
+    ...     <body>
+    ...         <a href="https://justasimpleexample.com/path1">click here</a>
+    ...         <a href="https://justasimpleexample.com/path2">click here</a>
+    ...         <a href="https://justasimpleexample.com/path3">click here</a>
+    ...     </body>
+    ... </html>
+    ... """
+    >>> chain = Chain('my_chain', chainable(re.findall, r'href="(.+?)"', flags=re.DOTALL, name="extract-links"))
+    >>> pp(chain(markup))
+    ['https://justasimpleexample.com/path1',
+     'https://justasimpleexample.com/path2',
+     'https://justasimpleexample.com/path3']
+
+We can see that everything works as expected, but here
+    >>> import re
+    >>> from fastchain import Chain, node_maker
+    >>> from pprint import pp
+    >>> markup = """
+    ... <html>
+    ...     <body>
+    ...         <a href="https://justasimpleexample.com/path1">click here</a>
+    ...         <a href="https://justasimpleexample.com/path2">click here</a>
+    ...         <a href="https://justasimpleexample.com/path3">click here</a>
+    ...     </body>
+    ... </html>
+    ... """
+    >>> chain = Chain('my_chain', chainable(re.findall, r'href="(.+?)"', flags=re.DOTALL, name="extract-links"))
+    >>> pp(chain(markup))facto
+    >>> from pprint import pp
+    >>> markup = """
+    ... <html>
+    ...     <body>
+    ...         <a href="https://justasimpleexample.com/path1">click here</a>
+    ...         <a href="https://justasimpleexample.com/path2">click here</a>
+    ...         <a href="https://justasimpleexample.com/path3">click here</a>
+    ...     </body>
+    ... </html>
+    ... """
+    >>> chain = Chain('my_chain', chainable(re.findall, r'href="(.+?)"', flags=re.DOTALL, name="extract-links"))
+    >>> pp(chain(markup))
+    ['https://justasimpleexample.com/path1',
+     'https://justasimpleexample.com/path2',
+     'https://justasimpleexample.com/path3']
+
+We can see that everything works as expected, but here
+    >>> import re
+    >>> from fastchain import Chain, nodefac
+    >>> from pprint import pp
+    >>> markup = """
+    ... <html>
+    ...     <body>
+    ...         <a href="https://justasimpleexample.com/path1">click here</a>
+    ...         <a href="https://justasimpleexample.com/path2">click here</a>
+    ...         <a href="https://justasimpleexample.com/path3">click here</a>
+    ...     </body>
+    ... </html>
+    ... """
+    >>> chain = Chain('my_chain', chainable(re.findall, r'href="(.+?)"', flags=re.DOTALL, name="extract-links"))
+    >>> pp(chain(markup))
+    ['https://justasimpleexample.com/path1',
+     'https://justasimpleexample.com/path2',
+     'https://justasimpleexample.com/path3']
+
+We can see that everything works as expected, but here
+    >>> import re
+    >>> from fastchain import Chain, chainable
+    >>> from pprint import pp
+    >>> markup = """
+    ... <html>
+    ...     <body>
+    ...         <a href="https://justasimpleexample.com/path1">click here</a>
+    ...         <a href="https://justasimpleexample.com/path2">click here</a>
+    ...         <a href="https://justasimpleexample.com/path3">click here</a>
+    ...     </body>
+    ... </html>
+    ... """
+    >>> chain = Chain('my_chain', chainable(re.findall, r'href="(.+?)"', flags=re.DOTALL, name="extract-links"))
+    >>> pp(chain(markup))
+    ['https://justasimpleexample.com/path1',
+     'https://justasimpleexample.com/path2',
+     'https://justasimpleexample.com/path3']
+
+We can see that everything works as expected, but here
+    >>> import re
+    >>> from fastchain import Chain, chainable
+    >>> from pprint import pp
+    >>> markup = """
+    ... <html>
+    ...     <body>
+    ...         <a href="https://justasimpleexample.com/path1">click here</a>
+    ...         <a href="https://justasimpleexample.com/path2">click here</a>
+    ...         <a href="https://justasimpleexample.com/path3">click here</a>
+    ...     </body>
+    ... </html>
+    ... """
+    >>> chain = Chain('my_chain', chainable(re.findall, r'href="(.+?)"', flags=re.DOTALL, name="extract-links"))
+    >>> pp(chain(markup))
+    ['https://justasimpleexample.com/path1',
+     'https://justasimpleexample.com/path2',
+     'https://justasimpleexample.com/path3']
+
+We can see that everything works as expected, but here
+    >>> import re
+    >>> from fastchain import Chain, chainable
+    >>> from pprint import pp
+    >>> markup = """
+    ... <html>
+    ...     <body>
+    ...         <a href="https://justasimpleexample.com/path1">click here</a>
+    ...         <a href="https://justasimpleexample.com/path2">click here</a>
+    ...         <a href="https://justasimpleexample.com/path3">click here</a>
+    ...     </body>
+    ... </html>
+    ... """
+    >>> chain = Chain('my_chain', chainable(re.findall, r'href="(.+?)"', flags=re.DOTALL, name="extract-links"))
+    >>> pp(chain(markup))
+    ['https://justasimpleexample.com/path1',
+     'https://justasimpleexample.com/path2',
+     'https://justasimpleexample.com/path3']
+
+We can see that everything works as expected, but here
+    >>> import re
+    >>> from fastchain import Chain, facto
+    >>> from pprint import pp
+    >>> markup = """
+    ... <html>
+    ...     <body>
+    ...         <a href="https://justasimpleexample.com/path1">click here</a>
+    ...         <a href="https://justasimpleexample.com/path2">click here</a>
+    ...         <a href="https://justasimpleexample.com/path3">click here</a>
+    ...     </body>
+    ... </html>
+    ... """
+    >>> chain = Chain('my_chain', chainable(re.findall, r'href="(.+?)"', flags=re.DOTALL, name="extract-links"))
+    >>> pp(chain(markup))facto
+    >>> from pprint import pp
+    >>> markup = """
+    ... <html>
+    ...     <body>
+    ...         <a href="https://justasimpleexample.com/path1">click here</a>
+    ...         <a href="https://justasimpleexample.com/path2">click here</a>
+    ...         <a href="https://justasimpleexample.com/path3">click here</a>
+    ...     </body>
+    ... </html>
+    ... """
+    >>> chain = Chain('my_chain', chainable(re.findall, r'href="(.+?)"', flags=re.DOTALL, name="extract-links"))
+    >>> pp(chain(markup))
+    ['https://justasimpleexample.com/path1',
+     'https://justasimpleexample.com/path2',
+     'https://justasimpleexample.com/path3']
+
+We can see that everything works as expected, but here
+    >>> import re
+    >>> from fastchain import Chain, nodefac
+    >>> from pprint import pp
+    >>> markup = """
+    ... <html>
+    ...     <body>
+    ...         <a href="https://justasimpleexample.com/path1">click here</a>
+    ...         <a href="https://justasimpleexample.com/path2">click here</a>
+    ...         <a href="https://justasimpleexample.com/path3">click here</a>
+    ...     </body>
+    ... </html>
+    ... """
+    >>> chain = Chain('my_chain', chainable(re.findall, r'href="(.+?)"', flags=re.DOTALL, name="extract-links"))
+    >>> pp(chain(markup))
+    ['https://justasimpleexample.com/path1',
+     'https://justasimpleexample.com/path2',
+     'https://justasimpleexample.com/path3']
+
+We can see that everything works as expected, but here
+    >>> import re
+    >>> from fastchain import Chain, chainable
+    >>> from pprint import pp
+    >>> markup = """
+    ... <html>
+    ...     <body>
+    ...         <a href="https://justasimpleexample.com/path1">click here</a>
+    ...         <a href="https://justasimpleexample.com/path2">click here</a>
+    ...         <a href="https://justasimpleexample.com/path3">click here</a>
+    ...     </body>
+    ... </html>
+    ... """
+    >>> chain = Chain('my_chain', chainable(re.findall, r'href="(.+?)"', flags=re.DOTALL, name="extract-links"))
+    >>> pp(chain(markup))
+    ['https://justasimpleexample.com/path1',
+     'https://justasimpleexample.com/path2',
+     'https://justasimpleexample.com/path3']
+
+We can see that everything works as expected, but here
+    >>> import re
+    >>> from fastchain import Chain, chainable
+    >>> from pprint import pp
+    >>> markup = """
+    ... <html>
+    ...     <body>
+    ...         <a href="https://justasimpleexample.com/path1">click here</a>
+    ...         <a href="https://justasimpleexample.com/path2">click here</a>
+    ...         <a href="https://justasimpleexample.com/path3">click here</a>
+    ...     </body>
+    ... </html>
+    ... """
+    >>> chain = Chain('my_chain', chainable(re.findall, r'href="(.+?)"', flags=re.DOTALL, name="extract-links"))
+    >>> pp(chain(markup))
+    ['https://justasimpleexample.com/path1',
+     'https://justasimpleexample.com/path2',
+     'https://justasimpleexample.com/path3']
+
+We can see that everything works as expected, but here
+    >>> import re
+    >>> from fastchain import Chain, chainable
+    >>> from pprint import pp
+    >>> markup = """
+    ... <html>
+    ...     <body>
+    ...         <a href="https://justasimpleexample.com/path1">click here</a>
+    ...         <a href="https://justasimpleexample.com/path2">click here</a>
+    ...         <a href="https://justasimpleexample.com/path3">click here</a>
+    ...     </body>
+    ... </html>
+    ... """
+    >>> chain = Chain('my_chain', chainable(re.findall, r'href="(.+?)"', flags=re.DOTALL, name="extract-links"))
+    >>> pp(chain(markup))
+    ['https://justasimpleexample.com/path1',
+     'https://justasimpleexample.com/path2',
+     'https://justasimpleexample.com/path3']
+
+We can see that everything works as expected, but here
+    >>> import re
+    >>> from fastchain import Chain, node_factory
+    >>> from pprint import pp
+    >>> markup = """
+    ... <html>
+    ...     <body>
+    ...         <a href="https://justasimpleexample.com/path1">click here</a>
+    ...         <a href="https://justasimpleexample.com/path2">click here</a>
+    ...         <a href="https://justasimpleexample.com/path3">click here</a>
+    ...     </body>
+    ... </html>
+    ... """
+    >>> chain = Chain('my_chain', chainable(re.findall, r'href="(.+?)"', flags=re.DOTALL, name="extract-links"))
+    >>> pp(chain(markup))facto
+    >>> from pprint import pp
+    >>> markup = """
+    ... <html>
+    ...     <body>
+    ...         <a href="https://justasimpleexample.com/path1">click here</a>
+    ...         <a href="https://justasimpleexample.com/path2">click here</a>
+    ...         <a href="https://justasimpleexample.com/path3">click here</a>
+    ...     </body>
+    ... </html>
+    ... """
+    >>> chain = Chain('my_chain', chainable(re.findall, r'href="(.+?)"', flags=re.DOTALL, name="extract-links"))
+    >>> pp(chain(markup))
+    ['https://justasimpleexample.com/path1',
+     'https://justasimpleexample.com/path2',
+     'https://justasimpleexample.com/path3']
+
+We can see that everything works as expected, but here
+    >>> import re
+    >>> from fastchain import Chain, nodefac
+    >>> from pprint import pp
+    >>> markup = """
+    ... <html>
+    ...     <body>
+    ...         <a href="https://justasimpleexample.com/path1">click here</a>
+    ...         <a href="https://justasimpleexample.com/path2">click here</a>
+    ...         <a href="https://justasimpleexample.com/path3">click here</a>
+    ...     </body>
+    ... </html>
+    ... """
+    >>> chain = Chain('my_chain', chainable(re.findall, r'href="(.+?)"', flags=re.DOTALL, name="extract-links"))
+    >>> pp(chain(markup))
+    ['https://justasimpleexample.com/path1',
+     'https://justasimpleexample.com/path2',
+     'https://justasimpleexample.com/path3']
+
+We can see that everything works as expected, but here
+    >>> import re
+    >>> from fastchain import Chain, chainable
+    >>> from pprint import pp
+    >>> markup = """
+    ... <html>
+    ...     <body>
+    ...         <a href="https://justasimpleexample.com/path1">click here</a>
+    ...         <a href="https://justasimpleexample.com/path2">click here</a>
+    ...         <a href="https://justasimpleexample.com/path3">click here</a>
+    ...     </body>
+    ... </html>
+    ... """
+    >>> chain = Chain('my_chain', chainable(re.findall, r'href="(.+?)"', flags=re.DOTALL, name="extract-links"))
+    >>> pp(chain(markup))
+    ['https://justasimpleexample.com/path1',
+     'https://justasimpleexample.com/path2',
+     'https://justasimpleexample.com/path3']
+
+We can see that everything works as expected, but here
+    >>> import re
+    >>> from fastchain import Chain, chainable
+    >>> from pprint import pp
+    >>> markup = """
+    ... <html>
+    ...     <body>
+    ...         <a href="https://justasimpleexample.com/path1">click here</a>
+    ...         <a href="https://justasimpleexample.com/path2">click here</a>
+    ...         <a href="https://justasimpleexample.com/path3">click here</a>
+    ...     </body>
+    ... </html>
+    ... """
+    >>> chain = Chain('my_chain', chainable(re.findall, r'href="(.+?)"', flags=re.DOTALL, name="extract-links"))
+    >>> pp(chain(markup))
+    ['https://justasimpleexample.com/path1',
+     'https://justasimpleexample.com/path2',
+     'https://justasimpleexample.com/path3']
+
+We can see that everything works as expected, but here
+    >>> import re
+    >>> from fastchain import Chain, chainable
+    >>> from pprint import pp
+    >>> markup = """
+    ... <html>
+    ...     <body>
+    ...         <a href="https://justasimpleexample.com/path1">click here</a>
+    ...         <a href="https://justasimpleexample.com/path2">click here</a>
+    ...         <a href="https://justasimpleexample.com/path3">click here</a>
+    ...     </body>
+    ... </html>
+    ... """
+    >>> chain = Chain('my_chain', chainable(re.findall, r'href="(.+?)"', flags=re.DOTALL, name="extract-links"))
+    >>> pp(chain(markup))
+    ['https://justasimpleexample.com/path1',
+     'https://justasimpleexample.com/path2',
+     'https://justasimpleexample.com/path3']
+
+We can see that everything works as expected, but here
+    >>> import re
+    >>> from fastchain import Chain, node_maker
+    >>> from pprint import pp
+    >>> markup = """
+    ... <html>
+    ...     <body>
+    ...         <a href="https://justasimpleexample.com/path1">click here</a>
+    ...         <a href="https://justasimpleexample.com/path2">click here</a>
+    ...         <a href="https://justasimpleexample.com/path3">click here</a>
+    ...     </body>
+    ... </html>
+    ... """
+    >>> chain = Chain('my_chain', chainable(re.findall, r'href="(.+?)"', flags=re.DOTALL, name="extract-links"))
+    >>> pp(chain(markup))facto
+    >>> from pprint import pp
+    >>> markup = """
+    ... <html>
+    ...     <body>
+    ...         <a href="https://justasimpleexample.com/path1">click here</a>
+    ...         <a href="https://justasimpleexample.com/path2">click here</a>
+    ...         <a href="https://justasimpleexample.com/path3">click here</a>
+    ...     </body>
+    ... </html>
+    ... """
+    >>> chain = Chain('my_chain', chainable(re.findall, r'href="(.+?)"', flags=re.DOTALL, name="extract-links"))
+    >>> pp(chain(markup))
+    ['https://justasimpleexample.com/path1',
+     'https://justasimpleexample.com/path2',
+     'https://justasimpleexample.com/path3']
+
+We can see that everything works as expected, but here
+    >>> import re
+    >>> from fastchain import Chain, nodefac
+    >>> from pprint import pp
+    >>> markup = """
+    ... <html>
+    ...     <body>
+    ...         <a href="https://justasimpleexample.com/path1">click here</a>
+    ...         <a href="https://justasimpleexample.com/path2">click here</a>
+    ...         <a href="https://justasimpleexample.com/path3">click here</a>
+    ...     </body>
+    ... </html>
+    ... """
+    >>> chain = Chain('my_chain', chainable(re.findall, r'href="(.+?)"', flags=re.DOTALL, name="extract-links"))
+    >>> pp(chain(markup))
+    ['https://justasimpleexample.com/path1',
+     'https://justasimpleexample.com/path2',
+     'https://justasimpleexample.com/path3']
+
+We can see that everything works as expected, but here
+    >>> import re
+    >>> from fastchain import Chain, chainable
+    >>> from pprint import pp
+    >>> markup = """
+    ... <html>
+    ...     <body>
+    ...         <a href="https://justasimpleexample.com/path1">click here</a>
+    ...         <a href="https://justasimpleexample.com/path2">click here</a>
+    ...         <a href="https://justasimpleexample.com/path3">click here</a>
+    ...     </body>
+    ... </html>
+    ... """
+    >>> chain = Chain('my_chain', chainable(re.findall, r'href="(.+?)"', flags=re.DOTALL, name="extract-links"))
+    >>> pp(chain(markup))
+    ['https://justasimpleexample.com/path1',
+     'https://justasimpleexample.com/path2',
+     'https://justasimpleexample.com/path3']
+
+We can see that everything works as expected, but here
+    >>> import re
+    >>> from fastchain import Chain, chainable
+    >>> from pprint import pp
+    >>> markup = """
+    ... <html>
+    ...     <body>
+    ...         <a href="https://justasimpleexample.com/path1">click here</a>
+    ...         <a href="https://justasimpleexample.com/path2">click here</a>
+    ...         <a href="https://justasimpleexample.com/path3">click here</a>
+    ...     </body>
+    ... </html>
+    ... """
+    >>> chain = Chain('my_chain', chainable(re.findall, r'href="(.+?)"', flags=re.DOTALL, name="extract-links"))
+    >>> pp(chain(markup))
+    ['https://justasimpleexample.com/path1',
+     'https://justasimpleexample.com/path2',
+     'https://justasimpleexample.com/path3']
+
+We can see that everything works as expected, but here
+    >>> import re
+    >>> from fastchain import Chain, chainable
+    >>> from pprint import pp
+    >>> markup = """
+    ... <html>
+    ...     <body>
+    ...         <a href="https://justasimpleexample.com/path1">click here</a>
+    ...         <a href="https://justasimpleexample.com/path2">click here</a>
+    ...         <a href="https://justasimpleexample.com/path3">click here</a>
+    ...     </body>
+    ... </html>
+    ... """
+    >>> chain = Chain('my_chain', chainable(re.findall, r'href="(.+?)"', flags=re.DOTALL, name="extract-links"))
+    >>> pp(chain(markup))
+    ['https://justasimpleexample.com/path1',
+     'https://justasimpleexample.com/path2',
+     'https://justasimpleexample.com/path3']
+
+We can see that everything works as expected, but here
+    >>> import re
+    >>> from fastchain import Chain, facto
+    >>> from pprint import pp
+    >>> markup = """
+    ... <html>
+    ...     <body>
+    ...         <a href="https://justasimpleexample.com/path1">click here</a>
+    ...         <a href="https://justasimpleexample.com/path2">click here</a>
+    ...         <a href="https://justasimpleexample.com/path3">click here</a>
+    ...     </body>
+    ... </html>
+    ... """
+    >>> chain = Chain('my_chain', chainable(re.findall, r'href="(.+?)"', flags=re.DOTALL, name="extract-links"))
+    >>> pp(chain(markup))facto
+    >>> from pprint import pp
+    >>> markup = """
+    ... <html>
+    ...     <body>
+    ...         <a href="https://justasimpleexample.com/path1">click here</a>
+    ...         <a href="https://justasimpleexample.com/path2">click here</a>
+    ...         <a href="https://justasimpleexample.com/path3">click here</a>
+    ...     </body>
+    ... </html>
+    ... """
+    >>> chain = Chain('my_chain', chainable(re.findall, r'href="(.+?)"', flags=re.DOTALL, name="extract-links"))
+    >>> pp(chain(markup))
+    ['https://justasimpleexample.com/path1',
+     'https://justasimpleexample.com/path2',
+     'https://justasimpleexample.com/path3']
+
+We can see that everything works as expected, but here
+    >>> import re
+    >>> from fastchain import Chain, nodefac
+    >>> from pprint import pp
+    >>> markup = """
+    ... <html>
+    ...     <body>
+    ...         <a href="https://justasimpleexample.com/path1">click here</a>
+    ...         <a href="https://justasimpleexample.com/path2">click here</a>
+    ...         <a href="https://justasimpleexample.com/path3">click here</a>
+    ...     </body>
+    ... </html>
+    ... """
+    >>> chain = Chain('my_chain', chainable(re.findall, r'href="(.+?)"', flags=re.DOTALL, name="extract-links"))
+    >>> pp(chain(markup))
+    ['https://justasimpleexample.com/path1',
+     'https://justasimpleexample.com/path2',
+     'https://justasimpleexample.com/path3']
+
+We can see that everything works as expected, but here
+    >>> import re
+    >>> from fastchain import Chain, chainable
+    >>> from pprint import pp
+    >>> markup = """
+    ... <html>
+    ...     <body>
+    ...         <a href="https://justasimpleexample.com/path1">click here</a>
+    ...         <a href="https://justasimpleexample.com/path2">click here</a>
+    ...         <a href="https://justasimpleexample.com/path3">click here</a>
+    ...     </body>
+    ... </html>
+    ... """
+    >>> chain = Chain('my_chain', chainable(re.findall, r'href="(.+?)"', flags=re.DOTALL, name="extract-links"))
+    >>> pp(chain(markup))
+    ['https://justasimpleexample.com/path1',
+     'https://justasimpleexample.com/path2',
+     'https://justasimpleexample.com/path3']
+
+We can see that everything works as expected, but here
+    >>> import re
+    >>> from fastchain import Chain, chainable
+    >>> from pprint import pp
+    >>> markup = """
+    ... <html>
+    ...     <body>
+    ...         <a href="https://justasimpleexample.com/path1">click here</a>
+    ...         <a href="https://justasimpleexample.com/path2">click here</a>
+    ...         <a href="https://justasimpleexample.com/path3">click here</a>
+    ...     </body>
+    ... </html>
+    ... """
+    >>> chain = Chain('my_chain', chainable(re.findall, r'href="(.+?)"', flags=re.DOTALL, name="extract-links"))
+    >>> pp(chain(markup))
+    ['https://justasimpleexample.com/path1',
+     'https://justasimpleexample.com/path2',
+     'https://justasimpleexample.com/path3']
+
+We can see that everything works as expected, but here
+    >>> import re
+    >>> from fastchain import Chain, chainable
+    >>> from pprint import pp
+    >>> markup = """
+    ... <html>
+    ...     <body>
+    ...         <a href="https://justasimpleexample.com/path1">click here</a>
+    ...         <a href="https://justasimpleexample.com/path2">click here</a>
+    ...         <a href="https://justasimpleexample.com/path3">click here</a>
+    ...     </body>
+    ... </html>
+    ... """
+    >>> chain = Chain('my_chain', chainable(re.findall, r'href="(.+?)"', flags=re.DOTALL, name="extract-links"))
+    >>> pp(chain(markup))
+    ['https://justasimpleexample.com/path1',
+     'https://justasimpleexample.com/path2',
+     'https://justasimpleexample.com/path3']
+
+We can see that everything works as expected, but here
+    >>> import re
+    >>> from fastchain import Chain, node_maker
+    >>> from pprint import pp
+    >>> markup = """
+    ... <html>
+    ...     <body>
+    ...         <a href="https://justasimpleexample.com/path1">click here</a>
+    ...         <a href="https://justasimpleexample.com/path2">click here</a>
+    ...         <a href="https://justasimpleexample.com/path3">click here</a>
+    ...     </body>
+    ... </html>
+    ... """
+    >>> chain = Chain('my_chain', chainable(re.findall, r'href="(.+?)"', flags=re.DOTALL, name="extract-links"))
+    >>> pp(chain(markup))facto
+    >>> from pprint import pp
+    >>> markup = """
+    ... <html>
+    ...     <body>
+    ...         <a href="https://justasimpleexample.com/path1">click here</a>
+    ...         <a href="https://justasimpleexample.com/path2">click here</a>
+    ...         <a href="https://justasimpleexample.com/path3">click here</a>
+    ...     </body>
+    ... </html>
+    ... """
+    >>> chain = Chain('my_chain', chainable(re.findall, r'href="(.+?)"', flags=re.DOTALL, name="extract-links"))
+    >>> pp(chain(markup))
+    ['https://justasimpleexample.com/path1',
+     'https://justasimpleexample.com/path2',
+     'https://justasimpleexample.com/path3']
+
+We can see that everything works as expected, but here
+    >>> import re
+    >>> from fastchain import Chain, nodefac
+    >>> from pprint import pp
+    >>> markup = """
+    ... <html>
+    ...     <body>
+    ...         <a href="https://justasimpleexample.com/path1">click here</a>
+    ...         <a href="https://justasimpleexample.com/path2">click here</a>
+    ...         <a href="https://justasimpleexample.com/path3">click here</a>
+    ...     </body>
+    ... </html>
+    ... """
+    >>> chain = Chain('my_chain', chainable(re.findall, r'href="(.+?)"', flags=re.DOTALL, name="extract-links"))
+    >>> pp(chain(markup))
+    ['https://justasimpleexample.com/path1',
+     'https://justasimpleexample.com/path2',
+     'https://justasimpleexample.com/path3']
+
+We can see that everything works as expected, but here
+    >>> import re
+    >>> from fastchain import Chain, chainable
+    >>> from pprint import pp
+    >>> markup = """
+    ... <html>
+    ...     <body>
+    ...         <a href="https://justasimpleexample.com/path1">click here</a>
+    ...         <a href="https://justasimpleexample.com/path2">click here</a>
+    ...         <a href="https://justasimpleexample.com/path3">click here</a>
+    ...     </body>
+    ... </html>
+    ... """
+    >>> chain = Chain('my_chain', chainable(re.findall, r'href="(.+?)"', flags=re.DOTALL, name="extract-links"))
+    >>> pp(chain(markup))
+    ['https://justasimpleexample.com/path1',
+     'https://justasimpleexample.com/path2',
+     'https://justasimpleexample.com/path3']
+
+We can see that everything works as expected, but here
+    >>> import re
+    >>> from fastchain import Chain, chainable
+    >>> from pprint import pp
+    >>> markup = """
+    ... <html>
+    ...     <body>
+    ...         <a href="https://justasimpleexample.com/path1">click here</a>
+    ...         <a href="https://justasimpleexample.com/path2">click here</a>
+    ...         <a href="https://justasimpleexample.com/path3">click here</a>
+    ...     </body>
+    ... </html>
+    ... """
+    >>> chain = Chain('my_chain', chainable(re.findall, r'href="(.+?)"', flags=re.DOTALL, name="extract-links"))
+    >>> pp(chain(markup))
+    ['https://justasimpleexample.com/path1',
+     'https://justasimpleexample.com/path2',
+     'https://justasimpleexample.com/path3']
+
+We can see that everything works as expected, but here
+    >>> import re
+    >>> from fastchain import Chain, chainable
+    >>> from pprint import pp
+    >>> markup = """
+    ... <html>
+    ...     <body>
+    ...         <a href="https://justasimpleexample.com/path1">click here</a>
+    ...         <a href="https://justasimpleexample.com/path2">click here</a>
+    ...         <a href="https://justasimpleexample.com/path3">click here</a>
+    ...     </body>
+    ... </html>
+    ... """
+    >>> chain = Chain('my_chain', chainable(re.findall, r'href="(.+?)"', flags=re.DOTALL, name="extract-links"))
+    >>> pp(chain(markup))
+    ['https://justasimpleexample.com/path1',
+     'https://justasimpleexample.com/path2',
+     'https://justasimpleexample.com/path3']
+
+We can see that everything works as expected, but here
+    >>> import re
+    >>> from fastchain import Chain, node_factory
+    >>> from pprint import pp
+    >>> markup = """
+    ... <html>
+    ...     <body>
+    ...         <a href="https://justasimpleexample.com/path1">click here</a>
+    ...         <a href="https://justasimpleexample.com/path2">click here</a>
+    ...         <a href="https://justasimpleexample.com/path3">click here</a>
+    ...     </body>
+    ... </html>
+    ... """
+    >>> chain = Chain('my_chain', chainable(re.findall, r'href="(.+?)"', flags=re.DOTALL, name="extract-links"))
+    >>> pp(chain(markup))facto
+    >>> from pprint import pp
+    >>> markup = """
+    ... <html>
+    ...     <body>
+    ...         <a href="https://justasimpleexample.com/path1">click here</a>
+    ...         <a href="https://justasimpleexample.com/path2">click here</a>
+    ...         <a href="https://justasimpleexample.com/path3">click here</a>
+    ...     </body>
+    ... </html>
+    ... """
+    >>> chain = Chain('my_chain', chainable(re.findall, r'href="(.+?)"', flags=re.DOTALL, name="extract-links"))
+    >>> pp(chain(markup))
+    ['https://justasimpleexample.com/path1',
+     'https://justasimpleexample.com/path2',
+     'https://justasimpleexample.com/path3']
+
+We can see that everything works as expected, but here
+    >>> import re
+    >>> from fastchain import Chain, nodefac
+    >>> from pprint import pp
+    >>> markup = """
+    ... <html>
+    ...     <body>
+    ...         <a href="https://justasimpleexample.com/path1">click here</a>
+    ...         <a href="https://justasimpleexample.com/path2">click here</a>
+    ...         <a href="https://justasimpleexample.com/path3">click here</a>
+    ...     </body>
+    ... </html>
+    ... """
+    >>> chain = Chain('my_chain', chainable(re.findall, r'href="(.+?)"', flags=re.DOTALL, name="extract-links"))
+    >>> pp(chain(markup))
+    ['https://justasimpleexample.com/path1',
+     'https://justasimpleexample.com/path2',
+     'https://justasimpleexample.com/path3']
+
+We can see that everything works as expected, but here
+    >>> import re
+    >>> from fastchain import Chain, chainable
+    >>> from pprint import pp
+    >>> markup = """
+    ... <html>
+    ...     <body>
+    ...         <a href="https://justasimpleexample.com/path1">click here</a>
+    ...         <a href="https://justasimpleexample.com/path2">click here</a>
+    ...         <a href="https://justasimpleexample.com/path3">click here</a>
+    ...     </body>
+    ... </html>
+    ... """
+    >>> chain = Chain('my_chain', chainable(re.findall, r'href="(.+?)"', flags=re.DOTALL, name="extract-links"))
+    >>> pp(chain(markup))
+    ['https://justasimpleexample.com/path1',
+     'https://justasimpleexample.com/path2',
+     'https://justasimpleexample.com/path3']
+
+We can see that everything works as expected, but here
+    >>> import re
+    >>> from fastchain import Chain, chainable
+    >>> from pprint import pp
+    >>> markup = """
+    ... <html>
+    ...     <body>
+    ...         <a href="https://justasimpleexample.com/path1">click here</a>
+    ...         <a href="https://justasimpleexample.com/path2">click here</a>
+    ...         <a href="https://justasimpleexample.com/path3">click here</a>
+    ...     </body>
+    ... </html>
+    ... """
+    >>> chain = Chain('my_chain', chainable(re.findall, r'href="(.+?)"', flags=re.DOTALL, name="extract-links"))
+    >>> pp(chain(markup))
+    ['https://justasimpleexample.com/path1',
+     'https://justasimpleexample.com/path2',
+     'https://justasimpleexample.com/path3']
+
+We can see that everything works as expected, but here
+    >>> import re
+    >>> from fastchain import Chain, chainable
+    >>> from pprint import pp
+    >>> markup = """
+    ... <html>
+    ...     <body>
+    ...         <a href="https://justasimpleexample.com/path1">click here</a>
+    ...         <a href="https://justasimpleexample.com/path2">click here</a>
+    ...         <a href="https://justasimpleexample.com/path3">click here</a>
+    ...     </body>
+    ... </html>
+    ... """
+    >>> chain = Chain('my_chain', chainable(re.findall, r'href="(.+?)"', flags=re.DOTALL, name="extract-links"))
+    >>> pp(chain(markup))
+    ['https://justasimpleexample.com/path1',
+     'https://justasimpleexample.com/path2',
+     'https://justasimpleexample.com/path3']
+
+We can see that everything works as expected, but here
+    >>> import re
+    >>> from fastchain import Chain, facto
+    >>> from pprint import pp
+    >>> markup = """
+    ... <html>
+    ...     <body>
+    ...         <a href="https://justasimpleexample.com/path1">click here</a>
+    ...         <a href="https://justasimpleexample.com/path2">click here</a>
+    ...         <a href="https://justasimpleexample.com/path3">click here</a>
+    ...     </body>
+    ... </html>
+    ... """
+    >>> chain = Chain('my_chain', chainable(re.findall, r'href="(.+?)"', flags=re.DOTALL, name="extract-links"))
+    >>> pp(chain(markup))facto
+    >>> from pprint import pp
+    >>> markup = """
+    ... <html>
+    ...     <body>
+    ...         <a href="https://justasimpleexample.com/path1">click here</a>
+    ...         <a href="https://justasimpleexample.com/path2">click here</a>
+    ...         <a href="https://justasimpleexample.com/path3">click here</a>
+    ...     </body>
+    ... </html>
+    ... """
+    >>> chain = Chain('my_chain', chainable(re.findall, r'href="(.+?)"', flags=re.DOTALL, name="extract-links"))
+    >>> pp(chain(markup))
+    ['https://justasimpleexample.com/path1',
+     'https://justasimpleexample.com/path2',
+     'https://justasimpleexample.com/path3']
+
+We can see that everything works as expected, but here
+    >>> import re
+    >>> from fastchain import Chain, nodefac
+    >>> from pprint import pp
+    >>> markup = """
+    ... <html>
+    ...     <body>
+    ...         <a href="https://justasimpleexample.com/path1">click here</a>
+    ...         <a href="https://justasimpleexample.com/path2">click here</a>
+    ...         <a href="https://justasimpleexample.com/path3">click here</a>
+    ...     </body>
+    ... </html>
+    ... """
+    >>> chain = Chain('my_chain', chainable(re.findall, r'href="(.+?)"', flags=re.DOTALL, name="extract-links"))
+    >>> pp(chain(markup))
+    ['https://justasimpleexample.com/path1',
+     'https://justasimpleexample.com/path2',
+     'https://justasimpleexample.com/path3']
+
+We can see that everything works as expected, but here
+    >>> import re
+    >>> from fastchain import Chain, chainable
+    >>> from pprint import pp
+    >>> markup = """
+    ... <html>
+    ...     <body>
+    ...         <a href="https://justasimpleexample.com/path1">click here</a>
+    ...         <a href="https://justasimpleexample.com/path2">click here</a>
+    ...         <a href="https://justasimpleexample.com/path3">click here</a>
+    ...     </body>
+    ... </html>
+    ... """
+    >>> chain = Chain('my_chain', chainable(re.findall, r'href="(.+?)"', flags=re.DOTALL, name="extract-links"))
+    >>> pp(chain(markup))
+    ['https://justasimpleexample.com/path1',
+     'https://justasimpleexample.com/path2',
+     'https://justasimpleexample.com/path3']
+
+We can see that everything works as expected, but here
+    >>> import re
+    >>> from fastchain import Chain, chainable
+    >>> from pprint import pp
+    >>> markup = """
+    ... <html>
+    ...     <body>
+    ...         <a href="https://justasimpleexample.com/path1">click here</a>
+    ...         <a href="https://justasimpleexample.com/path2">click here</a>
+    ...         <a href="https://justasimpleexample.com/path3">click here</a>
+    ...     </body>
+    ... </html>
+    ... """
+    >>> chain = Chain('my_chain', chainable(re.findall, r'href="(.+?)"', flags=re.DOTALL, name="extract-links"))
+    >>> pp(chain(markup))
+    ['https://justasimpleexample.com/path1',
+     'https://justasimpleexample.com/path2',
+     'https://justasimpleexample.com/path3']
+
+We can see that everything works as expected, but here
+    >>> import re
+    >>> from fastchain import Chain, chainable
+    >>> from pprint import pp
+    >>> markup = """
+    ... <html>
+    ...     <body>
+    ...         <a href="https://justasimpleexample.com/path1">click here</a>
+    ...         <a href="https://justasimpleexample.com/path2">click here</a>
+    ...         <a href="https://justasimpleexample.com/path3">click here</a>
+    ...     </body>
+    ... </html>
+    ... """
+    >>> chain = Chain('my_chain', chainable(re.findall, r'href="(.+?)"', flags=re.DOTALL, name="extract-links"))
+    >>> pp(chain(markup))
+    ['https://justasimpleexample.com/path1',
+     'https://justasimpleexample.com/path2',
+     'https://justasimpleexample.com/path3']
+
+We can see that everything works as expected, but here
+    >>> import re
+    >>> from fastchain import Chain, node_maker
+    >>> from pprint import pp
+    >>> markup = """
+    ... <html>
+    ...     <body>
+    ...         <a href="https://justasimpleexample.com/path1">click here</a>
+    ...         <a href="https://justasimpleexample.com/path2">click here</a>
+    ...         <a href="https://justasimpleexample.com/path3">click here</a>
+    ...     </body>
+    ... </html>
+    ... """
+    >>> chain = Chain('my_chain', chainable(re.findall, r'href="(.+?)"', flags=re.DOTALL, name="extract-links"))
+    >>> pp(chain(markup))facto
+    >>> from pprint import pp
+    >>> markup = """
+    ... <html>
+    ...     <body>
+    ...         <a href="https://justasimpleexample.com/path1">click here</a>
+    ...         <a href="https://justasimpleexample.com/path2">click here</a>
+    ...         <a href="https://justasimpleexample.com/path3">click here</a>
+    ...     </body>
+    ... </html>
+    ... """
+    >>> chain = Chain('my_chain', chainable(re.findall, r'href="(.+?)"', flags=re.DOTALL, name="extract-links"))
+    >>> pp(chain(markup))
+    ['https://justasimpleexample.com/path1',
+     'https://justasimpleexample.com/path2',
+     'https://justasimpleexample.com/path3']
+
+We can see that everything works as expected, but here
+    >>> import re
+    >>> from fastchain import Chain, nodefac
+    >>> from pprint import pp
+    >>> markup = """
+    ... <html>
+    ...     <body>
+    ...         <a href="https://justasimpleexample.com/path1">click here</a>
+    ...         <a href="https://justasimpleexample.com/path2">click here</a>
+    ...         <a href="https://justasimpleexample.com/path3">click here</a>
+    ...     </body>
+    ... </html>
+    ... """
+    >>> chain = Chain('my_chain', chainable(re.findall, r'href="(.+?)"', flags=re.DOTALL, name="extract-links"))
+    >>> pp(chain(markup))
+    ['https://justasimpleexample.com/path1',
+     'https://justasimpleexample.com/path2',
+     'https://justasimpleexample.com/path3']
+
+We can see that everything works as expected, but here
+    >>> import re
+    >>> from fastchain import Chain, chainable
+    >>> from pprint import pp
+    >>> markup = """
+    ... <html>
+    ...     <body>
+    ...         <a href="https://justasimpleexample.com/path1">click here</a>
+    ...         <a href="https://justasimpleexample.com/path2">click here</a>
+    ...         <a href="https://justasimpleexample.com/path3">click here</a>
+    ...     </body>
+    ... </html>
+    ... """
+    >>> chain = Chain('my_chain', chainable(re.findall, r'href="(.+?)"', flags=re.DOTALL, name="extract-links"))
+    >>> pp(chain(markup))
+    ['https://justasimpleexample.com/path1',
+     'https://justasimpleexample.com/path2',
+     'https://justasimpleexample.com/path3']
+
+We can see that everything works as expected, but here
+    >>> import re
+    >>> from fastchain import Chain, chainable
+    >>> from pprint import pp
+    >>> markup = """
+    ... <html>
+    ...     <body>
+    ...         <a href="https://justasimpleexample.com/path1">click here</a>
+    ...         <a href="https://justasimpleexample.com/path2">click here</a>
+    ...         <a href="https://justasimpleexample.com/path3">click here</a>
+    ...     </body>
+    ... </html>
+    ... """
+    >>> chain = Chain('my_chain', chainable(re.findall, r'href="(.+?)"', flags=re.DOTALL, name="extract-links"))
+    >>> pp(chain(markup))
+    ['https://justasimpleexample.com/path1',
+     'https://justasimpleexample.com/path2',
+     'https://justasimpleexample.com/path3']
+
+We can see that everything works as expected, but here
+    >>> import re
+    >>> from fastchain import Chain, chainable
+    >>> from pprint import pp
+    >>> markup = """
+    ... <html>
+    ...     <body>
+    ...         <a href="https://justasimpleexample.com/path1">click here</a>
+    ...         <a href="https://justasimpleexample.com/path2">click here</a>
+    ...         <a href="https://justasimpleexample.com/path3">click here</a>
+    ...     </body>
+    ... </html>
+    ... """
+    >>> chain = Chain('my_chain', chainable(re.findall, r'href="(.+?)"', flags=re.DOTALL, name="extract-links"))
+    >>> pp(chain(markup))
+    ['https://justasimpleexample.com/path1',
+     'https://justasimpleexample.com/path2',
+     'https://justasimpleexample.com/path3']
+
+We can see that everything works as expected, but here
+    >>> import re
+    >>> from fastchain import Chain, node_factory
+    >>> from pprint import pp
+    >>> markup = """
+    ... <html>
+    ...     <body>
+    ...         <a href="https://justasimpleexample.com/path1">click here</a>
+    ...         <a href="https://justasimpleexample.com/path2">click here</a>
+    ...         <a href="https://justasimpleexample.com/path3">click here</a>
+    ...     </body>
+    ... </html>
+    ... """
+    >>> chain = Chain('my_chain', chainable(re.findall, r'href="(.+?)"', flags=re.DOTALL, name="extract-links"))
+    >>> pp(chain(markup))facto
+    >>> from pprint import pp
+    >>> markup = """
+    ... <html>
+    ...     <body>
+    ...         <a href="https://justasimpleexample.com/path1">click here</a>
+    ...         <a href="https://justasimpleexample.com/path2">click here</a>
+    ...         <a href="https://justasimpleexample.com/path3">click here</a>
+    ...     </body>
+    ... </html>
+    ... """
+    >>> chain = Chain('my_chain', chainable(re.findall, r'href="(.+?)"', flags=re.DOTALL, name="extract-links"))
+    >>> pp(chain(markup))
+    ['https://justasimpleexample.com/path1',
+     'https://justasimpleexample.com/path2',
+     'https://justasimpleexample.com/path3']
+
+We can see that everything works as expected, but here
+    >>> import re
+    >>> from fastchain import Chain, nodefac
+    >>> from pprint import pp
+    >>> markup = """
+    ... <html>
+    ...     <body>
+    ...         <a href="https://justasimpleexample.com/path1">click here</a>
+    ...         <a href="https://justasimpleexample.com/path2">click here</a>
+    ...         <a href="https://justasimpleexample.com/path3">click here</a>
+    ...     </body>
+    ... </html>
+    ... """
+    >>> chain = Chain('my_chain', chainable(re.findall, r'href="(.+?)"', flags=re.DOTALL, name="extract-links"))
+    >>> pp(chain(markup))
+    ['https://justasimpleexample.com/path1',
+     'https://justasimpleexample.com/path2',
+     'https://justasimpleexample.com/path3']
+
+We can see that everything works as expected, but here
+    >>> import re
+    >>> from fastchain import Chain, chainable
+    >>> from pprint import pp
+    >>> markup = """
+    ... <html>
+    ...     <body>
+    ...         <a href="https://justasimpleexample.com/path1">click here</a>
+    ...         <a href="https://justasimpleexample.com/path2">click here</a>
+    ...         <a href="https://justasimpleexample.com/path3">click here</a>
+    ...     </body>
+    ... </html>
+    ... """
+    >>> chain = Chain('my_chain', chainable(re.findall, r'href="(.+?)"', flags=re.DOTALL, name="extract-links"))
+    >>> pp(chain(markup))
+    ['https://justasimpleexample.com/path1',
+     'https://justasimpleexample.com/path2',
+     'https://justasimpleexample.com/path3']
+
+We can see that everything works as expected, but here
+    >>> import re
+    >>> from fastchain import Chain, chainable
+    >>> from pprint import pp
+    >>> markup = """
+    ... <html>
+    ...     <body>
+    ...         <a href="https://justasimpleexample.com/path1">click here</a>
+    ...         <a href="https://justasimpleexample.com/path2">click here</a>
+    ...         <a href="https://justasimpleexample.com/path3">click here</a>
+    ...     </body>
+    ... </html>
+    ... """
+    >>> chain = Chain('my_chain', chainable(re.findall, r'href="(.+?)"', flags=re.DOTALL, name="extract-links"))
+    >>> pp(chain(markup))
+    ['https://justasimpleexample.com/path1',
+     'https://justasimpleexample.com/path2',
+     'https://justasimpleexample.com/path3']
+
+We can see that everything works as expected, but here
+    >>> import re
+    >>> from fastchain import Chain, chainable
+    >>> from pprint import pp
+    >>> markup = """
+    ... <html>
+    ...     <body>
+    ...         <a href="https://justasimpleexample.com/path1">click here</a>
+    ...         <a href="https://justasimpleexample.com/path2">click here</a>
+    ...         <a href="https://justasimpleexample.com/path3">click here</a>
+    ...     </body>
+    ... </html>
+    ... """
+    >>> chain = Chain('my_chain', chainable(re.findall, r'href="(.+?)"', flags=re.DOTALL, name="extract-links"))
+    >>> pp(chain(markup))
+    ['https://justasimpleexample.com/path1',
+     'https://justasimpleexample.com/path2',
+     'https://justasimpleexample.com/path3']
+
+We can see that everything works as expected, but here
+    >>> import re
+    >>> from fastchain import Chain, facto
+    >>> from pprint import pp
+    >>> markup = """
+    ... <html>
+    ...     <body>
+    ...         <a href="https://justasimpleexample.com/path1">click here</a>
+    ...         <a href="https://justasimpleexample.com/path2">click here</a>
+    ...         <a href="https://justasimpleexample.com/path3">click here</a>
+    ...     </body>
+    ... </html>
+    ... """
+    >>> chain = Chain('my_chain', chainable(re.findall, r'href="(.+?)"', flags=re.DOTALL, name="extract-links"))
+    >>> pp(chain(markup))facto
+    >>> from pprint import pp
+    >>> markup = """
+    ... <html>
+    ...     <body>
+    ...         <a href="https://justasimpleexample.com/path1">click here</a>
+    ...         <a href="https://justasimpleexample.com/path2">click here</a>
+    ...         <a href="https://justasimpleexample.com/path3">click here</a>
+    ...     </body>
+    ... </html>
+    ... """
+    >>> chain = Chain('my_chain', chainable(re.findall, r'href="(.+?)"', flags=re.DOTALL, name="extract-links"))
+    >>> pp(chain(markup))
+    ['https://justasimpleexample.com/path1',
+     'https://justasimpleexample.com/path2',
+     'https://justasimpleexample.com/path3']
+
+We can see that everything works as expected, but here
+    >>> import re
+    >>> from fastchain import Chain, nodefac
+    >>> from pprint import pp
+    >>> markup = """
+    ... <html>
+    ...     <body>
+    ...         <a href="https://justasimpleexample.com/path1">click here</a>
+    ...         <a href="https://justasimpleexample.com/path2">click here</a>
+    ...         <a href="https://justasimpleexample.com/path3">click here</a>
+    ...     </body>
+    ... </html>
+    ... """
+    >>> chain = Chain('my_chain', chainable(re.findall, r'href="(.+?)"', flags=re.DOTALL, name="extract-links"))
+    >>> pp(chain(markup))
+    ['https://justasimpleexample.com/path1',
+     'https://justasimpleexample.com/path2',
+     'https://justasimpleexample.com/path3']
+
+We can see that everything works as expected, but here
+    >>> import re
+    >>> from fastchain import Chain, chainable
+    >>> from pprint import pp
+    >>> markup = """
+    ... <html>
+    ...     <body>
+    ...         <a href="https://justasimpleexample.com/path1">click here</a>
+    ...         <a href="https://justasimpleexample.com/path2">click here</a>
+    ...         <a href="https://justasimpleexample.com/path3">click here</a>
+    ...     </body>
+    ... </html>
+    ... """
+    >>> chain = Chain('my_chain', chainable(re.findall, r'href="(.+?)"', flags=re.DOTALL, name="extract-links"))
+    >>> pp(chain(markup))
+    ['https://justasimpleexample.com/path1',
+     'https://justasimpleexample.com/path2',
+     'https://justasimpleexample.com/path3']
+
+We can see that everything works as expected, but here
+    >>> import re
+    >>> from fastchain import Chain, chainable
+    >>> from pprint import pp
+    >>> markup = """
+    ... <html>
+    ...     <body>
+    ...         <a href="https://justasimpleexample.com/path1">click here</a>
+    ...         <a href="https://justasimpleexample.com/path2">click here</a>
+    ...         <a href="https://justasimpleexample.com/path3">click here</a>
+    ...     </body>
+    ... </html>
+    ... """
+    >>> chain = Chain('my_chain', chainable(re.findall, r'href="(.+?)"', flags=re.DOTALL, name="extract-links"))
+    >>> pp(chain(markup))
+    ['https://justasimpleexample.com/path1',
+     'https://justasimpleexample.com/path2',
+     'https://justasimpleexample.com/path3']
+
+We can see that everything works as expected, but here
+    >>> import re
+    >>> from fastchain import Chain, chainable
+    >>> from pprint import pp
+    >>> markup = """
+    ... <html>
+    ...     <body>
+    ...         <a href="https://justasimpleexample.com/path1">click here</a>
+    ...         <a href="https://justasimpleexample.com/path2">click here</a>
+    ...         <a href="https://justasimpleexample.com/path3">click here</a>
+    ...     </body>
+    ... </html>
+    ... """
+    >>> chain = Chain('my_chain', chainable(re.findall, r'href="(.+?)"', flags=re.DOTALL, name="extract-links"))
+    >>> pp(chain(markup))
+    ['https://justasimpleexample.com/path1',
+     'https://justasimpleexample.com/path2',
+     'https://justasimpleexample.com/path3']
+
+We can see that everything works as expected, but here
+    >>> import re
+    >>> from fastchain import Chain, node_maker
+    >>> from pprint import pp
+    >>> markup = """
+    ... <html>
+    ...     <body>
+    ...         <a href="https://justasimpleexample.com/path1">click here</a>
+    ...         <a href="https://justasimpleexample.com/path2">click here</a>
+    ...         <a href="https://justasimpleexample.com/path3">click here</a>
+    ...     </body>
+    ... </html>
+    ... """
+    >>> chain = Chain('my_chain', chainable(re.findall, r'href="(.+?)"', flags=re.DOTALL, name="extract-links"))
+    >>> pp(chain(markup))facto
+    >>> from pprint import pp
+    >>> markup = """
+    ... <html>
+    ...     <body>
+    ...         <a href="https://justasimpleexample.com/path1">click here</a>
+    ...         <a href="https://justasimpleexample.com/path2">click here</a>
+    ...         <a href="https://justasimpleexample.com/path3">click here</a>
+    ...     </body>
+    ... </html>
+    ... """
+    >>> chain = Chain('my_chain', chainable(re.findall, r'href="(.+?)"', flags=re.DOTALL, name="extract-links"))
+    >>> pp(chain(markup))
+    ['https://justasimpleexample.com/path1',
+     'https://justasimpleexample.com/path2',
+     'https://justasimpleexample.com/path3']
+
+We can see that everything works as expected, but here
+    >>> import re
+    >>> from fastchain import Chain, nodefac
+    >>> from pprint import pp
+    >>> markup = """
+    ... <html>
+    ...     <body>
+    ...         <a href="https://justasimpleexample.com/path1">click here</a>
+    ...         <a href="https://justasimpleexample.com/path2">click here</a>
+    ...         <a href="https://justasimpleexample.com/path3">click here</a>
+    ...     </body>
+    ... </html>
+    ... """
+    >>> chain = Chain('my_chain', chainable(re.findall, r'href="(.+?)"', flags=re.DOTALL, name="extract-links"))
+    >>> pp(chain(markup))
+    ['https://justasimpleexample.com/path1',
+     'https://justasimpleexample.com/path2',
+     'https://justasimpleexample.com/path3']
+
+We can see that everything works as expected, but here
+    >>> import re
+    >>> from fastchain import Chain, chainable
+    >>> from pprint import pp
+    >>> markup = """
+    ... <html>
+    ...     <body>
+    ...         <a href="https://justasimpleexample.com/path1">click here</a>
+    ...         <a href="https://justasimpleexample.com/path2">click here</a>
+    ...         <a href="https://justasimpleexample.com/path3">click here</a>
+    ...     </body>
+    ... </html>
+    ... """
+    >>> chain = Chain('my_chain', chainable(re.findall, r'href="(.+?)"', flags=re.DOTALL, name="extract-links"))
+    >>> pp(chain(markup))
+    ['https://justasimpleexample.com/path1',
+     'https://justasimpleexample.com/path2',
+     'https://justasimpleexample.com/path3']
+
+We can see that everything works as expected, but here
+    >>> import re
+    >>> from fastchain import Chain, chainable
+    >>> from pprint import pp
+    >>> markup = """
+    ... <html>
+    ...     <body>
+    ...         <a href="https://justasimpleexample.com/path1">click here</a>
+    ...         <a href="https://justasimpleexample.com/path2">click here</a>
+    ...         <a href="https://justasimpleexample.com/path3">click here</a>
+    ...     </body>
+    ... </html>
+    ... """
+    >>> chain = Chain('my_chain', chainable(re.findall, r'href="(.+?)"', flags=re.DOTALL, name="extract-links"))
+    >>> pp(chain(markup))
+    ['https://justasimpleexample.com/path1',
+     'https://justasimpleexample.com/path2',
+     'https://justasimpleexample.com/path3']
+
+We can see that everything works as expected, but here
+    >>> import re
+    >>> from fastchain import Chain, chainable
+    >>> from pprint import pp
+    >>> markup = """
+    ... <html>
+    ...     <body>
+    ...         <a href="https://justasimpleexample.com/path1">click here</a>
+    ...         <a href="https://justasimpleexample.com/path2">click here</a>
+    ...         <a href="https://justasimpleexample.com/path3">click here</a>
+    ...     </body>
+    ... </html>
+    ... """
+    >>> chain = Chain('my_chain', chainable(re.findall, r'href="(.+?)"', flags=re.DOTALL, name="extract-links"))
+    >>> pp(chain(markup))
+    ['https://justasimpleexample.com/path1',
+     'https://justasimpleexample.com/path2',
+     'https://justasimpleexample.com/path3']
+
+We can see that everything works as expected, but here
+    >>> import re
+    >>> from fastchain import Chain, node_maker
+    >>> from pprint import pp
+    >>> markup = """
+    ... <html>
+    ...     <body>
+    ...         <a href="https://justasimpleexample.com/path1">click here</a>
+    ...         <a href="https://justasimpleexample.com/path2">click here</a>
+    ...         <a href="https://justasimpleexample.com/path3">click here</a>
+    ...     </body>
+    ... </html>
+    ... """
+    >>> chain = Chain('my_chain', chainable(re.findall, r'href="(.+?)"', flags=re.DOTALL, name="extract-links"))
+    >>> pp(chain(markup))facto
+    >>> from pprint import pp
+    >>> markup = """
+    ... <html>
+    ...     <body>
+    ...         <a href="https://justasimpleexample.com/path1">click here</a>
+    ...         <a href="https://justasimpleexample.com/path2">click here</a>
+    ...         <a href="https://justasimpleexample.com/path3">click here</a>
+    ...     </body>
+    ... </html>
+    ... """
+    >>> chain = Chain('my_chain', chainable(re.findall, r'href="(.+?)"', flags=re.DOTALL, name="extract-links"))
+    >>> pp(chain(markup))
+    ['https://justasimpleexample.com/path1',
+     'https://justasimpleexample.com/path2',
+     'https://justasimpleexample.com/path3']
+
+We can see that everything works as expected, but here
+    >>> import re
+    >>> from fastchain import Chain, nodefac
+    >>> from pprint import pp
+    >>> markup = """
+    ... <html>
+    ...     <body>
+    ...         <a href="https://justasimpleexample.com/path1">click here</a>
+    ...         <a href="https://justasimpleexample.com/path2">click here</a>
+    ...         <a href="https://justasimpleexample.com/path3">click here</a>
+    ...     </body>
+    ... </html>
+    ... """
+    >>> chain = Chain('my_chain', chainable(re.findall, r'href="(.+?)"', flags=re.DOTALL, name="extract-links"))
+    >>> pp(chain(markup))
+    ['https://justasimpleexample.com/path1',
+     'https://justasimpleexample.com/path2',
+     'https://justasimpleexample.com/path3']
+
+We can see that everything works as expected, but here
+    >>> import re
+    >>> from fastchain import Chain, chainable
+    >>> from pprint import pp
+    >>> markup = """
+    ... <html>
+    ...     <body>
+    ...         <a href="https://justasimpleexample.com/path1">click here</a>
+    ...         <a href="https://justasimpleexample.com/path2">click here</a>
+    ...         <a href="https://justasimpleexample.com/path3">click here</a>
+    ...     </body>
+    ... </html>
+    ... """
+    >>> chain = Chain('my_chain', chainable(re.findall, r'href="(.+?)"', flags=re.DOTALL, name="extract-links"))
+    >>> pp(chain(markup))
+    ['https://justasimpleexample.com/path1',
+     'https://justasimpleexample.com/path2',
+     'https://justasimpleexample.com/path3']
+
+We can see that everything works as expected, but here
+    >>> import re
+    >>> from fastchain import Chain, chainable
+    >>> from pprint import pp
+    >>> markup = """
+    ... <html>
+    ...     <body>
+    ...         <a href="https://justasimpleexample.com/path1">click here</a>
+    ...         <a href="https://justasimpleexample.com/path2">click here</a>
+    ...         <a href="https://justasimpleexample.com/path3">click here</a>
+    ...     </body>
+    ... </html>
+    ... """
+    >>> chain = Chain('my_chain', chainable(re.findall, r'href="(.+?)"', flags=re.DOTALL, name="extract-links"))
+    >>> pp(chain(markup))
+    ['https://justasimpleexample.com/path1',
+     'https://justasimpleexample.com/path2',
+     'https://justasimpleexample.com/path3']
+
+We can see that everything works as expected, but here
+    >>> import re
+    >>> from fastchain import Chain, chainable
+    >>> from pprint import pp
+    >>> markup = """
+    ... <html>
+    ...     <body>
+    ...         <a href="https://justasimpleexample.com/path1">click here</a>
+    ...         <a href="https://justasimpleexample.com/path2">click here</a>
+    ...         <a href="https://justasimpleexample.com/path3">click here</a>
+    ...     </body>
+    ... </html>
+    ... """
+    >>> chain = Chain('my_chain', chainable(re.findall, r'href="(.+?)"', flags=re.DOTALL, name="extract-links"))
+    >>> pp(chain(markup))
+    ['https://justasimpleexample.com/path1',
+     'https://justasimpleexample.com/path2',
+     'https://justasimpleexample.com/path3']
+
+We can see that everything works as expected, but here
+    >>> import re
+    >>> from fastchain import Chain, facto
+    >>> from pprint import pp
+    >>> markup = """
+    ... <html>
+    ...     <body>
+    ...         <a href="https://justasimpleexample.com/path1">click here</a>
+    ...         <a href="https://justasimpleexample.com/path2">click here</a>
+    ...         <a href="https://justasimpleexample.com/path3">click here</a>
+    ...     </body>
+    ... </html>
+    ... """
+    >>> chain = Chain('my_chain', chainable(re.findall, r'href="(.+?)"', flags=re.DOTALL, name="extract-links"))
+    >>> pp(chain(markup))facto
+    >>> from pprint import pp
+    >>> markup = """
+    ... <html>
+    ...     <body>
+    ...         <a href="https://justasimpleexample.com/path1">click here</a>
+    ...         <a href="https://justasimpleexample.com/path2">click here</a>
+    ...         <a href="https://justasimpleexample.com/path3">click here</a>
+    ...     </body>
+    ... </html>
+    ... """
+    >>> chain = Chain('my_chain', chainable(re.findall, r'href="(.+?)"', flags=re.DOTALL, name="extract-links"))
+    >>> pp(chain(markup))
+    ['https://justasimpleexample.com/path1',
+     'https://justasimpleexample.com/path2',
+     'https://justasimpleexample.com/path3']
+
+We can see that everything works as expected, but here
+    >>> import re
+    >>> from fastchain import Chain, nodefac
+    >>> from pprint import pp
+    >>> markup = """
+    ... <html>
+    ...     <body>
+    ...         <a href="https://justasimpleexample.com/path1">click here</a>
+    ...         <a href="https://justasimpleexample.com/path2">click here</a>
+    ...         <a href="https://justasimpleexample.com/path3">click here</a>
+    ...     </body>
+    ... </html>
+    ... """
+    >>> chain = Chain('my_chain', chainable(re.findall, r'href="(.+?)"', flags=re.DOTALL, name="extract-links"))
+    >>> pp(chain(markup))
+    ['https://justasimpleexample.com/path1',
+     'https://justasimpleexample.com/path2',
+     'https://justasimpleexample.com/path3']
+
+We can see that everything works as expected, but here
+    >>> import re
+    >>> from fastchain import Chain, chainable
+    >>> from pprint import pp
+    >>> markup = """
+    ... <html>
+    ...     <body>
+    ...         <a href="https://justasimpleexample.com/path1">click here</a>
+    ...         <a href="https://justasimpleexample.com/path2">click here</a>
+    ...         <a href="https://justasimpleexample.com/path3">click here</a>
+    ...     </body>
+    ... </html>
+    ... """
+    >>> chain = Chain('my_chain', chainable(re.findall, r'href="(.+?)"', flags=re.DOTALL, name="extract-links"))
+    >>> pp(chain(markup))
+    ['https://justasimpleexample.com/path1',
+     'https://justasimpleexample.com/path2',
+     'https://justasimpleexample.com/path3']
+
+We can see that everything works as expected, but here
+    >>> import re
+    >>> from fastchain import Chain, chainable
+    >>> from pprint import pp
+    >>> markup = """
+    ... <html>
+    ...     <body>
+    ...         <a href="https://justasimpleexample.com/path1">click here</a>
+    ...         <a href="https://justasimpleexample.com/path2">click here</a>
+    ...         <a href="https://justasimpleexample.com/path3">click here</a>
+    ...     </body>
+    ... </html>
+    ... """
+    >>> chain = Chain('my_chain', chainable(re.findall, r'href="(.+?)"', flags=re.DOTALL, name="extract-links"))
+    >>> pp(chain(markup))
+    ['https://justasimpleexample.com/path1',
+     'https://justasimpleexample.com/path2',
+     'https://justasimpleexample.com/path3']
+
+We can see that everything works as expected, but here
+    >>> import re
     >>> from fastchain import Chain, chainable
     >>> from pprint import pp
     >>> markup = """

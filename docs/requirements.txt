@@ -1,4 +1,4 @@
-Sphinx==5.1.1
-furo==2022.6.21
-sphinxcontrib-mermaid==0.7.1
-fastchain==0.1.0
+Sphinx==6.1.3
+furo==2022.12.7
+sphinxcontrib-mermaid==0.8.1
+# fastchain==0.1.0

@@ -1,26 +1,31 @@
 ===============
 Getting started
 ===============
-In this chapter we will be making our first steps and discover FastChain and its basic API and features,
-advance topics will be covered on next chapters.
 
-Installation
-============
-To start using it we need first to install from PyPI
+In this chapter we will be making our first steps using fastchain and its basic features,
+the next chapters will be covering specific and advanced topics in depth.
 
-.. code-block:: shell
+.. note::
 
-    pip install fastchain
+    Make sure to :ref:`install <installation>` ``fastchain`` first to be able to use it.
 
-However, if you want to test latest features before releases, you can get the newest instance
-directly from the Github Repository *(not recommended for production)*
+Simple use case
+===============
 
-.. code-block:: shell
+In this basic example, we will create a chain of functions to evaluate the average of numbers given in a string,
+the input value will be `"12.5 56.33 54.7 29.65"` and the required output is `38.295`
 
-    pip install git+https://github.com/mediadnan/fastchain.git#egg=fastchain
+For that we will be using the builtin |statistics.mean_docs| to evaluate the average, our code will be like:
 
-We can check if the installation went as expected by running :code:`pip show fastchain`,
-and after making sure it was correctly installed we can start using it.
+.. code-block:: python
+
+    >>> from statistics import mean
+    >>> from fastchain import chain, loop
+    >>> num_avg = chain(str.split, loop(float), mean)
+    >>> num_avg("12.5 56.33 54.7 29.65")
+    38.295
+
+
 
 Creating a chain
 ================

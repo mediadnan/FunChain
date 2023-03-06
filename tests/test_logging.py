@@ -1,57 +1,70 @@
-import re
+from datetime import datetime
 
 import pytest
-from logging import getLogger, INFO, ERROR
+import logging
 
-from fastchain._abc import FailureDetails
-from fastchain.monitoring import LoggingHandler
-
-
-@pytest.mark.parametrize('print_stats', (True, False))
-def test_logging_handler_bad_args_creation(print_stats):
-    with pytest.raises(TypeError):
-        LoggingHandler(object(), print_stats)  # noqa
-
-
-@pytest.mark.parametrize('print_stats', (True, False))
-@pytest.mark.parametrize('input, logger', (
-        (None, getLogger('fastchain')),
-        (getLogger('test'), getLogger('test')),
-        ('test', getLogger('test'))
-))
-def test_logging_handler_creation(input, logger, print_stats):
-    lh = LoggingHandler(input, print_stats)
-    assert lh.logger is logger
-    assert lh.print_stats is print_stats
+from fastchain.reporter import (
+    Severity,
+    OPTIONAL,
+    NORMAL,
+    INHERIT,
+    REQUIRED,
+    FailureData,
+    FailureLogger,
+)
 
 
-@pytest.mark.parametrize('failure, level', [
-    (FailureDetails(source='test', input=None, error=Exception('test failure'), fatal=True), ERROR),
-    (FailureDetails(source='test', input=None, error=Exception('test failure'), fatal=False), INFO),
-])
-def test_failures_handling(caplog, failure, level):
-    logger = getLogger('test_logger')
-    lh = LoggingHandler(logger, False)
-    with caplog.at_level(level, logger.name):
-        lh.handle_report(dict(rate=1, succeeded=3, failed=1, missed=0, required=2, total=3, failures=[failure]))
-    assert len(caplog.records) == 1
-    assert caplog.records[0].levelno == level
-    assert caplog.records[0].message == "test raised Exception('test failure') when receiving <class 'NoneType'>: None"
+def test_severity_values():
+    """Severity values MUST be constant through minor and patch versions at least"""
+    assert Severity.OPTIONAL is OPTIONAL
+    assert Severity.NORMAL is NORMAL
+    assert Severity.INHERIT is INHERIT
+    assert Severity.REQUIRED is REQUIRED
+    assert OPTIONAL.value == -1
+    assert NORMAL.value == 0
+    assert INHERIT.value == 0
+    assert REQUIRED.value == 1
 
 
-def test_stats_handling(capfd):
-    logger = getLogger('test_logger')
-    lh1 = LoggingHandler(logger, True)
-    report = dict(rate=1, succeeded=2, failed=0, missed=0, required=1, total=2, failures=[])
-    lh1.handle_report(report)
-    cap = capfd.readouterr()
-    assert re.search(
-        r'success percentage:\s*100%\s*'
-        r'successful operations:\s*2\s*'
-        r'unsuccessful operations:\s*0\s*'
-        r'unreached nodes:\s*0\s*'
-        r'required nodes:\s*1\s*'
-        r'total number of nodes:\s*2',
-        cap.out,
-        re.MULTILINE
+def test_failure_data_object():
+    time = datetime.now()
+    fd = FailureData(
+        'path.to.failure.source',
+        'mock failure for test',
+        time,
+        REQUIRED,
+        dict(additional='details')
     )
+    assert fd.source == 'path.to.failure.source'
+    assert fd.description == "mock failure for test"
+    assert fd.datetime == time
+    assert fd.severity is REQUIRED
+    assert fd.details['additional'] == "details"
+
+
+@pytest.mark.parametrize('severity, log_level, log_name', [
+    (NORMAL, logging.WARNING, 'WARNING'),
+    (REQUIRED, logging.ERROR, 'ERROR'),
+])
+def test_failure_logger(caplog, severity, log_level, log_name):
+    logger_name = 'FastChain'
+    logger = FailureLogger(logger_name)
+    dt = datetime(2023, 6, 6)
+    assert logger._logger.name == logger_name, "Logger name should be set by FailureLogger constructor"
+    with caplog.at_level(log_level, logger_name):
+        logger(FailureData('path.to.source', 'test message', dt, severity=severity))
+    log_record = caplog.records.pop()
+    assert log_record.levelno == log_level, "Logging level should reflect the severity level"
+    assert (log_record.message == f"path.to.source [{log_name}] :: test message 2023-06-06 00:00:00",
+            "The log template should match the default format")
+
+
+def test_failure_file_logging(tmp_path):
+    log_file = tmp_path/'logs.txt'
+    dt = datetime(2023, 6, 6)
+    assert not log_file.exists(), "File should not exist"
+    logger = FailureLogger(_file=log_file)
+    failure = FailureData('failure.source', 'failed for test', dt)
+    logger(failure)
+    assert (log_file.read_text() == f"path.to.source [WARNING] :: test message 2023-06-06 00:00:00",
+            "File log should match the default format")

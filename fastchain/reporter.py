@@ -21,28 +21,31 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from os import PathLike
 from types import TracebackType
-from typing import Any, overload, Self, Callable
+from typing import Any, overload, Callable, Self
 
 from ._util import pascal_to_snake
 
 
-
-
 class Severity(IntEnum):
-    """Defines levels of severity, each with different failure reaction"""
-    def __new__(cls, value, doc=None):
-        # Adding docstring to Enum members, idea form:
-        # https://stackoverflow.com/questions/50473951/how-can-i-attach-documentation-to-members-of-a-python-enum
-        self = object.__new__(cls)  # calling super().__new__(value) here would fail
-        self._value_ = value
-        if doc is not None:
-            self.__doc__ = doc
-        return self
+    """
+    Defines different levels of severity, each one for a different failure reaction
 
-    OPTIONAL = -1, "Basically indicates that the failure should be ignored"
-    NORMAL = 0, "Indicates that the failure should be reported but without failure"
-    INHERIT = 0, "The same as NORMAL, but could be overriden by any other severity"
-    REQUIRED = 1, "Indicates that the failure should be handled and the process should stop"
+    OPTIONAL
+        Basically indicates that the failure should be ignored
+
+    NORMAL
+        Indicates that the failure should be reported but without failure
+
+    INHERIT
+        The same as NORMAL, but could be overriden by any other severity
+
+    REQUIRED
+        Indicates that the failure should be handled and the process should stop
+    """
+    OPTIONAL = -1
+    NORMAL = 0
+    INHERIT = 0
+    REQUIRED = 1
 
 
 # severity shortcuts
@@ -67,7 +70,7 @@ class Failure(Exception):
         self.details = details
 
 
-@dataclass(slots=True, kw_only=True, order=False, frozen=True)
+@dataclass(order=False, frozen=True, slots=True)
 class FailureData:
     """
     Structured failure data automatically created by fastchain.reporter.Reporter,
@@ -86,9 +89,9 @@ class FailureData:
     """
     source: str
     description: str
-    datetime: datetime
-    severity: Severity
-    details: dict[str, Any] = field(repr=False)
+    datetime: datetime = field(default_factory=datetime.now)
+    severity: Severity = field(default=NORMAL)
+    details: dict[str, Any] = field(default_factory=dict, repr=False)
 
 
 class FailureLogger:
@@ -129,10 +132,9 @@ class FailureLogger:
             logger.addHandler(file_handler)
         self._logger = logger
 
-
     def __call__(self, failure: FailureData):
         lvl = logging.ERROR if (failure.severity is REQUIRED) else logging.WARNING
-        self._logger.log(lvl, failure.description, extra={'failure_source': failure.source,})
+        self._logger.log(lvl, failure.description, extra={'failure_source': failure.source, })
 
 
 class Reporter:
@@ -188,7 +190,7 @@ class Reporter:
             self,
             exc_type: type[Exception] | None,
             exc_val: Exception | None,
-            exc_tb: TracebackType
+            exc_tb: TracebackType | None
     ) -> bool:
         if exc_type is None:
             return True

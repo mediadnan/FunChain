@@ -14,17 +14,8 @@
 
 
 ## Introduction
-FastChain is a library that provide few tools for composing small functions to make data processing flows,
-isolating each precessing step *(function)* that may fail for a given input and need to be handled and reported.
-This tool can be used together with other frameworks to easily create reusable data extracting pipelines 
-and reduce boilerplate code needed to safely handle each step manually so that will be handled automatically.
-
-The functionality was first part of another service that extracts and cleans web data, and then was separated
-to be kept as an external open-source general-purpose dependency than can be used in different fields.
-
-### Audience
-FastChain is targeting projects that interact with inconsistent sources of data that may occasionally fail
-without breaking the main program. 
+FastChain is a package that provides tools and utilities to easily compose ***chain*** functions sequentially, 
+and create simple processing pipelines with minimum code and simple syntax *(such as OR operator ``func1 | func2``)*
 
 ## Installation
 Install FastChain from PyPI by running this command
@@ -33,7 +24,42 @@ Install FastChain from PyPI by running this command
 pip install fastchain
 ````
 
+## Audience
+This package falls into the '*developers tools*' category, its main purpose is to ease the process of software
+development and lower the code repetition. Thus, it's mainly targeting python developers of any niche.
+
+## Features
+The main and obvious features are:
+
+### Chaining multiple functions 🔗
+The main goal and first goal of this package is the composition of multiple into a single one, 
+and to do so we can simply use the OR ``|`` operator between nodes.
+
+Piping *(with ``|``)* a sequence of functions *(or any callables)* returns a **callable** that passes results from
+ one function to the next.
+This feature also supports conditional and optional chaining.
+
+### Spreading/mapping results 🎉
+Piping *(with ``*``)* a function to indicate that it should be called with each item of an **iterable**.
+
+### Branching result 🦑
+
+If at somme point we need to extract multiple data from the same input, we can pipe a ``dict`` , ``list``, ``set`` ...
+of functions; such as ``func1 | {'branch1': func2, 'branch2': func3}`` or ``func1 | [func2, func3]`` ...
+
+### Debug friendly 🪲
+An exception raised by a function ***(node)*** inside a chain will be raised as a special ``Exception`` subclass
+that holds the **location** of the failure *(with a unix path like syntax ``'path/to/function'``)* that pinpoints
+which function failed, together with the **description** and the **data** *(input)* that caused it.
+
+### Customisation and integration ⚙️
+...
+
+
 ## Usage
+
+
+
 In these example we will only scratch the surface to get and idea,
 to learn more about FastChain please visit the [documentation page](https://fast-chain.readthedocs.io/en/latest/)
 
@@ -156,14 +182,14 @@ The new code will look like this
 
 ````python
 from math import sqrt
-from fastchain import Chain, chainable
+from fastchain import Chain, node_factory
 
 rounded_square_roots = Chain(
-  "rounded_square_roots",
-  chainable(str.split, sep=',', default_factory=list),
-  '*', 
-  (float, sqrt, chainable(round, ndigits=2)),
-  list
+    "rounded_square_roots",
+    node_factory(str.split, sep=',', default_factory=list),
+    '*',
+    (float, sqrt, node_factory(round, ndigits=2)),
+    list
 )
 ````
 
@@ -191,15 +217,15 @@ by passing an additional keyword argument to the constructor ``print_stats=True`
 
 ````python
 from math import sqrt
-from fastchain import Chain, chainable
+from fastchain import Chain, node_factory
 
 rounded_square_roots = Chain(
-  "rounded_square_roots",
-  chainable(str.split, sep=',', default_factory=list),
-  '*', 
-  (float, sqrt, chainable(round, ndigits=2)),
-  list,
-  print_stats=True
+    "rounded_square_roots",
+    node_factory(str.split, sep=',', default_factory=list),
+    '*',
+    (float, sqrt, node_factory(round, ndigits=2)),
+    list,
+    print_stats=True
 )
 ````
 
