@@ -4,7 +4,7 @@ from typing import overload, Callable, ParamSpec, Any
 from inspect import signature
 from functools import update_wrapper, WRAPPER_ASSIGNMENTS
 
-from ._util import get_name
+from ._util import get_name, is_async
 from .node import (
     BaseNode,
     AsyncBaseNode,
@@ -22,9 +22,28 @@ from .node import (
 )
 
 
-def _build(obj):
+def build(obj, /, name: str | None = None) -> BaseNode:
     if isinstance(obj, BaseNode):
+        node = obj.copy()
+    elif callable(obj):
+        name = name or get_name(obj)
+        node = AsyncNode(obj) if is_async(obj) else Node(obj)
+    elif isinstance(obj, tuple):
+        nodes = list(filter(None, (build(item) for item in obj)))
+        async_nodes = set(isinstance(node, AsyncNode) for node in nodes)
+        if any(async_nodes):
+            if not all(async_nodes):
+                nodes = [node.to_async() for node in nodes]
+            node = AsyncChain(nodes)
+        node = Chain(nodes)
+    elif isinstance(obj, dict):
         pass
+    elif isinstance(obj, list):
+        pass
+    else:
+        raise TypeError("Unsupported type for chaining")
+
+
 
 
 def chain(*args: Chainable) -> Chain:
