@@ -1,13 +1,15 @@
 import functools
 import warnings
-from typing import overload, Callable, ParamSpec, Any
+from typing import Coroutine, Iterable, overload, Callable, ParamSpec, Any
 from inspect import signature
 from functools import update_wrapper, WRAPPER_ASSIGNMENTS
 
 from ._util import get_name, is_async
 from .node import (
+    AsyncLoop,
     BaseNode,
     AsyncBaseNode,
+    Loop,
     Node,
     AsyncNode,
     ListModel,
@@ -22,44 +24,61 @@ from .node import (
 )
 
 
-def build(obj, /, name: str | None = None) -> BaseNode:
+def _build_collection(items: Iterable[Chainable], /) -> tuple[bool, list[BaseNode]]:
+    nodes = [build(item) for item in items]
+    nodes_are_async = set(isinstance(node, AsyncNode) for node in nodes)
+    if any(nodes_are_async):
+        if not all(nodes_are_async):
+            nodes = [node.to_async() for node in nodes]
+        return True, nodes
+    return False, nodes
+
+
+def build(obj, /) -> BaseNode | AsyncBaseNode:
     if isinstance(obj, BaseNode):
-        node = obj.copy()
+        return obj.copy()
     elif callable(obj):
-        name = name or get_name(obj)
-        node = AsyncNode(obj) if is_async(obj) else Node(obj)
+        return node(obj)
     elif isinstance(obj, tuple):
-        nodes = list(filter(None, (build(item) for item in obj)))
-        async_nodes = set(isinstance(node, AsyncNode) for node in nodes)
-        if any(async_nodes):
-            if not all(async_nodes):
-                nodes = [node.to_async() for node in nodes]
-            node = AsyncChain(nodes)
-        node = Chain(nodes)
+        are_async, nodes = _build_collection(obj)
+        nodes = list(filter(None, nodes))
+        if len(nodes) == 1:
+            return nodes[0]
+        return AsyncChain(nodes) if are_async else Chain(nodes)
     elif isinstance(obj, dict):
-        pass
+        branches, items = zip(*obj.items())
+        Models = DictModel, AsyncDictModel
     elif isinstance(obj, list):
-        pass
+        branches, items = zip(*enumerate(obj))
+        Models = ListModel, AsyncListModel
     else:
         raise TypeError("Unsupported type for chaining")
+    are_async, nodes = _build_collection(items)
+    return Models[are_async](list(zip(branches, nodes, strict=True)))
 
 
+@overload
+def node(function: Callable[[Input], Coroutine[None, None, Output]], /, name: str = ...) -> AsyncNode: ...
+@overload
+def node(function: Callable[[Input], Output], /, name: str = ...) -> Node: ...
+
+
+def node(function: Callable[[Input], Output], /, name: str | None = None) -> Node | AsyncNode:
+    if not callable(function):
+        raise TypeError("node function must be callable")
+    if name is None:
+        name = get_name(function)
+    node = AsyncNode(function) if is_async(function) else Node(function)
+    node.name = get_name(function) if name is None else name
+    return node
 
 
 def chain(*args: Chainable) -> Chain:
     pass
 
 
-@overload
-def cb() -> Chain[Input, Input]: ...
-@overload
-def cb(func: Callable[[Input], Output], /, name: str = ...) -> Node[Input, Output]: ...
-@overload
-def cb(func: Callable[[Input], Output], /, name: str = ..., *args, **kwargs) -> Node[Input, Output]: ...
-@overload
-def cb(model: dict[Any, Chainable[Input, Output]], /) -> DictModel[Input, Output]: ...
-@overload
-def cb(model: list[Chainable[Input, Output]], /) -> ListModel[Input, Output]: ...
+def loop(*args: Chainable) -> Loop | AsyncLoop:
+    return AsyncLoop(node) if isinstance((node := chain(*args)), AsyncBaseNode) else Loop(node)
 
 
 def cb(obj=None, /, name: str | None = None, *args, **kwargs):
