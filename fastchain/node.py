@@ -1,5 +1,6 @@
 import abc
 import asyncio
+from types import NoneType
 from typing import (
     Any,
     Self,
@@ -181,7 +182,7 @@ class Loop(BaseNode[BaseNode[Input, Output], Iterable[Input], list[Output]], Gen
 
 
 class AsyncLoop(AsyncBaseNode[AsyncBaseNode[Input, Output], Iterable[Input], list[Output]], Generic[Input, Output]):
-    def process(self, args: Iterable[Input], reporter: Reporter) -> Feedback[list[Output]]:
+    async def process(self, args: Iterable[Input], reporter: Reporter) -> Feedback[list[Output]]:
         results = await asyncio.gather(*[
             asyncio.create_task(self.__core.process(arg, reporter(f'input-{i}')))
             for i, arg in enumerate(args)
@@ -252,3 +253,22 @@ class DictModel(Model[Input, dict[Any, Output]], DictModelMixin, CollectionMixin
 
 class AsyncDictModel(AsyncModel[Input, dict[Any, Output]], DictModelMixin, CollectionMixin, Generic[Input, Output]):
     pass
+
+
+class PassiveNode(BaseNode[NoneType, Input, Input], Generic[Input]):
+    def __bool__(self) -> bool:
+        return False
+
+    def to_async(self) -> 'AsyncBaseNode':
+        return AsyncPassiveNode(None)
+
+    def process(self, arg: Input, _: Reporter) -> Input:
+        return arg
+
+
+class AsyncPassiveNode(AsyncBaseNode[NoneType, Input, Input], Generic[Input]):
+    def __bool__(self) -> bool:
+        return False
+
+    async def process(self, arg: Input, _: Reporter) -> Input:
+        return arg

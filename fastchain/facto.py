@@ -4,7 +4,7 @@ from typing import Coroutine, Iterable, overload, Callable, ParamSpec, Any
 from inspect import signature
 from functools import update_wrapper, WRAPPER_ASSIGNMENTS
 
-from ._util import get_name, is_async
+from ._util import get_name, is_async, get_varname
 from .node import (
     AsyncLoop,
     BaseNode,
@@ -21,6 +21,7 @@ from .node import (
     Input,
     Output,
     Chainable,
+    PassiveNode,
 )
 
 
@@ -40,11 +41,7 @@ def build(obj, /) -> BaseNode | AsyncBaseNode:
     elif callable(obj):
         return node(obj)
     elif isinstance(obj, tuple):
-        are_async, nodes = _build_collection(obj)
-        nodes = list(filter(None, nodes))
-        if len(nodes) == 1:
-            return nodes[0]
-        return AsyncChain(nodes) if are_async else Chain(nodes)
+        return chain(*obj)
     elif isinstance(obj, dict):
         branches, items = zip(*obj.items())
         Models = DictModel, AsyncDictModel
@@ -56,65 +53,39 @@ def build(obj, /) -> BaseNode | AsyncBaseNode:
     are_async, nodes = _build_collection(items)
     return Models[are_async](list(zip(branches, nodes, strict=True)))
 
-
 @overload
-def node(function: Callable[[Input], Coroutine[None, None, Output]], /, name: str = ...) -> AsyncNode: ...
+def node() -> PassiveNode: ...
 @overload
-def node(function: Callable[[Input], Output], /, name: str = ...) -> Node: ...
+def node(function: Callable[[Input], Coroutine[None, None, Output]], /, *, name: str = ...) -> AsyncNode[Input, Output]: ...
+@overload
+def node(function: Callable[[Input], Output], /, *, name: str = ...) -> Node[Input, Output]: ...
 
 
-def node(function: Callable[[Input], Output], /, name: str | None = None) -> Node | AsyncNode:
+def node(function: Callable[[Input], Output], /, *, name: str | None = None) -> Node[Input, Output] | AsyncNode[Input, Output]:
     if not callable(function):
         raise TypeError("node function must be callable")
     if name is None:
         name = get_name(function)
-    node = AsyncNode(function) if is_async(function) else Node(function)
-    node.name = get_name(function) if name is None else name
-    return node
+    node_ = AsyncNode(function) if is_async(function) else Node(function)
+    node_.name = get_name(function) if name is None else name
+    return node_
 
 
-def chain(*args: Chainable) -> Chain:
-    pass
+def chain(*args: Chainable, name: str | None = None) -> Chain | AsyncChain:
+    are_async, nodes = _build_collection(args)
+    nodes = list(filter(None, nodes))
+    if not nodes:
+        return PassiveNode()
+    elif len(nodes) == 1:
+        return nodes[0]
+    node_ = AsyncChain(nodes) if are_async else Chain(nodes)
+    node_.name = get_varname() if name is None else name
+    return node_
 
 
 def loop(*args: Chainable) -> Loop | AsyncLoop:
     return AsyncLoop(node) if isinstance((node := chain(*args)), AsyncBaseNode) else Loop(node)
 
-
-def cb(obj=None, /, name: str | None = None, *args, **kwargs):
-    """
-    wraps a function (or list / dict of functions) and turns it into a node,
-    if called without arguments, the function returns a Node equivalent to
-    lambda x: x, and it's more optimized than node(lambda x: x)
-
-    :param obj:
-    :type obj:
-    :param name:
-    :type name:
-    :return:
-    :rtype:
-    """
-    if obj is None:
-        return PassiveNode()
-    if callable(obj):
-        if args or kwargs:
-            obj = functools.partial(obj, *args, **kwargs)
-        return Node(obj, name=name)
-    if isinstance(obj, dict):
-        return DictModel(obj)
-    if isinstance(obj, list):
-        return ListModel(obj)
-    if isinstance(obj, BaseNode):
-        warnings.warn("Passing a Node object to node(...) is useless", stacklevel=2)
-        return obj
-
-
-@overload
-def acb() -> AsyncChain[Input]: ...
-
-
-def acb():
-    pass
 
 
 SPEC = ParamSpec('SPEC')
@@ -145,7 +116,7 @@ def node_factory(function: Callable[SPEC, Chainable[Input, Output]], /) -> Calla
     :return: function that returns a Node wrapping the original function
     """
     def wrapper(*args: SPEC.args, **kwargs: SPEC.kwargs) -> Node:
-        return cb(function(*args, **kwargs), name=name)
+        return node(function(*args, **kwargs), name=name)
     if not callable(function):
         raise TypeError(f"node_factory decorator expects a function not {type(function).__qualname__!r}")
     name = get_name(function)
