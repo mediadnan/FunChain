@@ -9,6 +9,7 @@ the next chapters will be covering specific and advanced topics in depth.
 
     Make sure to :ref:`install <installation>` ``fastchain`` first to be able to use it.
 
+
 Simple use case
 ===============
 

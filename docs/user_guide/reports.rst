@@ -335,6 +335,352 @@ Let's analyse this example:
 
 .. code-block:: pycon
 
+    >>> from fastchain import Chain, node_maker
+    >>> def inverse(num):
+    ...     return 1/num
+    >>> def handle_failures(report):
+    ...     for failure in report['failures']:
+    ...         print(failure)
+    >>> chain = Chain('test', str.split, '*', (int, '?', inverse, str), chainable(str.join, ' '), log_failures=False)
+    >>> chain.add_report_handler(handle_failures, always=True)
+    >>> result = chain('1 6 15 ab 0 -20')facto
+    >>> def inverse(num):
+    ...     return 1/num
+    >>> def handle_failures(report):
+    ...     for failure in report['failures']:
+    ...         print(failure)
+    >>> chain = Chain('test', str.split, '*', (int, '?', inverse, str), chainable(str.join, ' '), log_failures=False)
+    >>> chain.add_report_handler(handle_failures, always=True)
+    >>> result = chain('1 6 15 ab 0 -20')node_maker
+    >>> def inverse(num):
+    ...     return 1/num
+    >>> def handle_failures(report):
+    ...     for failure in report['failures']:
+    ...         print(failure)
+    >>> chain = Chain('test', str.split, '*', (int, '?', inverse, str), chainable(str.join, ' '), log_failures=False)
+    >>> chain.add_report_handler(handle_failures, always=True)
+    >>> result = chain('1 6 15 ab 0 -20')facto
+    >>> def inverse(num):
+    ...     return 1/num
+    >>> def handle_failures(report):
+    ...     for failure in report['failures']:
+    ...         print(failure)
+    >>> chain = Chain('test', str.split, '*', (int, '?', inverse, str), chainable(str.join, ' '), log_failures=False)
+    >>> chain.add_report_handler(handle_failures, always=True)
+    >>> result = chain('1 6 15 ab 0 -20')factory
+    >>> def inverse(num):
+    ...     return 1/num
+    >>> def handle_failures(report):
+    ...     for failure in report['failures']:
+    ...         print(failure)
+    >>> chain = Chain('test', str.split, '*', (int, '?', inverse, str), chainable(str.join, ' '), log_failures=False)
+    >>> chain.add_report_handler(handle_failures, always=True)
+    >>> result = chain('1 6 15 ab 0 -20')facto
+    >>> def inverse(num):
+    ...     return 1/num
+    >>> def handle_failures(report):
+    ...     for failure in report['failures']:
+    ...         print(failure)
+    >>> chain = Chain('test', str.split, '*', (int, '?', inverse, str), chainable(str.join, ' '), log_failures=False)
+    >>> chain.add_report_handler(handle_failures, always=True)
+    >>> result = chain('1 6 15 ab 0 -20')node_maker
+    >>> def inverse(num):
+    ...     return 1/num
+    >>> def handle_failures(report):
+    ...     for failure in report['failures']:
+    ...         print(failure)
+    >>> chain = Chain('test', str.split, '*', (int, '?', inverse, str), chainable(str.join, ' '), log_failures=False)
+    >>> chain.add_report_handler(handle_failures, always=True)
+    >>> result = chain('1 6 15 ab 0 -20')facto
+    >>> def inverse(num):
+    ...     return 1/num
+    >>> def handle_failures(report):
+    ...     for failure in report['failures']:
+    ...         print(failure)
+    >>> chain = Chain('test', str.split, '*', (int, '?', inverse, str), chainable(str.join, ' '), log_failures=False)
+    >>> chain.add_report_handler(handle_failures, always=True)
+    >>> result = chain('1 6 15 ab 0 -20')
+    {'source': 'test/sequence[1]/sequence[0]/int', 'input': 'ab', 'error': ValueError("invalid literal for int() with base 10: 'ab'"), 'fatal': True}
+    {'source': 'test/sequence[1]/sequence[1]/inverse', 'input': 0, 'error': ZeroDivisionError('division by zero'), 'fatal': False}
+
+And understand what each of those keys means.
+    >>> from fastchain import Chain, nodefac
+    >>> def inverse(num):
+    ...     return 1/num
+    >>> def handle_failures(report):
+    ...     for failure in report['failures']:
+    ...         print(failure)
+    >>> chain = Chain('test', str.split, '*', (int, '?', inverse, str), chainable(str.join, ' '), log_failures=False)
+    >>> chain.add_report_handler(handle_failures, always=True)
+    >>> result = chain('1 6 15 ab 0 -20')
+    {'source': 'test/sequence[1]/sequence[0]/int', 'input': 'ab', 'error': ValueError("invalid literal for int() with base 10: 'ab'"), 'fatal': True}
+    {'source': 'test/sequence[1]/sequence[1]/inverse', 'input': 0, 'error': ZeroDivisionError('division by zero'), 'fatal': False}
+
+And understand what each of those keys means.
+    >>> from fastchain import Chain, chainable
+    >>> def inverse(num):
+    ...     return 1/num
+    >>> def handle_failures(report):
+    ...     for failure in report['failures']:
+    ...         print(failure)
+    >>> chain = Chain('test', str.split, '*', (int, '?', inverse, str), chainable(str.join, ' '), log_failures=False)
+    >>> chain.add_report_handler(handle_failures, always=True)
+    >>> result = chain('1 6 15 ab 0 -20')
+    {'source': 'test/sequence[1]/sequence[0]/int', 'input': 'ab', 'error': ValueError("invalid literal for int() with base 10: 'ab'"), 'fatal': True}
+    {'source': 'test/sequence[1]/sequence[1]/inverse', 'input': 0, 'error': ZeroDivisionError('division by zero'), 'fatal': False}
+
+And understand what each of those keys means.
+    >>> from fastchain import Chain, chainable
+    >>> def inverse(num):
+    ...     return 1/num
+    >>> def handle_failures(report):
+    ...     for failure in report['failures']:
+    ...         print(failure)
+    >>> chain = Chain('test', str.split, '*', (int, '?', inverse, str), chainable(str.join, ' '), log_failures=False)
+    >>> chain.add_report_handler(handle_failures, always=True)
+    >>> result = chain('1 6 15 ab 0 -20')
+    {'source': 'test/sequence[1]/sequence[0]/int', 'input': 'ab', 'error': ValueError("invalid literal for int() with base 10: 'ab'"), 'fatal': True}
+    {'source': 'test/sequence[1]/sequence[1]/inverse', 'input': 0, 'error': ZeroDivisionError('division by zero'), 'fatal': False}
+
+And understand what each of those keys means.
+    >>> from fastchain import Chain, chainable
+    >>> def inverse(num):
+    ...     return 1/num
+    >>> def handle_failures(report):
+    ...     for failure in report['failures']:
+    ...         print(failure)
+    >>> chain = Chain('test', str.split, '*', (int, '?', inverse, str), chainable(str.join, ' '), log_failures=False)
+    >>> chain.add_report_handler(handle_failures, always=True)
+    >>> result = chain('1 6 15 ab 0 -20')
+    {'source': 'test/sequence[1]/sequence[0]/int', 'input': 'ab', 'error': ValueError("invalid literal for int() with base 10: 'ab'"), 'fatal': True}
+    {'source': 'test/sequence[1]/sequence[1]/inverse', 'input': 0, 'error': ZeroDivisionError('division by zero'), 'fatal': False}
+
+And understand what each of those keys means.
+    >>> from fastchain import Chain, chainable
+    >>> def inverse(num):
+    ...     return 1/num
+    >>> def handle_failures(report):
+    ...     for failure in report['failures']:
+    ...         print(failure)
+    >>> chain = Chain('test', str.split, '*', (int, '?', inverse, str), chainable(str.join, ' '), log_failures=False)
+    >>> chain.add_report_handler(handle_failures, always=True)
+    >>> result = chain('1 6 15 ab 0 -20')
+    {'source': 'test/sequence[1]/sequence[0]/int', 'input': 'ab', 'error': ValueError("invalid literal for int() with base 10: 'ab'"), 'fatal': True}
+    {'source': 'test/sequence[1]/sequence[1]/inverse', 'input': 0, 'error': ZeroDivisionError('division by zero'), 'fatal': False}
+
+And understand what each of those keys means.
+    >>> from fastchain import Chain, chainable
+    >>> def inverse(num):
+    ...     return 1/num
+    >>> def handle_failures(report):
+    ...     for failure in report['failures']:
+    ...         print(failure)
+    >>> chain = Chain('test', str.split, '*', (int, '?', inverse, str), chainable(str.join, ' '), log_failures=False)
+    >>> chain.add_report_handler(handle_failures, always=True)
+    >>> result = chain('1 6 15 ab 0 -20')
+    {'source': 'test/sequence[1]/sequence[0]/int', 'input': 'ab', 'error': ValueError("invalid literal for int() with base 10: 'ab'"), 'fatal': True}
+    {'source': 'test/sequence[1]/sequence[1]/inverse', 'input': 0, 'error': ZeroDivisionError('division by zero'), 'fatal': False}
+
+And understand what each of those keys means.
+    >>> from fastchain import Chain, chainable
+    >>> def inverse(num):
+    ...     return 1/num
+    >>> def handle_failures(report):
+    ...     for failure in report['failures']:
+    ...         print(failure)
+    >>> chain = Chain('test', str.split, '*', (int, '?', inverse, str), chainable(str.join, ' '), log_failures=False)
+    >>> chain.add_report_handler(handle_failures, always=True)
+    >>> result = chain('1 6 15 ab 0 -20')
+    {'source': 'test/sequence[1]/sequence[0]/int', 'input': 'ab', 'error': ValueError("invalid literal for int() with base 10: 'ab'"), 'fatal': True}
+    {'source': 'test/sequence[1]/sequence[1]/inverse', 'input': 0, 'error': ZeroDivisionError('division by zero'), 'fatal': False}
+
+And understand what each of those keys means.
+    >>> from fastchain import Chain, chainable
+    >>> def inverse(num):
+    ...     return 1/num
+    >>> def handle_failures(report):
+    ...     for failure in report['failures']:
+    ...         print(failure)
+    >>> chain = Chain('test', str.split, '*', (int, '?', inverse, str), chainable(str.join, ' '), log_failures=False)
+    >>> chain.add_report_handler(handle_failures, always=True)
+    >>> result = chain('1 6 15 ab 0 -20')
+    {'source': 'test/sequence[1]/sequence[0]/int', 'input': 'ab', 'error': ValueError("invalid literal for int() with base 10: 'ab'"), 'fatal': True}
+    {'source': 'test/sequence[1]/sequence[1]/inverse', 'input': 0, 'error': ZeroDivisionError('division by zero'), 'fatal': False}
+
+And understand what each of those keys means.
+    >>> from fastchain import Chain, node_maker
+    >>> def inverse(num):
+    ...     return 1/num
+    >>> def handle_failures(report):
+    ...     for failure in report['failures']:
+    ...         print(failure)
+    >>> chain = Chain('test', str.split, '*', (int, '?', inverse, str), chainable(str.join, ' '), log_failures=False)
+    >>> chain.add_report_handler(handle_failures, always=True)
+    >>> result = chain('1 6 15 ab 0 -20')facto
+    >>> def inverse(num):
+    ...     return 1/num
+    >>> def handle_failures(report):
+    ...     for failure in report['failures']:
+    ...         print(failure)
+    >>> chain = Chain('test', str.split, '*', (int, '?', inverse, str), chainable(str.join, ' '), log_failures=False)
+    >>> chain.add_report_handler(handle_failures, always=True)
+    >>> result = chain('1 6 15 ab 0 -20')node_maker
+    >>> def inverse(num):
+    ...     return 1/num
+    >>> def handle_failures(report):
+    ...     for failure in report['failures']:
+    ...         print(failure)
+    >>> chain = Chain('test', str.split, '*', (int, '?', inverse, str), chainable(str.join, ' '), log_failures=False)
+    >>> chain.add_report_handler(handle_failures, always=True)
+    >>> result = chain('1 6 15 ab 0 -20')facto
+    >>> def inverse(num):
+    ...     return 1/num
+    >>> def handle_failures(report):
+    ...     for failure in report['failures']:
+    ...         print(failure)
+    >>> chain = Chain('test', str.split, '*', (int, '?', inverse, str), chainable(str.join, ' '), log_failures=False)
+    >>> chain.add_report_handler(handle_failures, always=True)
+    >>> result = chain('1 6 15 ab 0 -20')factory
+    >>> def inverse(num):
+    ...     return 1/num
+    >>> def handle_failures(report):
+    ...     for failure in report['failures']:
+    ...         print(failure)
+    >>> chain = Chain('test', str.split, '*', (int, '?', inverse, str), chainable(str.join, ' '), log_failures=False)
+    >>> chain.add_report_handler(handle_failures, always=True)
+    >>> result = chain('1 6 15 ab 0 -20')facto
+    >>> def inverse(num):
+    ...     return 1/num
+    >>> def handle_failures(report):
+    ...     for failure in report['failures']:
+    ...         print(failure)
+    >>> chain = Chain('test', str.split, '*', (int, '?', inverse, str), chainable(str.join, ' '), log_failures=False)
+    >>> chain.add_report_handler(handle_failures, always=True)
+    >>> result = chain('1 6 15 ab 0 -20')node_maker
+    >>> def inverse(num):
+    ...     return 1/num
+    >>> def handle_failures(report):
+    ...     for failure in report['failures']:
+    ...         print(failure)
+    >>> chain = Chain('test', str.split, '*', (int, '?', inverse, str), chainable(str.join, ' '), log_failures=False)
+    >>> chain.add_report_handler(handle_failures, always=True)
+    >>> result = chain('1 6 15 ab 0 -20')facto
+    >>> def inverse(num):
+    ...     return 1/num
+    >>> def handle_failures(report):
+    ...     for failure in report['failures']:
+    ...         print(failure)
+    >>> chain = Chain('test', str.split, '*', (int, '?', inverse, str), chainable(str.join, ' '), log_failures=False)
+    >>> chain.add_report_handler(handle_failures, always=True)
+    >>> result = chain('1 6 15 ab 0 -20')
+    {'source': 'test/sequence[1]/sequence[0]/int', 'input': 'ab', 'error': ValueError("invalid literal for int() with base 10: 'ab'"), 'fatal': True}
+    {'source': 'test/sequence[1]/sequence[1]/inverse', 'input': 0, 'error': ZeroDivisionError('division by zero'), 'fatal': False}
+
+And understand what each of those keys means.
+    >>> from fastchain import Chain, nodefac
+    >>> def inverse(num):
+    ...     return 1/num
+    >>> def handle_failures(report):
+    ...     for failure in report['failures']:
+    ...         print(failure)
+    >>> chain = Chain('test', str.split, '*', (int, '?', inverse, str), chainable(str.join, ' '), log_failures=False)
+    >>> chain.add_report_handler(handle_failures, always=True)
+    >>> result = chain('1 6 15 ab 0 -20')
+    {'source': 'test/sequence[1]/sequence[0]/int', 'input': 'ab', 'error': ValueError("invalid literal for int() with base 10: 'ab'"), 'fatal': True}
+    {'source': 'test/sequence[1]/sequence[1]/inverse', 'input': 0, 'error': ZeroDivisionError('division by zero'), 'fatal': False}
+
+And understand what each of those keys means.
+    >>> from fastchain import Chain, chainable
+    >>> def inverse(num):
+    ...     return 1/num
+    >>> def handle_failures(report):
+    ...     for failure in report['failures']:
+    ...         print(failure)
+    >>> chain = Chain('test', str.split, '*', (int, '?', inverse, str), chainable(str.join, ' '), log_failures=False)
+    >>> chain.add_report_handler(handle_failures, always=True)
+    >>> result = chain('1 6 15 ab 0 -20')
+    {'source': 'test/sequence[1]/sequence[0]/int', 'input': 'ab', 'error': ValueError("invalid literal for int() with base 10: 'ab'"), 'fatal': True}
+    {'source': 'test/sequence[1]/sequence[1]/inverse', 'input': 0, 'error': ZeroDivisionError('division by zero'), 'fatal': False}
+
+And understand what each of those keys means.
+    >>> from fastchain import Chain, chainable
+    >>> def inverse(num):
+    ...     return 1/num
+    >>> def handle_failures(report):
+    ...     for failure in report['failures']:
+    ...         print(failure)
+    >>> chain = Chain('test', str.split, '*', (int, '?', inverse, str), chainable(str.join, ' '), log_failures=False)
+    >>> chain.add_report_handler(handle_failures, always=True)
+    >>> result = chain('1 6 15 ab 0 -20')
+    {'source': 'test/sequence[1]/sequence[0]/int', 'input': 'ab', 'error': ValueError("invalid literal for int() with base 10: 'ab'"), 'fatal': True}
+    {'source': 'test/sequence[1]/sequence[1]/inverse', 'input': 0, 'error': ZeroDivisionError('division by zero'), 'fatal': False}
+
+And understand what each of those keys means.
+    >>> from fastchain import Chain, chainable
+    >>> def inverse(num):
+    ...     return 1/num
+    >>> def handle_failures(report):
+    ...     for failure in report['failures']:
+    ...         print(failure)
+    >>> chain = Chain('test', str.split, '*', (int, '?', inverse, str), chainable(str.join, ' '), log_failures=False)
+    >>> chain.add_report_handler(handle_failures, always=True)
+    >>> result = chain('1 6 15 ab 0 -20')
+    {'source': 'test/sequence[1]/sequence[0]/int', 'input': 'ab', 'error': ValueError("invalid literal for int() with base 10: 'ab'"), 'fatal': True}
+    {'source': 'test/sequence[1]/sequence[1]/inverse', 'input': 0, 'error': ZeroDivisionError('division by zero'), 'fatal': False}
+
+And understand what each of those keys means.
+    >>> from fastchain import Chain, chainable
+    >>> def inverse(num):
+    ...     return 1/num
+    >>> def handle_failures(report):
+    ...     for failure in report['failures']:
+    ...         print(failure)
+    >>> chain = Chain('test', str.split, '*', (int, '?', inverse, str), chainable(str.join, ' '), log_failures=False)
+    >>> chain.add_report_handler(handle_failures, always=True)
+    >>> result = chain('1 6 15 ab 0 -20')
+    {'source': 'test/sequence[1]/sequence[0]/int', 'input': 'ab', 'error': ValueError("invalid literal for int() with base 10: 'ab'"), 'fatal': True}
+    {'source': 'test/sequence[1]/sequence[1]/inverse', 'input': 0, 'error': ZeroDivisionError('division by zero'), 'fatal': False}
+
+And understand what each of those keys means.
+    >>> from fastchain import Chain, chainable
+    >>> def inverse(num):
+    ...     return 1/num
+    >>> def handle_failures(report):
+    ...     for failure in report['failures']:
+    ...         print(failure)
+    >>> chain = Chain('test', str.split, '*', (int, '?', inverse, str), chainable(str.join, ' '), log_failures=False)
+    >>> chain.add_report_handler(handle_failures, always=True)
+    >>> result = chain('1 6 15 ab 0 -20')
+    {'source': 'test/sequence[1]/sequence[0]/int', 'input': 'ab', 'error': ValueError("invalid literal for int() with base 10: 'ab'"), 'fatal': True}
+    {'source': 'test/sequence[1]/sequence[1]/inverse', 'input': 0, 'error': ZeroDivisionError('division by zero'), 'fatal': False}
+
+And understand what each of those keys means.
+    >>> from fastchain import Chain, chainable
+    >>> def inverse(num):
+    ...     return 1/num
+    >>> def handle_failures(report):
+    ...     for failure in report['failures']:
+    ...         print(failure)
+    >>> chain = Chain('test', str.split, '*', (int, '?', inverse, str), chainable(str.join, ' '), log_failures=False)
+    >>> chain.add_report_handler(handle_failures, always=True)
+    >>> result = chain('1 6 15 ab 0 -20')
+    {'source': 'test/sequence[1]/sequence[0]/int', 'input': 'ab', 'error': ValueError("invalid literal for int() with base 10: 'ab'"), 'fatal': True}
+    {'source': 'test/sequence[1]/sequence[1]/inverse', 'input': 0, 'error': ZeroDivisionError('division by zero'), 'fatal': False}
+
+And understand what each of those keys means.
+    >>> from fastchain import Chain, chainable
+    >>> def inverse(num):
+    ...     return 1/num
+    >>> def handle_failures(report):
+    ...     for failure in report['failures']:
+    ...         print(failure)
+    >>> chain = Chain('test', str.split, '*', (int, '?', inverse, str), chainable(str.join, ' '), log_failures=False)
+    >>> chain.add_report_handler(handle_failures, always=True)
+    >>> result = chain('1 6 15 ab 0 -20')
+    {'source': 'test/sequence[1]/sequence[0]/int', 'input': 'ab', 'error': ValueError("invalid literal for int() with base 10: 'ab'"), 'fatal': True}
+    {'source': 'test/sequence[1]/sequence[1]/inverse', 'input': 0, 'error': ZeroDivisionError('division by zero'), 'fatal': False}
+
+And understand what each of those keys means.
     >>> from fastchain import Chain, node_factory
     >>> def inverse(num):
     ...     return 1/num

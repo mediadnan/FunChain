@@ -342,6 +342,224 @@ A better way to do this is by using ``chainable``:
 
 .. code-block:: pycon
 
+    >>> from fastchain import Chain, node_maker
+    >>> cube = Chain('cube-number',
+    ...              chainable(lambda x: x ** 3, name="cube_evaluation"),
+    ...              chainable(lambda x: f"the cube is {x}", name="cube_representation"))
+    >>> cube(None)facto
+    >>> cube = Chain('cube-number',
+    ...              chainable(lambda x: x ** 3, name="cube_evaluation"),
+    ...              chainable(lambda x: f"the cube is {x}", name="cube_representation"))
+    >>> cube(None)node_maker
+    >>> cube = Chain('cube-number',
+    ...              chainable(lambda x: x ** 3, name="cube_evaluation"),
+    ...              chainable(lambda x: f"the cube is {x}", name="cube_representation"))
+    >>> cube(None)facto
+    >>> cube = Chain('cube-number',
+    ...              chainable(lambda x: x ** 3, name="cube_evaluation"),
+    ...              chainable(lambda x: f"the cube is {x}", name="cube_representation"))
+    >>> cube(None)factory
+    >>> cube = Chain('cube-number',
+    ...              chainable(lambda x: x ** 3, name="cube_evaluation"),
+    ...              chainable(lambda x: f"the cube is {x}", name="cube_representation"))
+    >>> cube(None)facto
+    >>> cube = Chain('cube-number',
+    ...              chainable(lambda x: x ** 3, name="cube_evaluation"),
+    ...              chainable(lambda x: f"the cube is {x}", name="cube_representation"))
+    >>> cube(None)node_maker
+    >>> cube = Chain('cube-number',
+    ...              chainable(lambda x: x ** 3, name="cube_evaluation"),
+    ...              chainable(lambda x: f"the cube is {x}", name="cube_representation"))
+    >>> cube(None)facto
+    >>> cube = Chain('cube-number',
+    ...              chainable(lambda x: x ** 3, name="cube_evaluation"),
+    ...              chainable(lambda x: f"the cube is {x}", name="cube_representation"))
+    >>> cube(None)
+    cube-number/sequence[0]/cube_evaluation raised TypeError...
+
+No doubt that this log was more helpful than the previous, but naming nodes is not exclusively related
+to lambda functions and can be used for all functions to give more specific names to a processing unit.
+    >>> from fastchain import Chain, nodefac
+    >>> cube = Chain('cube-number',
+    ...              chainable(lambda x: x ** 3, name="cube_evaluation"),
+    ...              chainable(lambda x: f"the cube is {x}", name="cube_representation"))
+    >>> cube(None)
+    cube-number/sequence[0]/cube_evaluation raised TypeError...
+
+No doubt that this log was more helpful than the previous, but naming nodes is not exclusively related
+to lambda functions and can be used for all functions to give more specific names to a processing unit.
+    >>> from fastchain import Chain, chainable
+    >>> cube = Chain('cube-number',
+    ...              chainable(lambda x: x ** 3, name="cube_evaluation"),
+    ...              chainable(lambda x: f"the cube is {x}", name="cube_representation"))
+    >>> cube(None)
+    cube-number/sequence[0]/cube_evaluation raised TypeError...
+
+No doubt that this log was more helpful than the previous, but naming nodes is not exclusively related
+to lambda functions and can be used for all functions to give more specific names to a processing unit.
+    >>> from fastchain import Chain, chainable
+    >>> cube = Chain('cube-number',
+    ...              chainable(lambda x: x ** 3, name="cube_evaluation"),
+    ...              chainable(lambda x: f"the cube is {x}", name="cube_representation"))
+    >>> cube(None)
+    cube-number/sequence[0]/cube_evaluation raised TypeError...
+
+No doubt that this log was more helpful than the previous, but naming nodes is not exclusively related
+to lambda functions and can be used for all functions to give more specific names to a processing unit.
+    >>> from fastchain import Chain, chainable
+    >>> cube = Chain('cube-number',
+    ...              chainable(lambda x: x ** 3, name="cube_evaluation"),
+    ...              chainable(lambda x: f"the cube is {x}", name="cube_representation"))
+    >>> cube(None)
+    cube-number/sequence[0]/cube_evaluation raised TypeError...
+
+No doubt that this log was more helpful than the previous, but naming nodes is not exclusively related
+to lambda functions and can be used for all functions to give more specific names to a processing unit.
+    >>> from fastchain import Chain, chainable
+    >>> cube = Chain('cube-number',
+    ...              chainable(lambda x: x ** 3, name="cube_evaluation"),
+    ...              chainable(lambda x: f"the cube is {x}", name="cube_representation"))
+    >>> cube(None)
+    cube-number/sequence[0]/cube_evaluation raised TypeError...
+
+No doubt that this log was more helpful than the previous, but naming nodes is not exclusively related
+to lambda functions and can be used for all functions to give more specific names to a processing unit.
+    >>> from fastchain import Chain, chainable
+    >>> cube = Chain('cube-number',
+    ...              chainable(lambda x: x ** 3, name="cube_evaluation"),
+    ...              chainable(lambda x: f"the cube is {x}", name="cube_representation"))
+    >>> cube(None)
+    cube-number/sequence[0]/cube_evaluation raised TypeError...
+
+No doubt that this log was more helpful than the previous, but naming nodes is not exclusively related
+to lambda functions and can be used for all functions to give more specific names to a processing unit.
+    >>> from fastchain import Chain, chainable
+    >>> cube = Chain('cube-number',
+    ...              chainable(lambda x: x ** 3, name="cube_evaluation"),
+    ...              chainable(lambda x: f"the cube is {x}", name="cube_representation"))
+    >>> cube(None)
+    cube-number/sequence[0]/cube_evaluation raised TypeError...
+
+No doubt that this log was more helpful than the previous, but naming nodes is not exclusively related
+to lambda functions and can be used for all functions to give more specific names to a processing unit.
+    >>> from fastchain import Chain, chainable
+    >>> cube = Chain('cube-number',
+    ...              chainable(lambda x: x ** 3, name="cube_evaluation"),
+    ...              chainable(lambda x: f"the cube is {x}", name="cube_representation"))
+    >>> cube(None)
+    cube-number/sequence[0]/cube_evaluation raised TypeError...
+
+No doubt that this log was more helpful than the previous, but naming nodes is not exclusively related
+to lambda functions and can be used for all functions to give more specific names to a processing unit.
+    >>> from fastchain import Chain, node_maker
+    >>> cube = Chain('cube-number',
+    ...              chainable(lambda x: x ** 3, name="cube_evaluation"),
+    ...              chainable(lambda x: f"the cube is {x}", name="cube_representation"))
+    >>> cube(None)facto
+    >>> cube = Chain('cube-number',
+    ...              chainable(lambda x: x ** 3, name="cube_evaluation"),
+    ...              chainable(lambda x: f"the cube is {x}", name="cube_representation"))
+    >>> cube(None)node_maker
+    >>> cube = Chain('cube-number',
+    ...              chainable(lambda x: x ** 3, name="cube_evaluation"),
+    ...              chainable(lambda x: f"the cube is {x}", name="cube_representation"))
+    >>> cube(None)facto
+    >>> cube = Chain('cube-number',
+    ...              chainable(lambda x: x ** 3, name="cube_evaluation"),
+    ...              chainable(lambda x: f"the cube is {x}", name="cube_representation"))
+    >>> cube(None)factory
+    >>> cube = Chain('cube-number',
+    ...              chainable(lambda x: x ** 3, name="cube_evaluation"),
+    ...              chainable(lambda x: f"the cube is {x}", name="cube_representation"))
+    >>> cube(None)facto
+    >>> cube = Chain('cube-number',
+    ...              chainable(lambda x: x ** 3, name="cube_evaluation"),
+    ...              chainable(lambda x: f"the cube is {x}", name="cube_representation"))
+    >>> cube(None)node_maker
+    >>> cube = Chain('cube-number',
+    ...              chainable(lambda x: x ** 3, name="cube_evaluation"),
+    ...              chainable(lambda x: f"the cube is {x}", name="cube_representation"))
+    >>> cube(None)facto
+    >>> cube = Chain('cube-number',
+    ...              chainable(lambda x: x ** 3, name="cube_evaluation"),
+    ...              chainable(lambda x: f"the cube is {x}", name="cube_representation"))
+    >>> cube(None)
+    cube-number/sequence[0]/cube_evaluation raised TypeError...
+
+No doubt that this log was more helpful than the previous, but naming nodes is not exclusively related
+to lambda functions and can be used for all functions to give more specific names to a processing unit.
+    >>> from fastchain import Chain, nodefac
+    >>> cube = Chain('cube-number',
+    ...              chainable(lambda x: x ** 3, name="cube_evaluation"),
+    ...              chainable(lambda x: f"the cube is {x}", name="cube_representation"))
+    >>> cube(None)
+    cube-number/sequence[0]/cube_evaluation raised TypeError...
+
+No doubt that this log was more helpful than the previous, but naming nodes is not exclusively related
+to lambda functions and can be used for all functions to give more specific names to a processing unit.
+    >>> from fastchain import Chain, chainable
+    >>> cube = Chain('cube-number',
+    ...              chainable(lambda x: x ** 3, name="cube_evaluation"),
+    ...              chainable(lambda x: f"the cube is {x}", name="cube_representation"))
+    >>> cube(None)
+    cube-number/sequence[0]/cube_evaluation raised TypeError...
+
+No doubt that this log was more helpful than the previous, but naming nodes is not exclusively related
+to lambda functions and can be used for all functions to give more specific names to a processing unit.
+    >>> from fastchain import Chain, chainable
+    >>> cube = Chain('cube-number',
+    ...              chainable(lambda x: x ** 3, name="cube_evaluation"),
+    ...              chainable(lambda x: f"the cube is {x}", name="cube_representation"))
+    >>> cube(None)
+    cube-number/sequence[0]/cube_evaluation raised TypeError...
+
+No doubt that this log was more helpful than the previous, but naming nodes is not exclusively related
+to lambda functions and can be used for all functions to give more specific names to a processing unit.
+    >>> from fastchain import Chain, chainable
+    >>> cube = Chain('cube-number',
+    ...              chainable(lambda x: x ** 3, name="cube_evaluation"),
+    ...              chainable(lambda x: f"the cube is {x}", name="cube_representation"))
+    >>> cube(None)
+    cube-number/sequence[0]/cube_evaluation raised TypeError...
+
+No doubt that this log was more helpful than the previous, but naming nodes is not exclusively related
+to lambda functions and can be used for all functions to give more specific names to a processing unit.
+    >>> from fastchain import Chain, chainable
+    >>> cube = Chain('cube-number',
+    ...              chainable(lambda x: x ** 3, name="cube_evaluation"),
+    ...              chainable(lambda x: f"the cube is {x}", name="cube_representation"))
+    >>> cube(None)
+    cube-number/sequence[0]/cube_evaluation raised TypeError...
+
+No doubt that this log was more helpful than the previous, but naming nodes is not exclusively related
+to lambda functions and can be used for all functions to give more specific names to a processing unit.
+    >>> from fastchain import Chain, chainable
+    >>> cube = Chain('cube-number',
+    ...              chainable(lambda x: x ** 3, name="cube_evaluation"),
+    ...              chainable(lambda x: f"the cube is {x}", name="cube_representation"))
+    >>> cube(None)
+    cube-number/sequence[0]/cube_evaluation raised TypeError...
+
+No doubt that this log was more helpful than the previous, but naming nodes is not exclusively related
+to lambda functions and can be used for all functions to give more specific names to a processing unit.
+    >>> from fastchain import Chain, chainable
+    >>> cube = Chain('cube-number',
+    ...              chainable(lambda x: x ** 3, name="cube_evaluation"),
+    ...              chainable(lambda x: f"the cube is {x}", name="cube_representation"))
+    >>> cube(None)
+    cube-number/sequence[0]/cube_evaluation raised TypeError...
+
+No doubt that this log was more helpful than the previous, but naming nodes is not exclusively related
+to lambda functions and can be used for all functions to give more specific names to a processing unit.
+    >>> from fastchain import Chain, chainable
+    >>> cube = Chain('cube-number',
+    ...              chainable(lambda x: x ** 3, name="cube_evaluation"),
+    ...              chainable(lambda x: f"the cube is {x}", name="cube_representation"))
+    >>> cube(None)
+    cube-number/sequence[0]/cube_evaluation raised TypeError...
+
+No doubt that this log was more helpful than the previous, but naming nodes is not exclusively related
+to lambda functions and can be used for all functions to give more specific names to a processing unit.
     >>> from fastchain import Chain, node_factory
     >>> cube = Chain('cube-number',
     ...              chainable(lambda x: x ** 3, name="cube_evaluation"),
@@ -462,6 +680,210 @@ Take for example a chain expected to return a number
 
 .. code-block:: pycon
 
+    >>> from fastchain import Chain, node_maker
+    >>> chain = Chain('double', chainable(lambda x: x * 2, default=0))
+    >>> result = chain(5)
+    >>> resultfacto
+    >>> chain = Chain('double', chainable(lambda x: x * 2, default=0))
+    >>> result = chain(5)
+    >>> resultnode_maker
+    >>> chain = Chain('double', chainable(lambda x: x * 2, default=0))
+    >>> result = chain(5)
+    >>> resultfacto
+    >>> chain = Chain('double', chainable(lambda x: x * 2, default=0))
+    >>> result = chain(5)
+    >>> resultfactory
+    >>> chain = Chain('double', chainable(lambda x: x * 2, default=0))
+    >>> result = chain(5)
+    >>> resultfacto
+    >>> chain = Chain('double', chainable(lambda x: x * 2, default=0))
+    >>> result = chain(5)
+    >>> resultnode_maker
+    >>> chain = Chain('double', chainable(lambda x: x * 2, default=0))
+    >>> result = chain(5)
+    >>> resultfacto
+    >>> chain = Chain('double', chainable(lambda x: x * 2, default=0))
+    >>> result = chain(5)
+    >>> result
+    10
+    >>> result = chain(None)
+    double/<lambda> raised TypeError...
+    >>> result
+    0
+    >>> from fastchain import Chain, nodefac
+    >>> chain = Chain('double', chainable(lambda x: x * 2, default=0))
+    >>> result = chain(5)
+    >>> result
+    10
+    >>> result = chain(None)
+    double/<lambda> raised TypeError...
+    >>> result
+    0
+    >>> from fastchain import Chain, chainable
+    >>> chain = Chain('double', chainable(lambda x: x * 2, default=0))
+    >>> result = chain(5)
+    >>> result
+    10
+    >>> result = chain(None)
+    double/<lambda> raised TypeError...
+    >>> result
+    0
+    >>> from fastchain import Chain, chainable
+    >>> chain = Chain('double', chainable(lambda x: x * 2, default=0))
+    >>> result = chain(5)
+    >>> result
+    10
+    >>> result = chain(None)
+    double/<lambda> raised TypeError...
+    >>> result
+    0
+    >>> from fastchain import Chain, chainable
+    >>> chain = Chain('double', chainable(lambda x: x * 2, default=0))
+    >>> result = chain(5)
+    >>> result
+    10
+    >>> result = chain(None)
+    double/<lambda> raised TypeError...
+    >>> result
+    0
+    >>> from fastchain import Chain, chainable
+    >>> chain = Chain('double', chainable(lambda x: x * 2, default=0))
+    >>> result = chain(5)
+    >>> result
+    10
+    >>> result = chain(None)
+    double/<lambda> raised TypeError...
+    >>> result
+    0
+    >>> from fastchain import Chain, chainable
+    >>> chain = Chain('double', chainable(lambda x: x * 2, default=0))
+    >>> result = chain(5)
+    >>> result
+    10
+    >>> result = chain(None)
+    double/<lambda> raised TypeError...
+    >>> result
+    0
+    >>> from fastchain import Chain, chainable
+    >>> chain = Chain('double', chainable(lambda x: x * 2, default=0))
+    >>> result = chain(5)
+    >>> result
+    10
+    >>> result = chain(None)
+    double/<lambda> raised TypeError...
+    >>> result
+    0
+    >>> from fastchain import Chain, chainable
+    >>> chain = Chain('double', chainable(lambda x: x * 2, default=0))
+    >>> result = chain(5)
+    >>> result
+    10
+    >>> result = chain(None)
+    double/<lambda> raised TypeError...
+    >>> result
+    0
+    >>> from fastchain import Chain, node_maker
+    >>> chain = Chain('double', chainable(lambda x: x * 2, default=0))
+    >>> result = chain(5)
+    >>> resultfacto
+    >>> chain = Chain('double', chainable(lambda x: x * 2, default=0))
+    >>> result = chain(5)
+    >>> resultnode_maker
+    >>> chain = Chain('double', chainable(lambda x: x * 2, default=0))
+    >>> result = chain(5)
+    >>> resultfacto
+    >>> chain = Chain('double', chainable(lambda x: x * 2, default=0))
+    >>> result = chain(5)
+    >>> resultfactory
+    >>> chain = Chain('double', chainable(lambda x: x * 2, default=0))
+    >>> result = chain(5)
+    >>> resultfacto
+    >>> chain = Chain('double', chainable(lambda x: x * 2, default=0))
+    >>> result = chain(5)
+    >>> resultnode_maker
+    >>> chain = Chain('double', chainable(lambda x: x * 2, default=0))
+    >>> result = chain(5)
+    >>> resultfacto
+    >>> chain = Chain('double', chainable(lambda x: x * 2, default=0))
+    >>> result = chain(5)
+    >>> result
+    10
+    >>> result = chain(None)
+    double/<lambda> raised TypeError...
+    >>> result
+    0
+    >>> from fastchain import Chain, nodefac
+    >>> chain = Chain('double', chainable(lambda x: x * 2, default=0))
+    >>> result = chain(5)
+    >>> result
+    10
+    >>> result = chain(None)
+    double/<lambda> raised TypeError...
+    >>> result
+    0
+    >>> from fastchain import Chain, chainable
+    >>> chain = Chain('double', chainable(lambda x: x * 2, default=0))
+    >>> result = chain(5)
+    >>> result
+    10
+    >>> result = chain(None)
+    double/<lambda> raised TypeError...
+    >>> result
+    0
+    >>> from fastchain import Chain, chainable
+    >>> chain = Chain('double', chainable(lambda x: x * 2, default=0))
+    >>> result = chain(5)
+    >>> result
+    10
+    >>> result = chain(None)
+    double/<lambda> raised TypeError...
+    >>> result
+    0
+    >>> from fastchain import Chain, chainable
+    >>> chain = Chain('double', chainable(lambda x: x * 2, default=0))
+    >>> result = chain(5)
+    >>> result
+    10
+    >>> result = chain(None)
+    double/<lambda> raised TypeError...
+    >>> result
+    0
+    >>> from fastchain import Chain, chainable
+    >>> chain = Chain('double', chainable(lambda x: x * 2, default=0))
+    >>> result = chain(5)
+    >>> result
+    10
+    >>> result = chain(None)
+    double/<lambda> raised TypeError...
+    >>> result
+    0
+    >>> from fastchain import Chain, chainable
+    >>> chain = Chain('double', chainable(lambda x: x * 2, default=0))
+    >>> result = chain(5)
+    >>> result
+    10
+    >>> result = chain(None)
+    double/<lambda> raised TypeError...
+    >>> result
+    0
+    >>> from fastchain import Chain, chainable
+    >>> chain = Chain('double', chainable(lambda x: x * 2, default=0))
+    >>> result = chain(5)
+    >>> result
+    10
+    >>> result = chain(None)
+    double/<lambda> raised TypeError...
+    >>> result
+    0
+    >>> from fastchain import Chain, chainable
+    >>> chain = Chain('double', chainable(lambda x: x * 2, default=0))
+    >>> result = chain(5)
+    >>> result
+    10
+    >>> result = chain(None)
+    double/<lambda> raised TypeError...
+    >>> result
+    0
     >>> from fastchain import Chain, node_factory
     >>> chain = Chain('double', chainable(lambda x: x * 2, default=0))
     >>> result = chain(5)
@@ -649,6 +1071,298 @@ Finally let's end with a usage example:
 
 .. code-block:: pycon
 
+    >>> from fastchain import Chain, node_maker
+    >>> from statistics import mean
+    >>> chain = Chain('my_chain',
+    ...               chainable(str.split, sep=',', name='split-by-commas'),
+    ...               '*',
+    ...               float,
+    ...               mean,
+    ...               chainable(round, ndigits=2, name='round-2d'))
+    >>> chain('12.23, 54.56, 41.88')facto
+    >>> from statistics import mean
+    >>> chain = Chain('my_chain',
+    ...               chainable(str.split, sep=',', name='split-by-commas'),
+    ...               '*',
+    ...               float,
+    ...               mean,
+    ...               chainable(round, ndigits=2, name='round-2d'))
+    >>> chain('12.23, 54.56, 41.88')node_maker
+    >>> from statistics import mean
+    >>> chain = Chain('my_chain',
+    ...               chainable(str.split, sep=',', name='split-by-commas'),
+    ...               '*',
+    ...               float,
+    ...               mean,
+    ...               chainable(round, ndigits=2, name='round-2d'))
+    >>> chain('12.23, 54.56, 41.88')facto
+    >>> from statistics import mean
+    >>> chain = Chain('my_chain',
+    ...               chainable(str.split, sep=',', name='split-by-commas'),
+    ...               '*',
+    ...               float,
+    ...               mean,
+    ...               chainable(round, ndigits=2, name='round-2d'))
+    >>> chain('12.23, 54.56, 41.88')factory
+    >>> from statistics import mean
+    >>> chain = Chain('my_chain',
+    ...               chainable(str.split, sep=',', name='split-by-commas'),
+    ...               '*',
+    ...               float,
+    ...               mean,
+    ...               chainable(round, ndigits=2, name='round-2d'))
+    >>> chain('12.23, 54.56, 41.88')facto
+    >>> from statistics import mean
+    >>> chain = Chain('my_chain',
+    ...               chainable(str.split, sep=',', name='split-by-commas'),
+    ...               '*',
+    ...               float,
+    ...               mean,
+    ...               chainable(round, ndigits=2, name='round-2d'))
+    >>> chain('12.23, 54.56, 41.88')node_maker
+    >>> from statistics import mean
+    >>> chain = Chain('my_chain',
+    ...               chainable(str.split, sep=',', name='split-by-commas'),
+    ...               '*',
+    ...               float,
+    ...               mean,
+    ...               chainable(round, ndigits=2, name='round-2d'))
+    >>> chain('12.23, 54.56, 41.88')facto
+    >>> from statistics import mean
+    >>> chain = Chain('my_chain',
+    ...               chainable(str.split, sep=',', name='split-by-commas'),
+    ...               '*',
+    ...               float,
+    ...               mean,
+    ...               chainable(round, ndigits=2, name='round-2d'))
+    >>> chain('12.23, 54.56, 41.88')
+    36.22
+    >>> from fastchain import Chain, nodefac
+    >>> from statistics import mean
+    >>> chain = Chain('my_chain',
+    ...               chainable(str.split, sep=',', name='split-by-commas'),
+    ...               '*',
+    ...               float,
+    ...               mean,
+    ...               chainable(round, ndigits=2, name='round-2d'))
+    >>> chain('12.23, 54.56, 41.88')
+    36.22
+    >>> from fastchain import Chain, chainable
+    >>> from statistics import mean
+    >>> chain = Chain('my_chain',
+    ...               chainable(str.split, sep=',', name='split-by-commas'),
+    ...               '*',
+    ...               float,
+    ...               mean,
+    ...               chainable(round, ndigits=2, name='round-2d'))
+    >>> chain('12.23, 54.56, 41.88')
+    36.22
+    >>> from fastchain import Chain, chainable
+    >>> from statistics import mean
+    >>> chain = Chain('my_chain',
+    ...               chainable(str.split, sep=',', name='split-by-commas'),
+    ...               '*',
+    ...               float,
+    ...               mean,
+    ...               chainable(round, ndigits=2, name='round-2d'))
+    >>> chain('12.23, 54.56, 41.88')
+    36.22
+    >>> from fastchain import Chain, chainable
+    >>> from statistics import mean
+    >>> chain = Chain('my_chain',
+    ...               chainable(str.split, sep=',', name='split-by-commas'),
+    ...               '*',
+    ...               float,
+    ...               mean,
+    ...               chainable(round, ndigits=2, name='round-2d'))
+    >>> chain('12.23, 54.56, 41.88')
+    36.22
+    >>> from fastchain import Chain, chainable
+    >>> from statistics import mean
+    >>> chain = Chain('my_chain',
+    ...               chainable(str.split, sep=',', name='split-by-commas'),
+    ...               '*',
+    ...               float,
+    ...               mean,
+    ...               chainable(round, ndigits=2, name='round-2d'))
+    >>> chain('12.23, 54.56, 41.88')
+    36.22
+    >>> from fastchain import Chain, chainable
+    >>> from statistics import mean
+    >>> chain = Chain('my_chain',
+    ...               chainable(str.split, sep=',', name='split-by-commas'),
+    ...               '*',
+    ...               float,
+    ...               mean,
+    ...               chainable(round, ndigits=2, name='round-2d'))
+    >>> chain('12.23, 54.56, 41.88')
+    36.22
+    >>> from fastchain import Chain, chainable
+    >>> from statistics import mean
+    >>> chain = Chain('my_chain',
+    ...               chainable(str.split, sep=',', name='split-by-commas'),
+    ...               '*',
+    ...               float,
+    ...               mean,
+    ...               chainable(round, ndigits=2, name='round-2d'))
+    >>> chain('12.23, 54.56, 41.88')
+    36.22
+    >>> from fastchain import Chain, chainable
+    >>> from statistics import mean
+    >>> chain = Chain('my_chain',
+    ...               chainable(str.split, sep=',', name='split-by-commas'),
+    ...               '*',
+    ...               float,
+    ...               mean,
+    ...               chainable(round, ndigits=2, name='round-2d'))
+    >>> chain('12.23, 54.56, 41.88')
+    36.22
+    >>> from fastchain import Chain, node_maker
+    >>> from statistics import mean
+    >>> chain = Chain('my_chain',
+    ...               chainable(str.split, sep=',', name='split-by-commas'),
+    ...               '*',
+    ...               float,
+    ...               mean,
+    ...               chainable(round, ndigits=2, name='round-2d'))
+    >>> chain('12.23, 54.56, 41.88')facto
+    >>> from statistics import mean
+    >>> chain = Chain('my_chain',
+    ...               chainable(str.split, sep=',', name='split-by-commas'),
+    ...               '*',
+    ...               float,
+    ...               mean,
+    ...               chainable(round, ndigits=2, name='round-2d'))
+    >>> chain('12.23, 54.56, 41.88')node_maker
+    >>> from statistics import mean
+    >>> chain = Chain('my_chain',
+    ...               chainable(str.split, sep=',', name='split-by-commas'),
+    ...               '*',
+    ...               float,
+    ...               mean,
+    ...               chainable(round, ndigits=2, name='round-2d'))
+    >>> chain('12.23, 54.56, 41.88')facto
+    >>> from statistics import mean
+    >>> chain = Chain('my_chain',
+    ...               chainable(str.split, sep=',', name='split-by-commas'),
+    ...               '*',
+    ...               float,
+    ...               mean,
+    ...               chainable(round, ndigits=2, name='round-2d'))
+    >>> chain('12.23, 54.56, 41.88')factory
+    >>> from statistics import mean
+    >>> chain = Chain('my_chain',
+    ...               chainable(str.split, sep=',', name='split-by-commas'),
+    ...               '*',
+    ...               float,
+    ...               mean,
+    ...               chainable(round, ndigits=2, name='round-2d'))
+    >>> chain('12.23, 54.56, 41.88')facto
+    >>> from statistics import mean
+    >>> chain = Chain('my_chain',
+    ...               chainable(str.split, sep=',', name='split-by-commas'),
+    ...               '*',
+    ...               float,
+    ...               mean,
+    ...               chainable(round, ndigits=2, name='round-2d'))
+    >>> chain('12.23, 54.56, 41.88')node_maker
+    >>> from statistics import mean
+    >>> chain = Chain('my_chain',
+    ...               chainable(str.split, sep=',', name='split-by-commas'),
+    ...               '*',
+    ...               float,
+    ...               mean,
+    ...               chainable(round, ndigits=2, name='round-2d'))
+    >>> chain('12.23, 54.56, 41.88')facto
+    >>> from statistics import mean
+    >>> chain = Chain('my_chain',
+    ...               chainable(str.split, sep=',', name='split-by-commas'),
+    ...               '*',
+    ...               float,
+    ...               mean,
+    ...               chainable(round, ndigits=2, name='round-2d'))
+    >>> chain('12.23, 54.56, 41.88')
+    36.22
+    >>> from fastchain import Chain, nodefac
+    >>> from statistics import mean
+    >>> chain = Chain('my_chain',
+    ...               chainable(str.split, sep=',', name='split-by-commas'),
+    ...               '*',
+    ...               float,
+    ...               mean,
+    ...               chainable(round, ndigits=2, name='round-2d'))
+    >>> chain('12.23, 54.56, 41.88')
+    36.22
+    >>> from fastchain import Chain, chainable
+    >>> from statistics import mean
+    >>> chain = Chain('my_chain',
+    ...               chainable(str.split, sep=',', name='split-by-commas'),
+    ...               '*',
+    ...               float,
+    ...               mean,
+    ...               chainable(round, ndigits=2, name='round-2d'))
+    >>> chain('12.23, 54.56, 41.88')
+    36.22
+    >>> from fastchain import Chain, chainable
+    >>> from statistics import mean
+    >>> chain = Chain('my_chain',
+    ...               chainable(str.split, sep=',', name='split-by-commas'),
+    ...               '*',
+    ...               float,
+    ...               mean,
+    ...               chainable(round, ndigits=2, name='round-2d'))
+    >>> chain('12.23, 54.56, 41.88')
+    36.22
+    >>> from fastchain import Chain, chainable
+    >>> from statistics import mean
+    >>> chain = Chain('my_chain',
+    ...               chainable(str.split, sep=',', name='split-by-commas'),
+    ...               '*',
+    ...               float,
+    ...               mean,
+    ...               chainable(round, ndigits=2, name='round-2d'))
+    >>> chain('12.23, 54.56, 41.88')
+    36.22
+    >>> from fastchain import Chain, chainable
+    >>> from statistics import mean
+    >>> chain = Chain('my_chain',
+    ...               chainable(str.split, sep=',', name='split-by-commas'),
+    ...               '*',
+    ...               float,
+    ...               mean,
+    ...               chainable(round, ndigits=2, name='round-2d'))
+    >>> chain('12.23, 54.56, 41.88')
+    36.22
+    >>> from fastchain import Chain, chainable
+    >>> from statistics import mean
+    >>> chain = Chain('my_chain',
+    ...               chainable(str.split, sep=',', name='split-by-commas'),
+    ...               '*',
+    ...               float,
+    ...               mean,
+    ...               chainable(round, ndigits=2, name='round-2d'))
+    >>> chain('12.23, 54.56, 41.88')
+    36.22
+    >>> from fastchain import Chain, chainable
+    >>> from statistics import mean
+    >>> chain = Chain('my_chain',
+    ...               chainable(str.split, sep=',', name='split-by-commas'),
+    ...               '*',
+    ...               float,
+    ...               mean,
+    ...               chainable(round, ndigits=2, name='round-2d'))
+    >>> chain('12.23, 54.56, 41.88')
+    36.22
+    >>> from fastchain import Chain, chainable
+    >>> from statistics import mean
+    >>> chain = Chain('my_chain',
+    ...               chainable(str.split, sep=',', name='split-by-commas'),
+    ...               '*',
+    ...               float,
+    ...               mean,
+    ...               chainable(round, ndigits=2, name='round-2d'))
+    >>> chain('12.23, 54.56, 41.88')
+    36.22
     >>> from fastchain import Chain, node_factory
     >>> from statistics import mean
     >>> chain = Chain('my_chain',

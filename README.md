@@ -182,13 +182,13 @@ The new code will look like this
 
 ````python
 from math import sqrt
-from fastchain import Chain, node_factory
+from fastchain import Chain, node_maker
 
 rounded_square_roots = Chain(
     "rounded_square_roots",
-    node_factory(str.split, sep=',', default_factory=list),
+    node_maker(str.split, sep=',', default_factory=list),
     '*',
-    (float, sqrt, node_factory(round, ndigits=2)),
+    (float, sqrt, node_maker(round, ndigits=2)),
     list
 )
 ````
@@ -217,13 +217,13 @@ by passing an additional keyword argument to the constructor ``print_stats=True`
 
 ````python
 from math import sqrt
-from fastchain import Chain, node_factory
+from fastchain import Chain, node_maker
 
 rounded_square_roots = Chain(
     "rounded_square_roots",
-    node_factory(str.split, sep=',', default_factory=list),
+    node_maker(str.split, sep=',', default_factory=list),
     '*',
-    (float, sqrt, node_factory(round, ndigits=2)),
+    (float, sqrt, node_maker(round, ndigits=2)),
     list,
     print_stats=True
 )
