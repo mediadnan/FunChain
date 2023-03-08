@@ -2,6 +2,7 @@ from __future__ import annotations
 import abc
 import asyncio
 from typing import (
+    TYPE_CHECKING,
     Any,
     Self,
     Generic,
@@ -9,21 +10,43 @@ from typing import (
     Callable,
     Iterable,
     Coroutine,
+    Literal,
     TypeAlias,
+    overload,
 )
 
-from ._util import asyncify
+from ._util import asyncify, get_varname, get_name
 from .reporter import Reporter, Severity, OPTIONAL, INHERIT
+
+
 
 T = TypeVar('T')
 Input = TypeVar('Input')
 Output = TypeVar('Output')
 Output2 = TypeVar('Output2')
 
+if TYPE_CHECKING:
+    Feedback: TypeAlias = Output | None
+    AsyncCallable: TypeAlias = Callable[[Input], Coroutine[None, None, Output]]
 
-Feedback: TypeAlias = Output | None
-AsyncCallable: TypeAlias = Callable[[Input], Coroutine[None, None, Output]]
+    Chainable: TypeAlias = ('BaseNode[Input, Output]' |
+                        Callable[[Input], Output] |
+                        dict[Any, 'Chainable[Input, Output]'] |
+                        list['Chainable[Input, Output]'] |
+                        tuple['Chainable', ...])
 
+
+    AsyncChainable: TypeAlias = ('AsyncBaseNode[Input, Output]' |
+                                 AsyncCallable[Input, Output] |
+                                 Callable[[Input], Output] |
+                                 dict[Any, 'AsyncChainable[Input, Output]'] |
+                                 list['AsyncChainable[Input, Output]'] |
+                                 tuple['AsyncChainable', ...])
+
+
+
+
+# Node type definitions ##################################################################
 
 class BaseNode(Generic[T, Input, Output]):
     """Base class for all fastchain nodes"""
@@ -46,6 +69,12 @@ class BaseNode(Generic[T, Input, Output]):
         new = self.__class__(self._core)
         new.__dict__.update(self.__dict__)
         return new
+
+    def __or__(self):
+        pass
+
+    def __mul__(self):
+        pass
 
     @abc.abstractmethod
     def to_async(self) -> AsyncBaseNode:
@@ -261,3 +290,59 @@ class AsyncPassiveNode(AsyncBaseNode[None, Input, Input], Generic[Input]):
 
     async def process(self, arg: Input, _: Reporter) -> Input:
         return arg
+
+
+# Node utility definitions ##############################################################
+
+GUESS_NAME = object()
+
+
+@overload
+def node() -> PassiveNode[Input]: ...
+@overload
+def node(func: AsyncCallable[Input, Output], /, *, name: str | None = ...) -> AsyncNode[Input, Output]: ...
+@overload
+def node(func: Callable[[Input], Output], /, *, name: str | None = ...) -> Node[Input, Output]: ...
+
+
+
+def node(obj: Any = Ellipsis, /, name: str | Any = GUESS_NAME):
+    if obj is Ellipsis:
+        node = PassiveNode(None)
+    elif isinstance(obj, BaseNode):
+        node = obj.copy()
+    elif callable(obj):
+        node = _func_node(obj, name=name)
+    elif isinstance(obj, (dict, list)):
+        node = _model(obj, name=name)
+    else:
+        raise TypeError("Unsupported type for chaining")
+    
+
+def _model(model, *, name=None):
+    if isinstance(model, dict):
+        branched_items = model.items()
+        models = DictModel, AsyncDictModel
+    elif isinstance(model, list):
+        branched_items = enumerate(model)
+        models = ListModel, AsyncListModel
+    else:
+        raise TypeError(f"model must be either an instance of {list} or {dict}")
+    nodes = [
+        (branch, node(item, name=str(branch)))
+        for branch, item in branched_items
+    ]
+    nodes_are_async = set(isinstance(nd, AsyncBaseNode) for nd in nodes)
+    is_async = False
+    if any(nodes_are_async):
+        is_async = True
+        if not all(nodes_are_async):
+            nodes = [nd.to_async() for nd in nodes]
+    nd = models[is_async](nodes)
+    nd.name = name
+    return nd
+
+
+def _func_node(func, *, name=None):
+    pass
+
