@@ -2,7 +2,7 @@ from __future__ import annotations
 import abc
 import asyncio
 from typing import (
-    TYPE_CHECKING,
+    overload,
     Any,
     Self,
     Generic,
@@ -10,9 +10,7 @@ from typing import (
     Callable,
     Iterable,
     Coroutine,
-    Literal,
     TypeAlias,
-    overload,
 )
 
 from ._util import asyncify, get_varname, get_name
@@ -25,24 +23,22 @@ Input = TypeVar('Input')
 Output = TypeVar('Output')
 Output2 = TypeVar('Output2')
 
-if TYPE_CHECKING:
-    Feedback: TypeAlias = Output | None
-    AsyncCallable: TypeAlias = Callable[[Input], Coroutine[None, None, Output]]
+Feedback: TypeAlias = Output | None
+AsyncCallable: TypeAlias = Callable[[Input], Coroutine[None, None, Output]]
 
-    Chainable: TypeAlias = ('BaseNode[Input, Output]' |
-                        Callable[[Input], Output] |
-                        dict[Any, 'Chainable[Input, Output]'] |
-                        list['Chainable[Input, Output]'] |
-                        tuple['Chainable', ...])
+Chainable: TypeAlias = ('BaseNode[Input, Output]' |
+                    Callable[[Input], Output] |
+                    dict[Any, 'Chainable[Input, Output]'] |
+                    list['Chainable[Input, Output]'] |
+                    tuple['Chainable', ...])
 
 
-    AsyncChainable: TypeAlias = ('AsyncBaseNode[Input, Output]' |
-                                 AsyncCallable[Input, Output] |
-                                 Callable[[Input], Output] |
-                                 dict[Any, 'AsyncChainable[Input, Output]'] |
-                                 list['AsyncChainable[Input, Output]'] |
-                                 tuple['AsyncChainable', ...])
-
+AsyncChainable: TypeAlias = ('AsyncBaseNode[Input, Output]' |
+                                AsyncCallable[Input, Output] |
+                                Callable[[Input], Output] |
+                                dict[Any, 'AsyncChainable[Input, Output]'] |
+                                list['AsyncChainable[Input, Output]'] |
+                                tuple['AsyncChainable', ...])
 
 
 
@@ -54,6 +50,7 @@ class BaseNode(Generic[T, Input, Output]):
     name: str
     severity: Severity
     parent: BaseNode | None
+    is_async: bool = False
 
     def __init__(self, core: T, /) -> None:
         self._core = core
@@ -70,11 +67,11 @@ class BaseNode(Generic[T, Input, Output]):
         new.__dict__.update(self.__dict__)
         return new
 
-    def __or__(self):
-        pass
+    def __or__(self, other):
+        return Chain(self) | other
 
-    def __mul__(self):
-        pass
+    def __mul__(self, other):
+        return Chain(self) * other
 
     @abc.abstractmethod
     def to_async(self) -> AsyncBaseNode:
@@ -134,9 +131,17 @@ class BaseNode(Generic[T, Input, Output]):
 
 class AsyncBaseNode(BaseNode[T, Input, Coroutine[None, None, Output]], Generic[T, Input, Output]):
     """Base class for all fastchain asynchronous nodes"""
+    is_async = True
+
     async def __call__(self, arg: Input, /, reporter: Reporter | None = None) -> Output | None:
         reporter = self._rep_prep(reporter)
         return await self.process(arg, reporter)
+    
+    def __or__(self, other):
+        return AsyncChain(self) | other
+    
+    def __mul__(self, other):
+        return AsyncChain(self) * other
 
     def to_async(self) -> AsyncBaseNode:
         return self.copy()
@@ -169,6 +174,15 @@ class CollectionMixin:
 
 
 class Chain(BaseNode[list[BaseNode], Input, Output], CollectionMixin, Generic[Input, Output]):
+    def __or__(self, other):
+        next_node = node(other, name=None)
+        if next_node.is_async:
+            return self.to_async | next_node
+                
+
+    def __mul__(self, other):
+        pass
+
     def to_async(self) -> AsyncChain[Input, Output]:
         return AsyncChain([node.to_async() for node in self._core])
 
