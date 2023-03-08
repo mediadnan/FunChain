@@ -2,16 +2,31 @@
 Getting started
 ===============
 
-In this chapter we will be making our first steps using fastchain and its basic features,
+Motivation
+==========
+Programing in general consists of a series of instructions that get executed one after the other, and when an instruction
+fails or returns an unexpected result, that causes all the remaining instructions that depends on it to fail.
+
+But there are many solution to that out there for that issue, some programing languages *like JavaScript, Dart, Swift ...*
+have the concept of optional chaining that prevent type errors like ``obj?.attribute``, Others give
+developers the responsibility to check results before passing them to the next instruction, and also we have
+great design patterns to follow *(especially in functional programming paradigm)* that target this specific issue
+*(like Monad and Railway oriented programming...)*. But for lazy programmers like myself, bending an entire code base
+to match a specific design pattern or handle each function separately is definitively not what I want to do,
+however in production we never want our application to go down if one part fails or if that fails for a specific input,
+usually we make sure to wrap each part and handle it exceptions and either simply logging them or sending them
+to a remote logging server, store and analyse them.
+
+Fastchain is designed to automate and simplify this process and to give a better developer experience, by taking care
+of what happens between each step *(node)* and how each failure should be handled, and simplifies the definition of
+function pipelines with a declarative, intuitive and easy syntax.
+
+In this chapter we will discover the basic use case of ``fastchain`` and make our first steps,
 the next chapters will be covering specific and advanced topics in depth.
 
-.. note::
 
-    Make sure to :ref:`install <installation>` ``fastchain`` first to be able to use it.
-
-
-Why using fastchain
-===================
+Simple pipeline
+===============
 Consider we want to make a function that does the following:
 
 1. Grabs a number from a text
@@ -26,9 +41,8 @@ The most compact way of doing this is will be something like this:
 
 .. code-block:: python
 
-    >>> import re
-    >>> import math
-    >>> NUMBERS_RE = re.compile(r'[+-]?(\d+(\.\d*)?|\.\d+)')
+    >>> import re, math
+    >>> NUMBERS_RE = re.compile(r'-?(\d+(\.\d*)?|\.\d+)')    # regex pattern that matches integer or decimal numbers
     >>> find_square_root = lambda text: str(round(math.sqrt(float(NUMBERS_RE.search(text).group())), 2))
     >>> find_square_root("what is the square root of 834.89?")
     '28.89'
@@ -37,8 +51,7 @@ An alternative and more readable way of creating this function will be like:
 
 .. code-block:: python
 
-    >>> import re
-    >>> import math
+    >>> import re, math
     >>> NUMBERS_RE = re.compile(r'[+-]?(\d+(\.\d*)?|\.\d+)')
     >>> def find_square_root(text: str) -> str:
     ...     number_match = NUMBERS_RE.search(text)  # step 1: grab a number from text
@@ -87,10 +100,10 @@ A simple fix to that problem will be wrapping ``find_square_root`` call inside `
     ...     logging.error(error)
     ERROR:root:math domain error
 
-This prevents the propagation of failure, but in one hand it gets tedious and in the other hand the message is
+This prevents the propagation of failure, but in one hand it gets repetitive and in the other hand the message is
 a bit too broad and doesn't pinpoint the failure source.
 
-We can make it better by rewriting the function like so:
+We can make it even better by rewriting the function like so:
 
 .. code-block:: python
 
@@ -154,5 +167,19 @@ too much for a function that only "evaluates a square root from a string", and t
 **Tedious**
     The same code is repeated multiple times and this is an anti-pattern, bad practice and tiring process.
 
-Of course any decent developer will create functions that automates these steps, but even that is additional work...
-so let ```fastchain`` handle that for you.
+Of course any decent developer will create functions that automates these steps and handles failures,
+but even that is additional work... ``fastchain`` handle that for you out of the box.
+
+
+Using fastchain
+---------------
+Now we will implement the same function ``find_square_root`` using ``fastchain``'s tools.
+
+.. note::
+
+    Make sure to :ref:`install <installation>` ``fastchain`` first to be able to use it.
+
+
+.. literalinclude:: examples/getting_started_fastchain_example.py
+    :language: python
+    :caption: fastchain_test.py

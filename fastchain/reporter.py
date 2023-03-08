@@ -209,14 +209,18 @@ class Reporter:
     @property
     def details(self) -> dict[str, Any]:
         """Gets full (hierarchically merged) details"""
-        if (root := self._root) and (root_context := root.name):
-            return {**root_context, **self._details}
+        if (root := self._root) is not None:
+            return {**root.details, **self._details}
         return self._details.copy()
 
     @property
     def severity(self) -> Severity:
         """Gets the (root aware) severity"""
-        return self._root.severity if (severity := self._severity is INHERIT) else severity
+        severity = self._severity
+        root = self._root
+        if severity is INHERIT and root is not None:
+            return root.severity
+        return severity
 
     @overload
     def report(self, error: Exception, severity: Severity = ..., **details) -> None: ...
