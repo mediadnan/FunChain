@@ -10,142 +10,149 @@ the next chapters will be covering specific and advanced topics in depth.
     Make sure to :ref:`install <installation>` ``fastchain`` first to be able to use it.
 
 
-Simple use case
-===============
+Why using fastchain
+===================
+Consider we want to make a function that does the following:
 
-In this basic example, we will create a chain of functions to evaluate the average of numbers given in a string,
-the input value will be `"12.5 56.33 54.7 29.65"` and the required output is `38.295`
+1. Grabs a number from a text
+2. Converts it into a float
+3. Calculates its square root
+4. Rounds the result to two decimal places
+5. Converts the result to a string
 
-For that we will be using the builtin |statistics.mean_docs| to evaluate the average, our code will be like:
+So the input will be something like ``"what is the square root of 834.89?"`` and the output will be ``'28.89'``.
+
+The most compact way of doing this is will be something like this:
 
 .. code-block:: python
 
-    >>> from statistics import mean
-    >>> from fastchain import chain, loop
-    >>> num_avg = chain(str.split, loop(float), mean)
-    >>> num_avg("12.5 56.33 54.7 29.65")
-    38.295
+    >>> import re
+    >>> import math
+    >>> NUMBERS_RE = re.compile(r'[+-]?(\d+(\.\d*)?|\.\d+)')
+    >>> find_square_root = lambda text: str(round(math.sqrt(float(NUMBERS_RE.search(text).group())), 2))
+    >>> find_square_root("what is the square root of 834.89?")
+    '28.89'
 
+An alternative and more readable way of creating this function will be like:
 
+.. code-block:: python
 
-Creating a chain
-================
-The main entrypoint for using fastchain tools is to create a chain object, it can be created the same way one would
-create a function that does some processing and then call it.
-The difference between having a regular function responsible for performing multiple processing steps and
-a chain is that chains treat each step as a unit and keeps track of each one whether it succeeded or not.
+    >>> import re
+    >>> import math
+    >>> NUMBERS_RE = re.compile(r'[+-]?(\d+(\.\d*)?|\.\d+)')
+    >>> def find_square_root(text: str) -> str:
+    ...     number_match = NUMBERS_RE.search(text)  # step 1: grab a number from text
+    ...     number = float(number_match.group())    # step 2: converts it into a float
+    ...     number_sqrt = math.sqrt(number)         # step 3: evaluate the square root
+    ...     rounded_sqrt = round(number_sqrt, 2)    # step 4: round to two decimal places
+    ...     return str(rounded_sqrt)                # step 5: convert to string again
+    >>> find_square_root("what is the square root of 834.89?")
+    '28.89'
 
-A similar behaviour could be achieved in functions wrapping steps that could raise exceptions
-in try...except blogs and handle those exceptions in a more specialized manner, that will be more optimized of course,
-but for most cases this becomes a constant pattern one wants to automate it.
+This works fine and fast, however steps 1, 2 and 3 are potential points of failure, so check this out:
 
-Basic usage
------------
-To get our hands dirty let's start by an example, our chain will calculates the average from numbers given in string,
-more specifically `chain('12.5 56.33 54.7 29.65') -> 38.295`
+.. code-block:: python
 
-for that we will be importing a builtin function |statistics.mean_docs| and then import :code:`fastchain.Chain`
+    >>> find_square_root(834.89)    # step 1: fails because re.Pattern.search expects a str/bytes
+    Traceback (most recent call last):
+        ...
+    TypeError: expected string or bytes-like object, got 'int'
+    >>> find_square_root("what is the square root of ABC?")   # step 2: fails because there's no number match
+    Traceback (most recent call last):
+        ...
+    AttributeError: 'NoneType' object has no attribute 'group'
+    >>> find_square_root("what is the square root of -16?")  # step 2: fails because math.sqrt expects a positive number
+    Traceback (most recent call last):
+        ...
+    ValueError: math domain error
 
-.. code-block:: pycon
+A simple fix to that problem will be wrapping ``find_square_root`` call inside ``try/except`` block
 
-    >>> from fastchain import Chain
-    >>> from statistics import mean
-    >>> chain = Chain('my_chain', str.split, '*', float, mean)
+.. code-block:: python
 
-The first argument we passed to the chain constructor was its name `'my_chain'`,
-let's us skip taking about the rest of arguments as that will be covered in details on the next chapter
-and check some few properties of the chain
+    >>> import logging
+    >>> try:
+    ...     find_square_root(834.89)
+    ... except Exception as error:
+    ...     logging.error(error)
+    ERROR:root:expected string or bytes-like object, got 'float'
+    >>> try:
+    ...     find_square_root("what is the square root of ABC?")
+    ... except Exception as error:
+    ...     logging.error(error)
+    ERROR:root:'NoneType' object has no attribute 'group'
+    >>> try:
+    ...     find_square_root("what is the square root of -16?")
+    ... except Exception as error:
+    ...     logging.error(error)
+    ERROR:root:math domain error
 
-.. code-block:: pycon
+This prevents the propagation of failure, but in one hand it gets tedious and in the other hand the message is
+a bit too broad and doesn't pinpoint the failure source.
 
-    >>> chain  # the chain representation
-    <chain 'my_chain'>
-    >>> chain.name  # the chain name
-    'my_chain'
-    >>> len(chain)  # chain size (str.split, float, mean)
-    3
+We can make it better by rewriting the function like so:
 
-Naming chains is mandatory and helps a lot to identify them from reports when you have many chains,
-Now if we want to use our chain all we have to do is call it with the input value
+.. code-block:: python
 
-.. code-block:: pycon
+    >>> import re, math, logging
+    >>> NUMBERS_RE = re.compile(r'[+-]?(\d+(\.\d*)?|\.\d+)')
+    >>> logging.basicConfig(level=0, format='[{levelname}] {name}: {message}', style='{')  # config logging template
+    >>> def find_square_root(text: str) -> str | None:
+    ...     logger = logging.getLogger(f'{__name__}.{find_square_root.__name__}')  # get logger for this function
+    ...     try:
+    ...         number_match = NUMBERS_RE.search(text)
+    ...     except TypeError as error:
+    ...         logger.getChild('matching').error(error)    # pinpointing the step that caused failure
+    ...         return                                      # return None, no need to continue
+    ...     try:
+    ...         number = float(number_match.group())
+    ...     except AttributeError as error:
+    ...         logger.getChild('casting').error(error)
+    ...         return
+    ...     try:
+    ...         number_sqrt = math.sqrt(number)
+    ...     except ValueError as error:
+    ...         logger.getChild('square_root').error(error)
+    ...         return
+    ...     rounded_sqrt = round(number_sqrt, 2)
+    ...     return str(rounded_sqrt)
 
-    >>> chain('12.5 56.33 54.7 29.65')
-    38.295
+Now that our function is ready, let's test it:
 
-Perfect, but nothing special about this and it can be achieved in a single line
+.. code-block:: python
 
-.. code-block:: pycon
+    >>> result = find_square_root("what is the square root of 834.89?")
+    >>> result  # str
+    '28.89'
+    >>> result = find_square_root(834.89)
+    [ERROR] __main__.find_square_root.matching: expected string or bytes-like object, got 'float'
+    >>> result  # None
 
-    >>> from statistics import mean
-    >>> simpler_chain = lambda numbers: mean(map(float, numbers.split()))
-    >>> simpler_chain('12.5 56.33 54.7 29.65')
-    38.295
+    >>> result = find_square_root("what is the square root of ABC?")
+    [ERROR] __main__.find_square_root.casting: 'NoneType' object has no attribute 'group'
+    >>> result  # None
 
-Well sure, but chains are used for cases when the process might fail at any point of the code,
-so let's try some few scenarios
+    >>> result = find_square_root("what is the square root of -16?")
+    [ERROR] __main__.find_square_root.square_root: math domain error
+    >>> result  # None
 
-.. code-block:: pycon
+Perfect, it works as we expected, wrapping the failure and logging it.
 
-    >>> chain(['12.5', '56.33', '54.7', '29.65'])
-    sequence[0]/str.split raised TypeError("descriptor 'split' for 'str' objects doesn't apply to a 'list' object") when receiving <class 'list'>: ['12.5', '56.33', '54.7', '29.65']
+But look how we started with a single line lambda function and ended up with more than 20 lines of code, it's just
+too much for a function that only "evaluates a square root from a string", and this approach has multiple disadvantages:
 
-Of course our chain doesn't expect lists, and this example shows that this exception was handled and logged
-pointing out the source (syntax will be covered on :ref:`reports chapter <reports>`) the error and the input,
-this information is handy when your app hosted that will continue running.
+**Unscalable**
+    It gets difficult if we want to add functionality to the function or reuse the same approach
+    *(wrap in* ``try/except`` *block and log)* in other functions.
 
-In addition especially when testing, you can tell the chain to print report statistics:
+**Inflexible**
+    If we want to change the error handling logic, we will have to change it in each of the function definitions.
 
-.. code-block:: pycon
+**Error-prone**
+    It's easy to miss a possible exception in one of the steps or miss a probable source of failure.
 
-    >>> chain = Chain('my_chain', str.split, '*', float, mean, print_stats=True)
-    >>> result = chain(['12.5', '56.33', '54.7', '29.65'])
-    -- STATS -----------------------------
-       success percentage:        0%
-       successful operations:     0
-       unsuccessful operations:   1
-       unreached nodes:           2
-       required nodes:            3
-       total number of nodes:     3
-    --------------------------------------
-    sequence[0]/str.split raised TypeError("descriptor 'split' for 'str' objects doesn't apply to a 'list' object") when receiving <class 'list'>: ['12.5', '56.33', '54.7', '29.65']
-    >>> repr(result)
-    'None'
+**Tedious**
+    The same code is repeated multiple times and this is an anti-pattern, bad practice and tiring process.
 
-Lets try another exception in a different step
-
-.. code-block:: pycon
-
-    >>> result = chain('12.5 abc 54.7 29.65')
-    -- STATS -----------------------------
-       success percentage:        92%
-       successful operations:     5
-       unsuccessful operations:   1
-       unreached nodes:           0
-       required nodes:            3
-       total number of nodes:     3
-    --------------------------------------
-    sequence[1]/float raised ValueError("could not convert string to float: 'abc'") when receiving <class 'str'>: 'abc'
-    >>> result
-    32.28333333333333
-
-Of course logging can be turned off :code:`chain = Chain('chain_name', str.split, ..., log_failures=False)`
-and other handlers can be added to handle reports `chain.add_report_handler(my_handler)` (learn more about :ref:`reports <reports>`)
-or keep logging but with a custom logger `..., logger='my_logger')`
-by passing the name of that logger `'my_logger'` or even passing the logger itself `..., logger=logger)`
-if `logger` an instance of the builtin |logging.Logger_docs|
-
-
-Chain API
----------
-
-.. autoclass:: fastchain.Chain
-   :members: name, add_report_handler
-
-.. |statistics.mean_docs| raw:: html
-
-   <a href="https://docs.python.org/3/library/functools.html#functools.partial" target="_blank">statistics.mean</a>
-
-.. |logging.Logger_docs| raw:: html
-
-   <a href="https://docs.python.org/3/library/logging.html#logging.Logger" target="_blank">Logger</a>
+Of course any decent developer will create functions that automates these steps, but even that is additional work...
+so let ```fastchain`` handle that for you.

@@ -63,10 +63,7 @@ This document contains the following pages
    :caption: User Guide
 
    user_guide/getting_started
-   user_guide/designing_workflows
-   user_guide/reports
-   user_guide/bigger_projects
-   user_guide/best_practices
+
 
 .. |semver_link| raw:: html
 

@@ -60,7 +60,7 @@ def _build_nodes(
     returns a boolean indicator whether nodes are asynchronous
     """
     nodes = [_build(item) for item in items]
-    nodes_are_async = set(isinstance(nd, AsyncNode) for nd in nodes)
+    nodes_are_async = set(isinstance(nd, AsyncBaseNode) for nd in nodes)
     if any(nodes_are_async):
         if not all(nodes_are_async):
             nodes = [nd.to_async() for nd in nodes]
