@@ -144,7 +144,7 @@ class AsyncBaseNode(BaseNode[T, Input, Coroutine[None, None, Output]], Generic[T
         return AsyncChain(self) * other
 
     def to_async(self) -> AsyncBaseNode:
-        return self.copy()
+        return self
 
     @abc.abstractmethod
     async def process(self, arg: Input, reporter: Reporter) -> Feedback[Output]:
@@ -176,12 +176,20 @@ class CollectionMixin:
 class Chain(BaseNode[list[BaseNode], Input, Output], CollectionMixin, Generic[Input, Output]):
     def __or__(self, other):
         next_node = node(other, name=None)
-        if next_node.is_async:
+        if not next_node:
+            return self
+        elif next_node.is_async:
             return self.to_async | next_node
-                
+        self.core.append(next_node)
+        return self
 
     def __mul__(self, other):
-        pass
+        next_node = node(other, name=None)
+        if not next_node:
+            return self
+        elif next_node.is_async:
+            return self.to_async * next_node
+        return self | Loop(next_node)
 
     def to_async(self) -> AsyncChain[Input, Output]:
         return AsyncChain([node.to_async() for node in self._core])
@@ -198,6 +206,20 @@ class Chain(BaseNode[list[BaseNode], Input, Output], CollectionMixin, Generic[In
 
 
 class AsyncChain(AsyncBaseNode[list[AsyncBaseNode], Input, Output], CollectionMixin, Generic[Input, Output]):
+
+    def __or__(self, other):
+        next_node = node(other, name=None)
+        if not next_node:
+            return self
+        self.core.append(next_node.to_async())
+        return self
+
+    def __mul__(self, other):
+        next_node = node(other, name=None)
+        if not next_node:
+            return self
+        return self | AsyncLoop(next_node.to_async())
+    
     async def process(self, arg: Any, reporter: Reporter) -> Feedback[Output]:
         for node in self._core:
             res = await node.process(arg, reporter)

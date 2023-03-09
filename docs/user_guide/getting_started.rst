@@ -183,3 +183,51 @@ Now we will implement the same function ``find_square_root`` using ``fastchain``
 .. literalinclude:: examples/getting_started_fastchain_example.py
     :language: python
     :caption: fastchain_test.py
+
+That's it, we just declare the functions to be called sequentially and fastchain
+will make a chain from that.
+
+.. important:: 
+
+    It is necessary to wrap the first function within ``fastchain.node()``,
+    a utility that converts a function into a *"chainable"* node.
+
+.. note:: 
+
+    We could also wrap each function inside ``fastchain.node()``, but fastchain
+    does that automatically and it is useless to do it manually unless we want to
+    customize a specific node.
+
+Now let's see what we got
+
+.. code-block:: python
+
+    >>> from fastchain_test import find_square_root
+    >>> find_square_root
+    fastchain.Chain('find_square_root', len=6)
+
+It already got the name from the variable's name and the count of nodes *(steps)*.
+now let check it functionality.
+
+.. code-block:: python
+
+    >>> result = find_square_root("what is the square root of 834.89?")
+    >>> result
+    '28.89'
+    >>> result = find_square_root(834.89)
+    [ERROR] find_square_root.re_Pattern_search: expected string or bytes-like object, got 'float'
+    >>> result  # None
+
+    >>> result = find_square_root("what is the square root of ABC?")
+    [ERROR] find_square_root.re_Match_group: 'NoneType' object has no attribute 'group'
+    >>> result  # None
+
+    >>> result = find_square_root("what is the square root of -16?")
+    [ERROR] find_square_root.math_sqrt: math domain error
+    >>> result  # None
+
+
+And as expected all nodes are executed in isolation from the rest
+and failures are well reported out of the box. Of course as we will later see,
+the failure handling behaviour is fully customizable, but the default logging
+handler is already not bad.
