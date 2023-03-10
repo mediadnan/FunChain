@@ -24,6 +24,7 @@ License
 This project is distributed under the MIT license.
 
 .. _installation:
+
 Installation
 ------------
 You can get fastchain from PyPI with the following command
@@ -57,12 +58,14 @@ integrated into your application.
 
 This document contains the following pages
 
+
 .. toctree::
    :includehidden:
    :maxdepth: 2
    :caption: User Guide
 
    user_guide/getting_started
+   user_guide/best_practices
 
 
 .. |semver_link| raw:: html

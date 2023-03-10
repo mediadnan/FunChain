@@ -74,7 +74,7 @@ This works fine and fast, however steps 1, 2 and 3 are potential points of failu
     Traceback (most recent call last):
         ...
     AttributeError: 'NoneType' object has no attribute 'group'
-    >>> find_square_root("what is the square root of -16?")  # step 2: fails because math.sqrt expects a positive number
+    >>> find_square_root("what is the square root of -16?")  # step 3: fails because math.sqrt expects a positive number
     Traceback (most recent call last):
         ...
     ValueError: math domain error
@@ -180,9 +180,10 @@ Now we will implement the same function ``find_square_root`` using ``fastchain``
     Make sure to :ref:`install <installation>` ``fastchain`` first to be able to use it.
 
 
-.. literalinclude:: examples/getting_started_fastchain_example.py
+.. literalinclude:: ../examples/getting_started/fastchain_example_1.py
     :language: python
     :caption: fastchain_test.py
+    :linenos:
 
 That's it, we just declare the functions to be called sequentially and fastchain
 will make a chain from that.
@@ -195,7 +196,7 @@ will make a chain from that.
 .. note:: 
 
     We could also wrap each function inside ``fastchain.node()``, but fastchain
-    does that automatically and it is useless to do it manually unless we want to
+    does that automatically and it is unecessary to do it manually unless we want to
     customize a specific node.
 
 Now let's see what we got
@@ -231,3 +232,6 @@ And as expected all nodes are executed in isolation from the rest
 and failures are well reported out of the box. Of course as we will later see,
 the failure handling behaviour is fully customizable, but the default logging
 handler is already not bad.
+
+
+
