@@ -6,6 +6,10 @@ import inspect
 from typing import Callable, ParamSpec, TypeVar, Coroutine
 
 
+def validate_name(name: str) -> str:
+    pass
+
+
 def get_name(func: Callable, strip: str = '_') -> str:
     """
     Gets the functions name

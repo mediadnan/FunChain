@@ -36,22 +36,17 @@ class Severity(IntEnum):
     NORMAL
         Indicates that the failure should be reported but without failure
 
-    INHERIT
-        The same as NORMAL, but could be overriden by any other severity
-
     REQUIRED
         Indicates that the failure should be handled and the process should stop
     """
     OPTIONAL = -1
     NORMAL = 0
-    INHERIT = 0
     REQUIRED = 1
 
 
 # severity shortcuts
 OPTIONAL = Severity.OPTIONAL
 NORMAL = Severity.NORMAL
-INHERIT = Severity.INHERIT
 REQUIRED = Severity.REQUIRED
 
 
@@ -146,8 +141,8 @@ class Reporter:
 
     def __init__(
             self,
-            name: Any = None,
-            severity: Severity = INHERIT,
+            name: str,
+            severity: Severity,
             handler: Callable[[FailureData], None] | None = FailureLogger(),
             **details
     ) -> None:
@@ -168,19 +163,6 @@ class Reporter:
         self._handler = handler
         self._details = details
         self._severity = severity
-
-    def __call__(self, name: Any, severity: Severity = INHERIT, **details) -> Self:
-        """
-        Derives new reporter from the current, keeping its reference.
-
-        :param name: name of the new sub reporter
-        :param severity: level of severity OPTIONAL/NORMAL/REQUIRED
-        :keyword details: additional details to be reported
-        :return: the new reporter child
-        """
-        sub = self.__class__(name, severity, self._handler, **details)
-        sub._root = self
-        return sub
 
     def __enter__(self) -> Self:
         """Reporter as a context will capture exceptions and report them"""

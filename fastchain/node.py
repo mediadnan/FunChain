@@ -10,7 +10,7 @@ from typing import (
 )
 
 from ._util import asyncify
-from .reporter import Reporter, Severity, OPTIONAL, INHERIT
+from .reporter import Reporter, Severity, OPTIONAL
 
 
 class BaseNode(ABC):
@@ -18,7 +18,7 @@ class BaseNode(ABC):
     severity: Severity
 
     def __init__(self):
-        self.severity = INHERIT
+        self.severity = Severity.NORMAL
 
     @abstractmethod
     def copy(self) -> Self:
