@@ -1,4 +1,3 @@
-from __future__ import annotations
 from abc import ABC, abstractmethod, ABCMeta
 import asyncio
 from typing import (
@@ -26,12 +25,21 @@ class BaseNode(ABC):
         """Returns an identical copy of the current node"""
 
     @abstractmethod
-    def to_async(self) -> BaseNode:
+    def to_async(self) -> 'AsyncBaseNode':
         """Returns an async copy of the current node"""
 
     @abstractmethod
     def __call__(self, arg, reporter: Reporter) -> Any:
-        """Implements the processing logic for the node"""
+        """Processes arg and returns the result"""
+
+
+class AsyncBaseNode(BaseNode):
+    def to_async(self) -> Self:
+        return self.copy()
+
+    @abstractmethod
+    async def __call__(self, arg, reporter: Reporter) -> Any:
+        """Processes arg asynchronously and returns the result"""
 
 
 Input = TypeVar('Input')
@@ -50,7 +58,7 @@ class Node(BaseNode):
     def copy(self) -> Self:
         return self.__class__(self.func, self.name)
 
-    def to_async(self) -> AsyncNode:
+    def to_async(self) -> 'AsyncNode':
         return AsyncNode(asyncify(self.func), self.name)
 
     def __call__(self, arg: Input, reporter: Reporter) -> Output | None:
@@ -58,7 +66,7 @@ class Node(BaseNode):
             return self.func(arg)
 
 
-class AsyncNode(Node):
+class AsyncNode(Node, AsyncBaseNode):
     func: Callable[[Input], Coroutine[None, None, Output]]
 
     async def __call__(self, arg: Input, reporter: Reporter) -> Output | None:
@@ -76,7 +84,7 @@ class Chain(BaseNode):
     def copy(self) -> Self:
         return self.__class__([node.copy() for node in self.nodes])
 
-    def to_async(self) -> AsyncChain:
+    def to_async(self) -> 'AsyncChain':
         return AsyncChain([node.to_async() for node in self.nodes])
 
     def __call__(self, arg, reporter: Reporter) -> Any | None:
@@ -90,7 +98,7 @@ class Chain(BaseNode):
         return arg
 
 
-class AsyncChain(Chain):
+class AsyncChain(Chain, AsyncBaseNode):
     async def __call__(self, arg, reporter: Reporter) -> Any:
         for node in self.nodes:
             res = await node(arg, reporter)
@@ -112,7 +120,7 @@ class Loop(BaseNode):
     def copy(self) -> Self:
         return self.__class__(self.node.copy())
 
-    def to_async(self) -> AsyncLoop:
+    def to_async(self) -> 'AsyncLoop':
         return AsyncLoop(self.node.to_async())
 
     def __call__(self, args: Iterable[Input], reporter: Reporter) -> list:
@@ -120,7 +128,7 @@ class Loop(BaseNode):
         return [res for res in (node(arg, reporter) for arg in args) if res is not None]
 
 
-class AsyncLoop(Loop):
+class AsyncLoop(Loop, AsyncBaseNode):
     async def __call__(self, args: Iterable, reporter: Reporter) -> list:
         node = self.node
         results = await asyncio.gather(*(asyncio.create_task(node(arg, reporter)) for arg in args))
@@ -142,7 +150,7 @@ class Model(BaseNode):
     def copy(self) -> Self:
         return self.__class__([(branch, node.copy()) for branch, node in self.nodes])
 
-    def to_async(self) -> AsyncModel:
+    def to_async(self) -> 'AsyncModel':
         return AsyncModel([(branch, node.to_async()) for branch, node in self.nodes])
 
     def __call__(self, arg: Input, reporter: Reporter) -> Output:
@@ -154,7 +162,7 @@ class Model(BaseNode):
         )
 
 
-class AsyncModel(Model, metaclass=ABCMeta):
+class AsyncModel(Model, AsyncBaseNode, metaclass=ABCMeta):
     async def __call__(self, arg: Input, reporter: Reporter) -> Output:
         branches, severities, tasks = zip(*[
             (branch,
