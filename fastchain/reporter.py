@@ -21,7 +21,7 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from os import PathLike
 from types import TracebackType
-from typing import Any, overload, Callable, Self, Generic, TypeVar
+from typing import Any, overload, Callable, Self, Generic, TypeVar, Literal
 
 from ._util import pascal_to_snake
 
@@ -238,8 +238,16 @@ T = TypeVar('T')
 
 
 class Reporter(Generic[T]):
-    def __init__(self): ...
+    name: str
+    reports: dict[str, Literal[True] | FailureData]
 
-    def failure(self, source: T, error: Exception, severity: Severity, **details): ...
+    def __init__(self, name: str, reports: dict | None = None):
+        self.name = name
+        self.reports = reports or dict()
 
-    def success(self, source: T, **details): ...
+    def failure(self, error: Exception, severity: Severity, **details): ...
+
+    def success(self, **details): ...
+
+    def __call__(self, name: str) -> 'Reporter[T]':
+        return Reporter(f'{self.name}.{name}', self.reports)

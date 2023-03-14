@@ -3,7 +3,6 @@ The module defines different types of fastchain nodes,
 nodes are built and used by fastchain chains
 to perform the data processing.
 """
-import functools
 from abc import ABC, abstractmethod, ABCMeta
 import asyncio
 from typing import (
@@ -20,7 +19,7 @@ from typing import (
     overload,
 )
 
-from ._util import asyncify, is_async, get_name, validate_name
+from ._util import asyncify, is_async, get_name, validate_name, get_varname
 from .reporter import Reporter, Severity, OPTIONAL
 
 
@@ -49,12 +48,14 @@ AsyncListModelChainable: TypeAlias = list[AsyncChainable[Input, Any] | Chainable
 
 class BaseNode(ABC, Generic[Input, Output]):
     """Base class for all fastchain nodes"""
-    __slots__ = 'severity', 'root'
-    root: Optional['BaseNode']
+    __slots__ = 'severity', 'root', 'name'
+    name: str | None
     severity: Severity
+    root: Optional['BaseNode']
 
-    def __init__(self):
-        self.root = None
+    def __init__(self, root: Optional['BaseNode'] = None) -> None:
+        self.name = None
+        self.root = root
         self.severity = Severity.NORMAL
 
     @overload
@@ -97,6 +98,9 @@ class BaseNode(ABC, Generic[Input, Output]):
     def __mul__(self, other: Chainable[Output, Output2] | AsyncChainable[Output, Output2]) -> 'Chain[Output, Output2]':
         return Chain(self) * other
 
+    @abstractmethod
+    def __len__(self) -> int: ...
+
     def __call__(self, arg, /, reporter: Reporter | None = None) -> Output | None:
         """Processes arg and returns the result"""
         return self._process(arg, self.__prepare_reporter__(reporter))
@@ -129,7 +133,7 @@ class BaseNode(ABC, Generic[Input, Output]):
         """Returns an identical copy of the current node"""
 
     @abstractmethod
-    def to_async(self) -> 'AsyncBaseNode':
+    def to_async(self) -> 'AsyncBaseNode[Input, Output]':
         """Returns an async copy of the current node"""
 
 
@@ -151,10 +155,13 @@ class Node(BaseNode):
         self.func = func
         self.name = name
 
+    def __len__(self) -> int:
+        return 1
+
     def copy(self) -> Self:
         return self.__class__(self.func, self.name)
 
-    def to_async(self) -> 'AsyncNode':
+    def to_async(self) -> 'AsyncNode[Input, Output]':
         return AsyncNode(asyncify(self.func), self.name)
 
     def _process(self, arg: Input, reporter: Reporter) -> Output | None:
@@ -181,18 +188,22 @@ class AsyncNode(Node, AsyncBaseNode):
 
 
 class Chain(BaseNode):
-    __slots__ = 'nodes',
+    __slots__ = 'nodes', '__len'
+    __len: int
     nodes: list[BaseNode]
 
     def __init__(self, *nodes: BaseNode) -> None:
         super().__init__()
         self.nodes = list(nodes)
+        self.__len = sum(map(len, nodes))
 
     def __or__(self, other):
         if is_node_async(other):
             return self.to_async() | other
         next_node = build(other)
-        self.nodes.append()
+        next_node.root = self
+        self.nodes.append(next_node)
+        self.__len += len(next_node)
         return self
 
     def __mul__(self, other):
@@ -200,10 +211,13 @@ class Chain(BaseNode):
             return self.to_async() * other
         return self | Loop(build(other))
 
+    def __len__(self) -> int:
+        return self.__len
+
     def copy(self) -> Self:
         return self.__class__(*(node.copy() for node in self.nodes))
 
-    def to_async(self) -> 'AsyncChain':
+    def to_async(self) -> 'AsyncChain[Input, Output]':
         return AsyncChain(*(node.to_async() for node in self.nodes))
 
     def _process(self, arg, reporter: Reporter) -> Any | None:
@@ -219,7 +233,10 @@ class Chain(BaseNode):
 
 class AsyncChain(Chain[Input, Output], AsyncBaseNode[Input, Output], Generic[Input, Output]):
     def __or__(self, other):
-        self.nodes.append(async_build(other))
+        next_node = async_build(other)
+        next_node.root = self
+        self.nodes.append(next_node)
+        self.__len += len(next_node)
         return self
 
     def __mul__(self, other):
@@ -237,12 +254,17 @@ class AsyncChain(Chain[Input, Output], AsyncBaseNode[Input, Output], Generic[Inp
 
 
 class Loop(BaseNode[Iterable[Input], list[Output]], Generic[Input, Output]):
-    __slots__ = 'node',
+    __slots__ = 'node', '__len'
+    __len: int
     node: BaseNode[Input, Output]
 
     def __init__(self, node: BaseNode[Input, Output], /) -> None:
         super().__init__()
         self.node = node
+        self.__len = len(node)
+
+    def __len__(self) -> int:
+        return self.__len
 
     def copy(self) -> Self:
         return self.__class__(self.node.copy())
@@ -263,12 +285,17 @@ class AsyncLoop(Loop[Input, Output], AsyncBaseNode[Input, Output], Generic[Input
 
 
 class Model(BaseNode[Input, Output], Generic[Input, Output]):
-    __slots__ = 'nodes',
+    __slots__ = 'nodes', '__len'
+    __len: int
     nodes: list[tuple[Any, BaseNode]]
 
     def __init__(self, nodes: list[tuple[Any, BaseNode]]):
         super().__init__()
         self.nodes = nodes
+        self.__len = sum((len(node) for _, node in self.nodes))
+
+    def __len__(self) -> int:
+        return self.__len
 
     @staticmethod
     @abstractmethod
@@ -351,6 +378,7 @@ def nd(model: AsyncListModelChainable[Input, Output]) -> ListModel[Input, Output
 
 
 def nd(obj=None) -> BaseNode:
+    name = get_varname()
     if obj is None:
         return Chain()
     elif is_node_async(obj):
