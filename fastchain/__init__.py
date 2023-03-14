@@ -7,7 +7,6 @@ it also takes a callback that takes a report as its only parameter.
 chains are callables, they take an input and returns the last result.
 """
 from .reporter import Failure, Severity, OPTIONAL, NORMAL, REQUIRED
-from .facto import node
-
+from .nodes import nd as node
 
 __version__ = '0.1.0'
