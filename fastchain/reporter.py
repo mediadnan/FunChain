@@ -241,13 +241,18 @@ class Reporter(Generic[T]):
     name: str
     reports: dict[str, Literal[True] | FailureData]
 
-    def __init__(self, name: str, reports: dict | None = None):
-        self.name = name
+    def __init__(self, name: Any, reports: dict | None = None):
+        self.name = str(name) if name else None
         self.reports = reports or dict()
 
     def failure(self, error: Exception, severity: Severity, **details): ...
 
     def success(self, **details): ...
 
-    def __call__(self, name: str) -> 'Reporter[T]':
+    def __call__(self, name: Any) -> Self:
+        if name is None:
+            return self
+        elif self.name is None:
+            self.name = str(name)
+            return self
         return Reporter(f'{self.name}.{name}', self.reports)
