@@ -6,8 +6,8 @@ Chain is the main component, it parses the given model and creates the right exe
 it also takes a callback that takes a report as its only parameter.
 chains are callables, they take an input and returns the last result.
 """
-from .reporter import Failure, Severity, OPTIONAL, INHERIT, NORMAL, REQUIRED
-from .facto import chain, node, loop, model, node_maker, required, optional
+from .reporter import Failure, Severity, OPTIONAL, NORMAL, REQUIRED
+from .facto import node
 
 
 __version__ = '0.1.0'

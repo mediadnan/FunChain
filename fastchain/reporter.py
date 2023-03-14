@@ -21,7 +21,7 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from os import PathLike
 from types import TracebackType
-from typing import Any, overload, Callable, Self
+from typing import Any, overload, Callable, Self, Generic, TypeVar
 
 from ._util import pascal_to_snake
 
@@ -132,7 +132,7 @@ class FailureLogger:
         self._logger.log(lvl, failure.description, extra={'failure_source': failure.source, })
 
 
-class Reporter:
+class _Reporter:
     _name: str | None
     _root: Self | None
     _severity: Severity
@@ -200,7 +200,7 @@ class Reporter:
         """Gets the (root aware) severity"""
         severity = self._severity
         root = self._root
-        if severity is INHERIT and root is not None:
+        if severity is None and root is not None:
             return root.severity
         return severity
 
@@ -232,3 +232,14 @@ class Reporter:
             severity=severity,
             details=details
         ))
+
+
+T = TypeVar('T')
+
+
+class Reporter(Generic[T]):
+    def __init__(self): ...
+
+    def failure(self, source: T, error: Exception, severity: Severity, **details): ...
+
+    def success(self, source: T, **details): ...

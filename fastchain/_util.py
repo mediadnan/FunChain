@@ -6,8 +6,20 @@ import inspect
 from typing import Callable, ParamSpec, TypeVar, Coroutine
 
 
+NAME_SEPARATOR = '.'
+
+
+def join_names(*names: str) -> str:
+    """joins a collection of hierarchically ordered names"""
+    return NAME_SEPARATOR.join(names)
+
+
+def split_name(name: str) -> list[str]:
+    """"""
+
+
 def validate_name(name: str) -> str:
-    pass
+    return name
 
 
 def get_name(func: Callable, strip: str = '_') -> str:
