@@ -18,7 +18,7 @@ from typing import (
     overload,
 )
 
-from .reporter import Reporter, Severity, OPTIONAL, FailureData, FailureLogger
+from .reporter import Reporter, Severity, OPTIONAL, Failure, FailureLogger
 from ._util import asyncify, is_async, get_name, validate_name
 from .util.names import get_func_name, guess_var_name
 
@@ -69,10 +69,6 @@ class BaseNode(ABC, Generic[Input, Output]):
     def __or__(self, other: AsyncListModelChainable[Output]) -> 'AsyncChain[Input, list]': ...
     @overload
     def __or__(self, other: ListModelChainable[Output]) -> 'Chain[Input, list]': ...
-
-    def __or__(self, other: Chainable[Output, Output2] | AsyncChainable[Output, Output2]) -> 'Chain[Output, Output2]':
-        return Chain(self) | other
-
     @overload
     def __mul__(self, other: 'AsyncBaseNode[Output, Output2]') -> 'AsyncChain[Input, list[Output2]]': ...
     @overload
@@ -90,6 +86,9 @@ class BaseNode(ABC, Generic[Input, Output]):
     @overload
     def __mul__(self, other: ListModelChainable[Output]) -> 'Chain[Input, list[list]]': ...
 
+    def __or__(self, other: Chainable[Output, Output2] | AsyncChainable[Output, Output2]) -> 'Chain[Output, Output2]':
+        return Chain(self) | other
+
     def __mul__(self, other: Chainable[Output, Output2] | AsyncChainable[Output, Output2]) -> 'Chain[Output, Output2]':
         return Chain(self) * other
 
@@ -105,7 +104,7 @@ class BaseNode(ABC, Generic[Input, Output]):
             self,
             arg, /, *,
             name: str | None = None,
-            handler: Callable[[FailureData], None] = FailureLogger()
+            handler: Callable[[Failure], None] | None = FailureLogger()
     ) -> Output | None:
         """Processes arg and returns the result"""
         if name is None:
@@ -120,11 +119,6 @@ class BaseNode(ABC, Generic[Input, Output]):
     def required(self) -> Self:
         new = self.copy()
         new.severity = Severity.REQUIRED
-        return new
-
-    def named(self, name: str) -> Self:
-        new = self.copy()
-        new.name = validate_name(name)
         return new
 
     @abstractmethod
@@ -148,10 +142,6 @@ class AsyncBaseNode(BaseNode[Input, Coroutine[None, None, Output]], Generic[Inpu
     def __or__(self, other: DictModelChainable[Output]) -> 'AsyncChain[Input, dict]': ...
     @overload
     def __or__(self, other: ListModelChainable[Output]) -> 'AsyncChain[Input, list]': ...
-
-    def __or__(self, other):
-        return AsyncChain(self) | other
-
     @overload
     def __mul__(self, other: 'BaseNode[Output, Output2]') -> 'AsyncChain[Input, list[Output2]]': ...
     @overload
@@ -161,6 +151,9 @@ class AsyncBaseNode(BaseNode[Input, Coroutine[None, None, Output]], Generic[Inpu
     @overload
     def __mul__(self, other: ListModelChainable[Output]) -> 'AsyncChain[Input, list[list]]': ...
 
+    def __or__(self, other):
+        return AsyncChain(self) | other
+
     def __mul__(self, other):
         return AsyncChain(self) * other
 
@@ -169,7 +162,7 @@ class AsyncBaseNode(BaseNode[Input, Coroutine[None, None, Output]], Generic[Inpu
         return self
 
     @abstractmethod
-    def _process(self, arg, reporter: Reporter) -> Output | None: ...
+    async def _process(self, arg, reporter: Reporter) -> Output | None: ...
 
 
 class Node(BaseNode[Input, Output], Generic[Input, Output]):
@@ -180,7 +173,7 @@ class Node(BaseNode[Input, Output], Generic[Input, Output]):
     def __init__(self, func: Callable[[Input], Output], name: str | None = None) -> None:
         super().__init__()
         self.func = func
-        self.name = name if (name is not None and validate_name(name)) else get_func_name(func)
+        self.name = name or get_func_name(func)
 
     def __len__(self) -> int:
         return 1
@@ -217,7 +210,7 @@ class Chain(BaseNode[Input, Output], Generic[Input, Output]):
     def __init__(self, *nodes: BaseNode) -> None:
         super().__init__()
         self.nodes = list(nodes)
-        self.__len = sum(map(len, nodes))
+        self.__len = sum(map(len, nodes)) if nodes else 0
 
     def __or__(self, other):
         if is_node_async(other):

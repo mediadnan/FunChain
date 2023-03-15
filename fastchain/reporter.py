@@ -21,9 +21,9 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from os import PathLike
 from types import TracebackType
-from typing import Any, overload, Callable, Self
+from typing import Any, Callable, Self
 
-from ._util import pascal_to_snake
+from .util.names import NAME_SEPARATOR
 
 
 class Severity(IntEnum):
@@ -50,23 +50,8 @@ NORMAL = Severity.NORMAL
 REQUIRED = Severity.REQUIRED
 
 
-class Failure(Exception):
-    """
-    Custom exception holding description and additional details,
-    this exception can be raised inside nodes if a some
-    condition is not met, as a form of validation.
-    """
-    description: str
-    details: dict[str, Any]
-
-    def __init__(self, description: str, **details):
-        super().__init__(description)
-        self.description = description
-        self.details = details
-
-
 @dataclass(order=False, frozen=True, slots=True)
-class FailureData:
+class Failure:
     """
     Structured failure data automatically created by fastchain.reporter.Reporter,
     this object holds key information about a specific processing failure.
@@ -122,111 +107,9 @@ class FailureLogger:
             logger.addHandler(file_handler)
         self._logger = logger
 
-    def __call__(self, failure: FailureData):
+    def __call__(self, failure: Failure):
         lvl = logging.ERROR if (failure.severity is REQUIRED) else logging.WARNING
         self._logger.log(lvl, failure.error, extra={'failure_source': failure.source, })
-
-
-class _Reporter:
-    _name: str | None
-    _root: Self | None
-    _severity: Severity
-    _details: dict[str, Any]
-    _handler: Callable[[FailureData], None] | None
-
-    def __init__(
-            self,
-            name: str,
-            severity: Severity,
-            handler: Callable[[FailureData], None] | None = FailureLogger(),
-            **details
-    ) -> None:
-        """
-        Reporter holds tracing info when called by nested nodes, to keep track
-        of the location (source) of error and holds additional information
-        from each layer to combine when a failure occurs.
-
-        The severity of the reporter determines how it reacts to a specific failure.
-
-        :param name: name of the new reporter
-        :param severity: level of severity OPTIONAL/NORMAL/REQUIRED
-        :param handler: function that will be called with FailureDetails object
-        :keyword details: additional details to be reported
-        """
-        self._root = None
-        self._name = name
-        self._handler = handler
-        self._details = details
-        self._severity = severity
-
-    def __enter__(self) -> Self:
-        """Reporter as a context will capture exceptions and report them"""
-        return self
-
-    def __exit__(
-            self,
-            exc_type: type[Exception] | None,
-            exc_val: Exception | None,
-            exc_tb: TracebackType | None
-    ) -> bool:
-        if exc_type is None:
-            return True
-        elif isinstance(exc_val, Exception):
-            self.report(exc_val)
-            return True
-        return False  # propagate higher order exception (like BaseException)
-
-    @property
-    def name(self) -> str | None:
-        """Gets dot separated hierarchical name root.sub.sub_sub"""
-        if (root := self._root) and (root_name := root.name):
-            return f'{root_name}.{self._name}'
-        return self._name
-
-    @property
-    def details(self) -> dict[str, Any]:
-        """Gets full (hierarchically merged) details"""
-        if (root := self._root) is not None:
-            return {**root.details, **self._details}
-        return self._details.copy()
-
-    @property
-    def severity(self) -> Severity:
-        """Gets the (root aware) severity"""
-        severity = self._severity
-        root = self._root
-        if severity is None and root is not None:
-            return root.severity
-        return severity
-
-    @overload
-    def report(self, error: Exception, severity: Severity = ..., **details) -> None: ...
-    @overload
-    def report(self, description: str, severity: Severity = ..., **details) -> None: ...
-
-    def report(self, arg: str | Exception, **details) -> None:
-        """Encapsulate the failure with registered details into a FailureDetails object and calls the handler"""
-        severity = self.severity
-        handler = self._handler
-        if (severity is OPTIONAL) or (handler is None):
-            return
-        dt = datetime.now()
-        if isinstance(arg, Failure):
-            desc = arg.description
-            details = {**self.details, **details, **arg.details}
-        elif isinstance(arg, Exception):
-            desc = str(arg)
-            details = {**self.details, **details, 'error_type': pascal_to_snake(type(arg).__name__)}
-        else:
-            desc = arg
-            details = {**self.details, **details}
-        handler(FailureData(
-            source=self.name,
-            error=desc,
-            datetime=dt,
-            severity=severity,
-            details=details
-        ))
 
 
 class Reporter:
@@ -234,12 +117,12 @@ class Reporter:
     name: str
     severity: Severity
     details: dict[str, Any]
-    handler: Callable[[FailureData], None]
+    handler: Callable[[Failure], None] | None
 
     def __init__(
             self,
             name: str,
-            handler: Callable[[FailureData], None],
+            handler: Callable[[Failure], None] | None,
             *,
             severity: Severity = NORMAL,
             **details
@@ -250,12 +133,19 @@ class Reporter:
         self.severity = severity
 
     def failure(self, error: Exception) -> None:
-        self.handler(FailureData(self.name, error, self.severity, details=self.details))
+        if (self.severity is OPTIONAL) or (self.handler is None):
+            return
+        self.handler(Failure(self.name, error, self.severity, details=self.details))
 
     def __call__(self, name: str | None, *, severity: Severity = NORMAL, **details) -> Self:
         if name is None:
             return self
-        return Reporter(f'{self.name}.{name}', self.handler, severity=severity, **self.details, **details)
+        return Reporter(
+            f'{self.name}{NAME_SEPARATOR}{name}',
+            self.handler,
+            severity=severity,
+            **{**self.details, **details}
+        )
 
     def __enter__(self) -> Self:
         """Reporter as a context will capture exceptions and report them"""

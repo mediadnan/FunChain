@@ -9,7 +9,7 @@ from fastchain.reporter import (
     NORMAL,
     INHERIT,
     REQUIRED,
-    FailureData,
+    Failure,
     FailureLogger,
 )
 
@@ -28,7 +28,7 @@ def test_severity_values():
 
 def test_failure_data_object():
     time = datetime.now()
-    fd = FailureData(
+    fd = Failure(
         'path.to.failure.source',
         'mock failure for test',
         time,
@@ -52,7 +52,7 @@ def test_failure_logger(caplog, severity, log_level, log_name):
     dt = datetime(2023, 6, 6)
     assert logger._logger.name == logger_name, "Logger name should be set by FailureLogger constructor"
     with caplog.at_level(log_level, logger_name):
-        logger(FailureData('path.to.source', 'test message', dt, severity=severity))
+        logger(Failure('path.to.source', 'test message', dt, severity=severity))
     log_record = caplog.records.pop()
     assert log_record.levelno == log_level, "Logging level should reflect the severity level"
     assert (log_record.message == f"path.to.source [{log_name}] :: test message 2023-06-06 00:00:00",
@@ -64,7 +64,7 @@ def test_failure_file_logging(tmp_path):
     dt = datetime(2023, 6, 6)
     assert not log_file.exists(), "File should not exist"
     logger = FailureLogger(_file=log_file)
-    failure = FailureData('failure.source', 'failed for test', dt)
+    failure = Failure('failure.source', 'failed for test', dt)
     logger(failure)
     assert (log_file.read_text() == f"path.to.source [WARNING] :: test message 2023-06-06 00:00:00",
             "File log should match the default format")
