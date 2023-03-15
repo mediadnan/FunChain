@@ -109,7 +109,7 @@ class BaseNode(ABC, Generic[Input, Output]):
         """Processes arg and returns the result"""
         if name is None:
             name = guess_var_name()
-        return self._process(arg, Reporter(name, handler))
+        return self.process(arg, Reporter(name, handler))
 
     def optional(self) -> Self:
         new = self.copy()
@@ -122,7 +122,7 @@ class BaseNode(ABC, Generic[Input, Output]):
         return new
 
     @abstractmethod
-    def _process(self, arg, reporter: Reporter) -> Output | None: ...
+    def process(self, arg, reporter: Reporter) -> Output | None: ...
 
     @abstractmethod
     def copy(self) -> Self:
@@ -162,7 +162,7 @@ class AsyncBaseNode(BaseNode[Input, Coroutine[None, None, Output]], Generic[Inpu
         return self
 
     @abstractmethod
-    async def _process(self, arg, reporter: Reporter) -> Output | None: ...
+    async def process(self, arg, reporter: Reporter) -> Output | None: ...
 
 
 class Node(BaseNode[Input, Output], Generic[Input, Output]):
@@ -189,7 +189,7 @@ class Node(BaseNode[Input, Output], Generic[Input, Output]):
         new.name = validate_name(name)
         return new
 
-    def _process(self, arg: Input, reporter: Reporter) -> Output | None:
+    def process(self, arg: Input, reporter: Reporter) -> Output | None:
         with reporter(self.name, severity=self.severity, input=arg):
             return self.func(arg)
 
@@ -197,7 +197,7 @@ class Node(BaseNode[Input, Output], Generic[Input, Output]):
 class AsyncNode(Node[Input, Output], AsyncBaseNode[Input, Output], Generic[Input, Output]):
     func: Callable[[Input], Coroutine[None, None, Output]]
 
-    async def _process(self, arg: Input, reporter: Reporter) -> Output | None:
+    async def process(self, arg: Input, reporter: Reporter) -> Output | None:
         with reporter(self.name, severity=self.severity, input=arg):
             return await self.func(arg)
 
@@ -234,9 +234,9 @@ class Chain(BaseNode[Input, Output], Generic[Input, Output]):
     def to_async(self) -> 'AsyncChain[Input, Output]':
         return AsyncChain(*(node.to_async() for node in self.nodes))
 
-    def _process(self, arg, reporter: Reporter) -> Any | None:
+    def process(self, arg, reporter: Reporter) -> Any | None:
         for index, node in enumerate(self.nodes):
-            res = node._process(arg, reporter(f'c[{index}]'))
+            res = node.process(arg, reporter(f'c[{index}]'))
             if res is None:
                 if node.severity is OPTIONAL:
                     continue
@@ -252,9 +252,9 @@ class AsyncChain(Chain[Input, Output], AsyncBaseNode[Input, Output], Generic[Inp
     def __mul__(self, other):
         return AsyncChain(*self.nodes, AsyncLoop(async_build(other)))
 
-    async def _process(self, arg, reporter: Reporter) -> Any:
+    async def process(self, arg, reporter: Reporter) -> Any:
         for index, node in enumerate(self.nodes):
-            res = await node._process(arg, reporter(f'c[{index}]'))
+            res = await node.process(arg, reporter(f'c[{index}]'))
             if res is None:
                 if node.severity is OPTIONAL:
                     continue
@@ -282,16 +282,16 @@ class Loop(BaseNode[Iterable[Input], list[Output]], Generic[Input, Output]):
     def to_async(self) -> 'AsyncLoop[Input, Output]':
         return AsyncLoop(self.node.to_async())
 
-    def _process(self, args: Iterable[Input], reporter: Reporter) -> list[Output]:
+    def process(self, args: Iterable[Input], reporter: Reporter) -> list[Output]:
         node = self.node
-        results = (node._process(arg, reporter(f'i[{i}]')) for i, arg in enumerate(args))
+        results = (node.process(arg, reporter(f'i[{i}]')) for i, arg in enumerate(args))
         return [res for res in results if res is not None]
 
 
 class AsyncLoop(Loop[Input, Output], AsyncBaseNode[Input, Output], Generic[Input, Output]):
-    async def _process(self, args: Iterable[Input], reporter: Reporter) -> list[Output]:
+    async def process(self, args: Iterable[Input], reporter: Reporter) -> list[Output]:
         node = self.node
-        tasks = (asyncio.create_task(node._process(arg, reporter(f'i[{i}]'))) for i, arg in enumerate(args))
+        tasks = (asyncio.create_task(node.process(arg, reporter(f'i[{i}]'))) for i, arg in enumerate(args))
         results = await asyncio.gather(*tasks)
         return [res for res in results if res is not None]
 
@@ -320,12 +320,12 @@ class Model(BaseNode[Input, Output], Generic[Input, Output]):
     def to_async(self) -> 'AsyncModel[Input, Output]':
         return AsyncModel([(branch, node.to_async()) for branch, node in self.nodes])
 
-    def _process(self, arg: Input, reporter: Reporter) -> Output:
+    def process(self, arg: Input, reporter: Reporter) -> Output:
         return self.convert(
             (branch, result)
             for branch, result, severity
             in (
-                (branch, node._process(arg, reporter(f'b[{branch}]')), node.severity)
+                (branch, node.process(arg, reporter(f'b[{branch}]')), node.severity)
                 for branch, node in self.nodes
             )
             if not (result is None and severity is OPTIONAL)
@@ -333,11 +333,11 @@ class Model(BaseNode[Input, Output], Generic[Input, Output]):
 
 
 class AsyncModel(Model[Input, Output], AsyncBaseNode[Input, Output], Generic[Input, Output], metaclass=ABCMeta):
-    async def _process(self, arg: Input, reporter: Reporter) -> Output:
+    async def process(self, arg: Input, reporter: Reporter) -> Output:
         branches, severities, tasks = zip(*[
             (branch,
              node.severity,
-             asyncio.create_task(node._process(arg, reporter(f'b[{branch}]'))))
+             asyncio.create_task(node.process(arg, reporter(f'b[{branch}]'))))
             for branch, node in self.nodes
         ])
         return self.convert(
@@ -372,34 +372,6 @@ class AsyncDictModel(AsyncModel[Input, dict], Generic[Input]):
     convert = staticmethod(dict_converter)
 
 
-@overload
-def nd() -> Chain[Input, Input]: ...
-@overload
-def nd(fun: AsyncCallable[Input, Output]) -> AsyncNode[Input, Output]: ...
-@overload
-def nd(fun: Callable[[Input], Output]) -> Node[Input, Output]: ...
-@overload
-def nd(fun: AsyncCallable[Input, Output]) -> AsyncNode[Input, Output]: ...
-@overload
-def nd(fun: Callable[[Any], Any]) -> Node[Input, Output]: ...
-@overload
-def nd(model: AsyncDictModelChainable[Input]) -> AsyncDictModel[Input]: ...
-@overload
-def nd(model: AsyncListModelChainable[Input]) -> AsyncListModel[Input]: ...
-@overload
-def nd(model: DictModelChainable[Input]) -> DictModel[Input]: ...
-@overload
-def nd(model: AsyncListModelChainable[Input]) -> ListModel[Input]: ...
-
-
-def nd(obj=None) -> BaseNode:
-    if obj is None:
-        return Chain()
-    elif is_node_async(obj):
-        return async_build(obj)
-    return build(obj)
-
-
 def is_node_async(obj) -> bool:
     """Checks whether the function or the collection contains an async function"""
     if isinstance(obj, AsyncBaseNode):
@@ -413,18 +385,13 @@ def is_node_async(obj) -> bool:
 
 def build(obj: Chainable[Input, Output]) -> BaseNode[Input, Output]:
     if isinstance(obj, BaseNode):
-        if isinstance(obj, AsyncBaseNode):
-            raise TypeError("Cannot build a normal node from and async node")
-        return obj.copy()
+        return obj
     elif callable(obj):
-        if is_async(obj):
-            raise TypeError("Cannot build a normal node from and async function")
         return Node(obj, get_name(obj))
     elif isinstance(obj, (list, dict)):
-        model, items = ((DictModel, obj.items()) if isinstance(obj, dict) else (ListModel, enumerate(obj)))
-        nodes: list[Any, BaseNode] = []
-        for branch, item in items:
-            node = build(item).named(str(branch))
+        if isinstance(obj, dict):
+            return DictModel([(key, build(item)) for key, item in obj.items()])
+        return ListModel([(index, build(item)) for index, item in enumerate(obj)])
     raise TypeError(f"Unsupported type {type(obj).__name__} for chaining")
 
 

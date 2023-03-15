@@ -20,8 +20,7 @@ from enum import IntEnum
 from dataclasses import dataclass, field
 from datetime import datetime
 from os import PathLike
-from types import TracebackType
-from typing import Any, Callable, Self
+from typing import Any, Callable, Self, TypeAlias
 
 from .util.names import NAME_SEPARATOR
 
@@ -39,9 +38,9 @@ class Severity(IntEnum):
     REQUIRED
         Indicates that the failure should be handled and the process should stop
     """
-    OPTIONAL = -1
-    NORMAL = 0
-    REQUIRED = 1
+    OPTIONAL = 0
+    NORMAL = 1
+    REQUIRED = 2
 
 
 # severity shortcuts
@@ -112,36 +111,48 @@ class FailureLogger:
         self._logger.log(lvl, failure.error, extra={'failure_source': failure.source, })
 
 
+FailureHandler: TypeAlias = Callable[[Failure], None]
+
+
 class Reporter:
     __slots__ = 'name', 'handler', 'severity', 'details'
     name: str
     severity: Severity
     details: dict[str, Any]
-    handler: Callable[[Failure], None] | None
+    handler: FailureHandler | None
 
     def __init__(
             self,
             name: str,
-            handler: Callable[[Failure], None] | None,
+            handler: FailureHandler | None,
             *,
             severity: Severity = NORMAL,
             **details
     ) -> None:
+        """
+        Reporter object holds location information of nodes
+        and handles their failures.
+
+        :param name: the root name of the chain execution
+        :param handler: the function to be called when failures occur
+        :param severity: the level of severity (OPTIONAL, NORMAL, REQUIRED)
+        :param details: any additional details to be reported
+        """
         self.name = name
         self.details = details
         self.handler = handler
         self.severity = severity
 
     def failure(self, error: Exception) -> None:
+        """Prepares a failure object and calls the handler"""
         if (self.severity is OPTIONAL) or (self.handler is None):
             return
         self.handler(Failure(self.name, error, self.severity, details=self.details))
 
-    def __call__(self, name: str | None, *, severity: Severity = NORMAL, **details) -> Self:
-        if name is None:
-            return self
+    def __call__(self, name: str | None = None, *, severity: Severity = NORMAL, **details) -> Self:
+        """Derives a new reporter with a hierarchical name from the current one"""
         return Reporter(
-            f'{self.name}{NAME_SEPARATOR}{name}',
+            self.name if name is None else f'{self.name}{NAME_SEPARATOR}{name}',
             self.handler,
             severity=severity,
             **{**self.details, **details}
@@ -151,13 +162,8 @@ class Reporter:
         """Reporter as a context will capture exceptions and report them"""
         return self
 
-    def __exit__(
-            self,
-            exc_type: type[Exception] | None,
-            exc_val: Exception | None,
-            exc_tb: TracebackType | None
-    ) -> bool:
-        if exc_type is None:
+    def __exit__(self, exc_type, exc_val, exc_tb) -> bool:
+        if exc_val is None:
             return True
         elif isinstance(exc_val, Exception):
             self.failure(exc_val)
