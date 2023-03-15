@@ -20,7 +20,7 @@ from typing import (
 
 from .reporter import Reporter, Severity, OPTIONAL, Failure, FailureLogger
 from ._util import asyncify, is_async, get_name, validate_name
-from .util.names import get_func_name, guess_var_name
+from .util.name import get_func_name, guess_var_name
 
 Input = TypeVar('Input')
 Output = TypeVar('Output')
