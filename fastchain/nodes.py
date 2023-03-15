@@ -18,9 +18,9 @@ from typing import (
     overload,
 )
 
-from ._util import asyncify, is_async, get_name, validate_name, get_varname
-from .reporter import Reporter, Severity, OPTIONAL
-
+from .reporter import Reporter, Severity, OPTIONAL, FailureData, FailureLogger
+from ._util import asyncify, is_async, get_name, validate_name
+from .util.names import get_func_name, guess_var_name
 
 Input = TypeVar('Input')
 Output = TypeVar('Output')
@@ -47,12 +47,10 @@ AsyncListModelChainable: TypeAlias = list[AsyncChainable[Input, Any] | Chainable
 
 class BaseNode(ABC, Generic[Input, Output]):
     """Base class for all fastchain nodes"""
-    __slots__ = 'severity', 'name'
-    name: str | None
+    __slots__ = 'severity',
     severity: Severity
 
-    def __init__(self, name: str | None = None) -> None:
-        self.name = name
+    def __init__(self) -> None:
         self.severity = Severity.NORMAL
 
     @overload
@@ -73,7 +71,7 @@ class BaseNode(ABC, Generic[Input, Output]):
     def __or__(self, other: ListModelChainable[Output]) -> 'Chain[Input, list]': ...
 
     def __or__(self, other: Chainable[Output, Output2] | AsyncChainable[Output, Output2]) -> 'Chain[Output, Output2]':
-        return Chain(self, name=get_varname(2)) | other
+        return Chain(self) | other
 
     @overload
     def __mul__(self, other: 'AsyncBaseNode[Output, Output2]') -> 'AsyncChain[Input, list[Output2]]': ...
@@ -93,17 +91,26 @@ class BaseNode(ABC, Generic[Input, Output]):
     def __mul__(self, other: ListModelChainable[Output]) -> 'Chain[Input, list[list]]': ...
 
     def __mul__(self, other: Chainable[Output, Output2] | AsyncChainable[Output, Output2]) -> 'Chain[Output, Output2]':
-        return Chain(self, name=get_varname()) * other
+        return Chain(self) * other
 
     @abstractmethod
     def __len__(self) -> int: ...
 
     def __repr__(self) -> str:
-        return f'fastchain.{self.__class__.__name__}({self.name or ""}, {self.__len__()})'
+        name = guess_var_name()
+        name = f'{name!r}, ' if name else ''
+        return f'fastchain.{self.__class__.__name__}({name}nodes={self.__len__()})'
 
-    def __call__(self, arg, /, reporter: Reporter | None = None) -> Output | None:
+    def __call__(
+            self,
+            arg, /, *,
+            name: str | None = None,
+            handler: Callable[[FailureData], None] = FailureLogger()
+    ) -> Output | None:
         """Processes arg and returns the result"""
-        return self._process(arg, Reporter(self.name))
+        if name is None:
+            name = guess_var_name()
+        return self._process(arg, Reporter(name, handler))
 
     def optional(self) -> Self:
         new = self.copy()
@@ -129,26 +136,51 @@ class BaseNode(ABC, Generic[Input, Output]):
 
     @abstractmethod
     def to_async(self) -> 'AsyncBaseNode[Input, Output]':
-        """Returns an async copy of the current node"""
+        """Returns an async version of the current node"""
 
 
 class AsyncBaseNode(BaseNode[Input, Coroutine[None, None, Output]], Generic[Input, Output]):
+    @overload
+    def __or__(self, other: 'BaseNode[Output, Output2]') -> 'AsyncChain[Input, Output2]': ...
+    @overload
+    def __or__(self, other: Callable[[Output], Output2]) -> 'AsyncChain[Input, Output2]': ...
+    @overload
+    def __or__(self, other: DictModelChainable[Output]) -> 'AsyncChain[Input, dict]': ...
+    @overload
+    def __or__(self, other: ListModelChainable[Output]) -> 'AsyncChain[Input, list]': ...
+
+    def __or__(self, other):
+        return AsyncChain(self) | other
+
+    @overload
+    def __mul__(self, other: 'BaseNode[Output, Output2]') -> 'AsyncChain[Input, list[Output2]]': ...
+    @overload
+    def __mul__(self, other: Callable[[Output], Output2]) -> 'AsyncChain[Input, list[Output2]]': ...
+    @overload
+    def __mul__(self, other: DictModelChainable[Output]) -> 'AsyncChain[Input, list[dict]]': ...
+    @overload
+    def __mul__(self, other: ListModelChainable[Output]) -> 'AsyncChain[Input, list[list]]': ...
+
+    def __mul__(self, other):
+        return AsyncChain(self) * other
+
     def to_async(self) -> Self:
-        return self.copy()
+        """Returns the current node"""
+        return self
 
     @abstractmethod
     def _process(self, arg, reporter: Reporter) -> Output | None: ...
 
 
 class Node(BaseNode[Input, Output], Generic[Input, Output]):
-    __slots__ = 'name', 'func'
+    __slots__ = 'func', 'name'
     name: str
     func: Callable[[Input], Output]
 
-    def __init__(self, func: Callable[[Input], Output], name: str) -> None:
+    def __init__(self, func: Callable[[Input], Output], name: str | None = None) -> None:
         super().__init__()
         self.func = func
-        self.name = name
+        self.name = name if (name is not None and validate_name(name)) else get_func_name(func)
 
     def __len__(self) -> int:
         return 1
@@ -159,27 +191,22 @@ class Node(BaseNode[Input, Output], Generic[Input, Output]):
     def to_async(self) -> 'AsyncNode[Input, Output]':
         return AsyncNode(asyncify(self.func), self.name)
 
+    def named(self, name: str) -> Self:
+        new = self.copy()
+        new.name = validate_name(name)
+        return new
+
     def _process(self, arg: Input, reporter: Reporter) -> Output | None:
-        try:
-            result = self.func(arg)
-        except Exception as error:
-            reporter.failure(error, self.severity, input=arg)
-        else:
-            reporter.success(input=arg, output=result)
-            return result
+        with reporter(self.name, severity=self.severity, input=arg):
+            return self.func(arg)
 
 
 class AsyncNode(Node[Input, Output], AsyncBaseNode[Input, Output], Generic[Input, Output]):
     func: Callable[[Input], Coroutine[None, None, Output]]
 
     async def _process(self, arg: Input, reporter: Reporter) -> Output | None:
-        try:
-            result = await self.func(arg)
-        except Exception as error:
-            reporter.failure(error, self.severity, input=arg)
-        else:
-            reporter.success(input=arg, output=result)
-            return result
+        with reporter(self.name, severity=self.severity, input=arg):
+            return await self.func(arg)
 
 
 class Chain(BaseNode[Input, Output], Generic[Input, Output]):
@@ -187,33 +214,36 @@ class Chain(BaseNode[Input, Output], Generic[Input, Output]):
     __len: int
     nodes: list[BaseNode]
 
-    def __init__(self, *nodes: BaseNode, name: str | None = None) -> None:
-        super().__init__(name)
+    def __init__(self, *nodes: BaseNode) -> None:
+        super().__init__()
         self.nodes = list(nodes)
         self.__len = sum(map(len, nodes))
 
     def __or__(self, other):
         if is_node_async(other):
             return self.to_async() | other
-        return Chain(*self.nodes, build(other), name=self.name)
+        nxt = build(other)
+        self.__len += len(nxt)
+        self.nodes.append(nxt)
+        return self
 
     def __mul__(self, other):
         if is_node_async(other):
             return self.to_async() * other
-        return Chain(*self.nodes, Loop(build(other)), name=self.name)
+        return self | Loop(build(other))
 
     def __len__(self) -> int:
         return self.__len
 
     def copy(self) -> Self:
-        return self.__class__(*(node.copy() for node in self.nodes), name=self.name)
+        return self.__class__(*(node.copy() for node in self.nodes))
 
     def to_async(self) -> 'AsyncChain[Input, Output]':
-        return AsyncChain(*(node.to_async() for node in self.nodes), name=self.name)
+        return AsyncChain(*(node.to_async() for node in self.nodes))
 
     def _process(self, arg, reporter: Reporter) -> Any | None:
-        for node in self.nodes:
-            res = node(arg, reporter(self.name))
+        for index, node in enumerate(self.nodes):
+            res = node._process(arg, reporter(f'c[{index}]'))
             if res is None:
                 if node.severity is OPTIONAL:
                     continue
@@ -224,14 +254,14 @@ class Chain(BaseNode[Input, Output], Generic[Input, Output]):
 
 class AsyncChain(Chain[Input, Output], AsyncBaseNode[Input, Output], Generic[Input, Output]):
     def __or__(self, other):
-        return AsyncChain(*self.nodes, async_build(other), name=self.name)
+        return AsyncChain(*self.nodes, async_build(other))
 
     def __mul__(self, other):
-        return AsyncChain(*self.nodes, AsyncLoop(async_build(other)), name=self.name)
+        return AsyncChain(*self.nodes, AsyncLoop(async_build(other)))
 
     async def _process(self, arg, reporter: Reporter) -> Any:
-        for node in self.nodes:
-            res = await node(arg, reporter(self.name))
+        for index, node in enumerate(self.nodes):
+            res = await node._process(arg, reporter(f'c[{index}]'))
             if res is None:
                 if node.severity is OPTIONAL:
                     continue
@@ -246,7 +276,7 @@ class Loop(BaseNode[Iterable[Input], list[Output]], Generic[Input, Output]):
     node: BaseNode[Input, Output]
 
     def __init__(self, node: BaseNode[Input, Output], /) -> None:
-        super().__init__(node.name)
+        super().__init__()
         self.node = node
         self.__len = len(node)
 
@@ -261,13 +291,15 @@ class Loop(BaseNode[Iterable[Input], list[Output]], Generic[Input, Output]):
 
     def _process(self, args: Iterable[Input], reporter: Reporter) -> list[Output]:
         node = self.node
-        return [res for res in (node(arg, reporter) for arg in args) if res is not None]
+        results = (node._process(arg, reporter(f'i[{i}]')) for i, arg in enumerate(args))
+        return [res for res in results if res is not None]
 
 
 class AsyncLoop(Loop[Input, Output], AsyncBaseNode[Input, Output], Generic[Input, Output]):
     async def _process(self, args: Iterable[Input], reporter: Reporter) -> list[Output]:
         node = self.node
-        results = await asyncio.gather(*(asyncio.create_task(node(arg, reporter)) for arg in args))
+        tasks = (asyncio.create_task(node._process(arg, reporter(f'i[{i}]'))) for i, arg in enumerate(args))
+        results = await asyncio.gather(*tasks)
         return [res for res in results if res is not None]
 
 
@@ -299,7 +331,10 @@ class Model(BaseNode[Input, Output], Generic[Input, Output]):
         return self.convert(
             (branch, result)
             for branch, result, severity
-            in ((branch, node(arg, reporter(branch)), node.severity) for branch, node in self.nodes)
+            in (
+                (branch, node._process(arg, reporter(f'b[{branch}]')), node.severity)
+                for branch, node in self.nodes
+            )
             if not (result is None and severity is OPTIONAL)
         )
 
@@ -309,7 +344,7 @@ class AsyncModel(Model[Input, Output], AsyncBaseNode[Input, Output], Generic[Inp
         branches, severities, tasks = zip(*[
             (branch,
              node.severity,
-             asyncio.create_task(node(arg, reporter(branch))))
+             asyncio.create_task(node._process(arg, reporter(f'b[{branch}]'))))
             for branch, node in self.nodes
         ])
         return self.convert(
@@ -393,10 +428,10 @@ def build(obj: Chainable[Input, Output]) -> BaseNode[Input, Output]:
             raise TypeError("Cannot build a normal node from and async function")
         return Node(obj, get_name(obj))
     elif isinstance(obj, (list, dict)):
-        model, (branches, items) = ((DictModel, zip(*obj.items()))
-                                    if isinstance(obj, dict) else
-                                    (ListModel, zip(*enumerate(obj))))
-
+        model, items = ((DictModel, obj.items()) if isinstance(obj, dict) else (ListModel, enumerate(obj)))
+        nodes: list[Any, BaseNode] = []
+        for branch, item in items:
+            node = build(item).named(str(branch))
     raise TypeError(f"Unsupported type {type(obj).__name__} for chaining")
 
 

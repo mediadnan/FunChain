@@ -36,7 +36,7 @@ def test_failure_data_object():
         dict(additional='details')
     )
     assert fd.source == 'path.to.failure.source'
-    assert fd.description == "mock failure for test"
+    assert fd.error == "mock failure for test"
     assert fd.datetime == time
     assert fd.severity is REQUIRED
     assert fd.details['additional'] == "details"

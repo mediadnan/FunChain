@@ -43,6 +43,8 @@ def get_varname(stack_level: int = 2) -> str | None:
     :param stack_level:
     :return: var_name or class.varname or class.inner.varname ...
     """
+    import pprint
+    pprint.pp([(context := st.code_context) and context[0].strip() for st in inspect.stack()])
     stacks = inspect.stack()[stack_level:]
     name = []
     for stack in stacks:

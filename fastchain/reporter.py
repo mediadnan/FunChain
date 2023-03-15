@@ -21,7 +21,7 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from os import PathLike
 from types import TracebackType
-from typing import Any, overload, Callable, Self, Generic, TypeVar, Literal
+from typing import Any, overload, Callable, Self
 
 from ._util import pascal_to_snake
 
@@ -72,20 +72,15 @@ class FailureData:
     this object holds key information about a specific processing failure.
 
     :param source: dot-separated location where the failure occurred (path.to.source)
-    :type source: str
-    :param description: describes what's gone wrong that cause a failure
-    :type description: str
-    :param datetime: tells when the failure occurred
-    :type datetime: datetime
+    :param error: describes what's gone wrong that cause a failure
     :param severity: tells how serious the failure was (defines how to react to the failure)
-    :type severity: Severity
+    :param datetime: tells when the failure occurred
     :param details: additional key-value pairs information about the failure (depends on the source)
-    :type details: dict[str, Any]
     """
     source: str
-    description: str
-    datetime: datetime = field(default_factory=datetime.now)
+    error: Exception
     severity: Severity = field(default=NORMAL)
+    datetime: datetime = field(default_factory=datetime.now)
     details: dict[str, Any] = field(default_factory=dict, repr=False)
 
 
@@ -129,7 +124,7 @@ class FailureLogger:
 
     def __call__(self, failure: FailureData):
         lvl = logging.ERROR if (failure.severity is REQUIRED) else logging.WARNING
-        self._logger.log(lvl, failure.description, extra={'failure_source': failure.source, })
+        self._logger.log(lvl, failure.error, extra={'failure_source': failure.source, })
 
 
 class _Reporter:
@@ -227,32 +222,54 @@ class _Reporter:
             details = {**self.details, **details}
         handler(FailureData(
             source=self.name,
-            description=desc,
+            error=desc,
             datetime=dt,
             severity=severity,
             details=details
         ))
 
 
-T = TypeVar('T')
-
-
-class Reporter(Generic[T]):
+class Reporter:
+    __slots__ = 'name', 'handler', 'severity', 'details'
     name: str
-    reports: dict[str, Literal[True] | FailureData]
+    severity: Severity
+    details: dict[str, Any]
+    handler: Callable[[FailureData], None]
 
-    def __init__(self, name: Any, reports: dict | None = None):
-        self.name = str(name) if name else None
-        self.reports = reports or dict()
+    def __init__(
+            self,
+            name: str,
+            handler: Callable[[FailureData], None],
+            *,
+            severity: Severity = NORMAL,
+            **details
+    ) -> None:
+        self.name = name
+        self.details = details
+        self.handler = handler
+        self.severity = severity
 
-    def failure(self, error: Exception, severity: Severity, **details): ...
+    def failure(self, error: Exception) -> None:
+        self.handler(FailureData(self.name, error, self.severity, details=self.details))
 
-    def success(self, **details): ...
-
-    def __call__(self, name: Any) -> Self:
+    def __call__(self, name: str | None, *, severity: Severity = NORMAL, **details) -> Self:
         if name is None:
             return self
-        elif self.name is None:
-            self.name = str(name)
-            return self
-        return Reporter(f'{self.name}.{name}', self.reports)
+        return Reporter(f'{self.name}.{name}', self.handler, severity=severity, **self.details, **details)
+
+    def __enter__(self) -> Self:
+        """Reporter as a context will capture exceptions and report them"""
+        return self
+
+    def __exit__(
+            self,
+            exc_type: type[Exception] | None,
+            exc_val: Exception | None,
+            exc_tb: TracebackType | None
+    ) -> bool:
+        if exc_type is None:
+            return True
+        elif isinstance(exc_val, Exception):
+            self.failure(exc_val)
+            return True
+        return False  # propagate higher order exception (like BaseException)
