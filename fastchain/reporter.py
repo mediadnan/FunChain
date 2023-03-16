@@ -22,7 +22,7 @@ from datetime import datetime
 from os import PathLike
 from typing import Any, Callable, Self, TypeAlias
 
-from .util.names import NAME_SEPARATOR
+from .util.name import NAME_SEPARATOR
 
 
 class Severity(IntEnum):

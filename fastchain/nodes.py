@@ -30,19 +30,19 @@ AsyncCallable: TypeAlias = Callable[[Input], Coroutine[None, None, Output]]
 Chainable: TypeAlias = Union[
     'BaseNode[Input, Output]',
     Callable[[Input], Output],
-    'DictModelChainable[Input]',
-    'ListModelChainable[Input]'
+    'DictGroupChainable[Input]',
+    'ListGroupChainable[Input]'
 ]
 AsyncChainable: TypeAlias = Union[
     'AsyncBaseNode[Input, Output]',
     AsyncCallable[Input, Output],
-    'AsyncDictModelChainable[Input]',
-    'AsyncListModelChainable[Input]'
+    'AsyncDictGroupChainable[Input]',
+    'AsyncListGroupChainable[Input]'
 ]
-DictModelChainable: TypeAlias = dict[Any, Chainable[Input, Any]]
-ListModelChainable: TypeAlias = list[Chainable[Input, Any]]
-AsyncDictModelChainable: TypeAlias = dict[Any, AsyncChainable[Input, Any] | Chainable[Input, Any]]
-AsyncListModelChainable: TypeAlias = list[AsyncChainable[Input, Any] | Chainable[Input, Any]]
+DictGroupChainable: TypeAlias = dict[Any, Chainable[Input, Any]]
+ListGroupChainable: TypeAlias = list[Chainable[Input, Any]]
+AsyncDictGroupChainable: TypeAlias = dict[Any, AsyncChainable[Input, Any] | Chainable[Input, Any]]
+AsyncListGroupChainable: TypeAlias = list[AsyncChainable[Input, Any] | Chainable[Input, Any]]
 
 
 class BaseNode(ABC, Generic[Input, Output]):
@@ -62,13 +62,13 @@ class BaseNode(ABC, Generic[Input, Output]):
     @overload
     def __or__(self, other: Callable[[Output], Output2]) -> 'Chain[Input, Output2]': ...
     @overload
-    def __or__(self, other: AsyncDictModelChainable[Output]) -> 'AsyncChain[Input, dict]': ...
+    def __or__(self, other: AsyncDictGroupChainable[Output]) -> 'AsyncChain[Input, dict]': ...
     @overload
-    def __or__(self, other: DictModelChainable[Output]) -> 'Chain[Input, dict]': ...
+    def __or__(self, other: DictGroupChainable[Output]) -> 'Chain[Input, dict]': ...
     @overload
-    def __or__(self, other: AsyncListModelChainable[Output]) -> 'AsyncChain[Input, list]': ...
+    def __or__(self, other: AsyncListGroupChainable[Output]) -> 'AsyncChain[Input, list]': ...
     @overload
-    def __or__(self, other: ListModelChainable[Output]) -> 'Chain[Input, list]': ...
+    def __or__(self, other: ListGroupChainable[Output]) -> 'Chain[Input, list]': ...
     @overload
     def __mul__(self, other: 'AsyncBaseNode[Output, Output2]') -> 'AsyncChain[Input, list[Output2]]': ...
     @overload
@@ -78,13 +78,13 @@ class BaseNode(ABC, Generic[Input, Output]):
     @overload
     def __mul__(self, other: Callable[[Output], Output2]) -> 'Chain[Input, list[Output2]]': ...
     @overload
-    def __mul__(self, other: AsyncDictModelChainable[Output]) -> 'AsyncChain[Input, list[dict]]': ...
+    def __mul__(self, other: AsyncDictGroupChainable[Output]) -> 'AsyncChain[Input, list[dict]]': ...
     @overload
-    def __mul__(self, other: DictModelChainable[Output]) -> 'Chain[Input, list[dict]]': ...
+    def __mul__(self, other: DictGroupChainable[Output]) -> 'Chain[Input, list[dict]]': ...
     @overload
-    def __mul__(self, other: AsyncListModelChainable[Output]) -> 'AsyncChain[Input, list[list]]': ...
+    def __mul__(self, other: AsyncListGroupChainable[Output]) -> 'AsyncChain[Input, list[list]]': ...
     @overload
-    def __mul__(self, other: ListModelChainable[Output]) -> 'Chain[Input, list[list]]': ...
+    def __mul__(self, other: ListGroupChainable[Output]) -> 'Chain[Input, list[list]]': ...
 
     def __or__(self, other: Chainable[Output, Output2] | AsyncChainable[Output, Output2]) -> 'Chain[Output, Output2]':
         return Chain(self) | other
@@ -139,17 +139,17 @@ class AsyncBaseNode(BaseNode[Input, Coroutine[None, None, Output]], Generic[Inpu
     @overload
     def __or__(self, other: Callable[[Output], Output2]) -> 'AsyncChain[Input, Output2]': ...
     @overload
-    def __or__(self, other: DictModelChainable[Output]) -> 'AsyncChain[Input, dict]': ...
+    def __or__(self, other: DictGroupChainable[Output]) -> 'AsyncChain[Input, dict]': ...
     @overload
-    def __or__(self, other: ListModelChainable[Output]) -> 'AsyncChain[Input, list]': ...
+    def __or__(self, other: ListGroupChainable[Output]) -> 'AsyncChain[Input, list]': ...
     @overload
     def __mul__(self, other: 'BaseNode[Output, Output2]') -> 'AsyncChain[Input, list[Output2]]': ...
     @overload
     def __mul__(self, other: Callable[[Output], Output2]) -> 'AsyncChain[Input, list[Output2]]': ...
     @overload
-    def __mul__(self, other: DictModelChainable[Output]) -> 'AsyncChain[Input, list[dict]]': ...
+    def __mul__(self, other: DictGroupChainable[Output]) -> 'AsyncChain[Input, list[dict]]': ...
     @overload
-    def __mul__(self, other: ListModelChainable[Output]) -> 'AsyncChain[Input, list[list]]': ...
+    def __mul__(self, other: ListGroupChainable[Output]) -> 'AsyncChain[Input, list[list]]': ...
 
     def __or__(self, other):
         return AsyncChain(self) | other
@@ -296,7 +296,7 @@ class AsyncLoop(Loop[Input, Output], AsyncBaseNode[Input, Output], Generic[Input
         return [res for res in results if res is not None]
 
 
-class Model(BaseNode[Input, Output], Generic[Input, Output]):
+class Group(BaseNode[Input, Output], Generic[Input, Output]):
     __slots__ = 'nodes', '__len'
     __len: int
     nodes: list[tuple[Any, BaseNode]]
@@ -317,8 +317,8 @@ class Model(BaseNode[Input, Output], Generic[Input, Output]):
     def copy(self) -> Self:
         return self.__class__([(branch, node.copy()) for branch, node in self.nodes])
 
-    def to_async(self) -> 'AsyncModel[Input, Output]':
-        return AsyncModel([(branch, node.to_async()) for branch, node in self.nodes])
+    def to_async(self) -> 'AsyncGroup[Input, Output]':
+        return AsyncGroup([(branch, node.to_async()) for branch, node in self.nodes])
 
     def process(self, arg: Input, reporter: Reporter) -> Output:
         return self.convert(
@@ -332,7 +332,7 @@ class Model(BaseNode[Input, Output], Generic[Input, Output]):
         )
 
 
-class AsyncModel(Model[Input, Output], AsyncBaseNode[Input, Output], Generic[Input, Output], metaclass=ABCMeta):
+class AsyncGroup(Group[Input, Output], AsyncBaseNode[Input, Output], Generic[Input, Output], metaclass=ABCMeta):
     async def process(self, arg: Input, reporter: Reporter) -> Output:
         branches, severities, tasks = zip(*[
             (branch,
@@ -356,19 +356,19 @@ def list_converter(results: Iterable[tuple[Any, Any]]) -> list:
     return [result for _, result in results]
 
 
-class ListModel(Model[Input, list], Generic[Input]):
+class ListGroup(Group[Input, list], Generic[Input]):
     convert = staticmethod(list_converter)
 
 
-class AsyncListModel(AsyncModel[Input, list], Generic[Input]):
+class AsyncListGroup(AsyncGroup[Input, list], Generic[Input]):
     convert = staticmethod(list_converter)
 
 
-class DictModel(Model[Input, dict], Generic[Input]):
+class DictGroup(Group[Input, dict], Generic[Input]):
     convert = staticmethod(dict_converter)
 
 
-class AsyncDictModel(AsyncModel[Input, dict], Generic[Input]):
+class AsyncDictGroup(AsyncGroup[Input, dict], Generic[Input]):
     convert = staticmethod(dict_converter)
 
 
@@ -390,8 +390,8 @@ def build(obj: Chainable[Input, Output]) -> BaseNode[Input, Output]:
         return Node(obj, get_name(obj))
     elif isinstance(obj, (list, dict)):
         if isinstance(obj, dict):
-            return DictModel([(key, build(item)) for key, item in obj.items()])
-        return ListModel([(index, build(item)) for index, item in enumerate(obj)])
+            return DictGroup([(key, build(item)) for key, item in obj.items()])
+        return ListGroup([(index, build(item)) for index, item in enumerate(obj)])
     raise TypeError(f"Unsupported type {type(obj).__name__} for chaining")
 
 
@@ -402,6 +402,6 @@ def async_build(obj) -> AsyncBaseNode:
         return AsyncNode(asyncify(obj), get_name(obj))
     elif isinstance(obj, (list, dict)):
         if isinstance(obj, dict):
-            return AsyncDictModel([(key, async_build(item)) for key, item in obj.items()])
-        return AsyncListModel([(index, async_build(item)) for index, item in enumerate(obj)])
+            return AsyncDictGroup([(key, async_build(item)) for key, item in obj.items()])
+        return AsyncListGroup([(index, async_build(item)) for index, item in enumerate(obj)])
     raise TypeError(f"Unsupported type {type(obj).__name__} for chaining")

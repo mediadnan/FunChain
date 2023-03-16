@@ -4,9 +4,9 @@ from typing import overload, Callable
 from .nodes import (
     build, async_build, is_node_async,
     Input, Output, AsyncCallable,
-    DictModelChainable, ListModelChainable, AsyncDictModelChainable, AsyncListModelChainable,
-    BaseNode, Node, AsyncNode, Chain, DictModel, ListModel,
-    AsyncDictModel, AsyncListModel,
+    DictGroupChainable, ListGroupChainable, AsyncDictGroupChainable, AsyncListGroupChainable,
+    BaseNode, Node, AsyncNode, Chain, DictGroup, ListGroup,
+    AsyncDictGroup, AsyncListGroup,
 )
 from .reporter import Reporter, Severity
 from .util.annotation import is_typed_optional
@@ -23,13 +23,13 @@ def node(function: AsyncCallable[Input, Output]) -> AsyncNode[Input, Output]: ..
 @overload
 def node(function: Callable[[Input], Output]) -> Node[Input, Output]: ...
 @overload
-def node(structure: AsyncDictModelChainable[Input]) -> AsyncDictModel[Input]: ...
+def node(structure: AsyncDictGroupChainable[Input]) -> AsyncDictGroup[Input]: ...
 @overload
-def node(structure: AsyncListModelChainable[Input]) -> AsyncListModel[Input]: ...
+def node(structure: AsyncListGroupChainable[Input]) -> AsyncListGroup[Input]: ...
 @overload
-def node(structure: DictModelChainable[Input]) -> DictModel[Input]: ...
+def node(structure: DictGroupChainable[Input]) -> DictGroup[Input]: ...
 @overload
-def node(structure: ListModelChainable[Input]) -> ListModel[Input]: ...
+def node(structure: ListGroupChainable[Input]) -> ListGroup[Input]: ...
 
 
 def node(obj=None) -> BaseNode:

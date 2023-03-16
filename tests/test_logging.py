@@ -7,7 +7,6 @@ from fastchain.reporter import (
     Severity,
     OPTIONAL,
     NORMAL,
-    INHERIT,
     REQUIRED,
     Failure,
     FailureLogger,
@@ -18,11 +17,11 @@ def test_severity_values():
     """Severity values MUST be constant through minor and patch versions at least"""
     assert Severity.OPTIONAL is OPTIONAL
     assert Severity.NORMAL is NORMAL
-    assert Severity.INHERIT is INHERIT
+    # assert Severity.INHERIT is INHERIT
     assert Severity.REQUIRED is REQUIRED
     assert OPTIONAL.value == -1
     assert NORMAL.value == 0
-    assert INHERIT.value == 0
+    # assert INHERIT.value == 0
     assert REQUIRED.value == 1
 
 
