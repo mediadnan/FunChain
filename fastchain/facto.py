@@ -48,7 +48,7 @@ class Model:
 
     def __init__(self, data: Input, reporter: Reporter):
         self._data = data
-        self._reporter = reporter(self.__class__.__model_name__)
+        self._reporter = reporter(getattr(self.__class__, '__model_name__', self.__class__.__qualname__))
 
     def __init_subclass__(cls, **kwargs):
         for name, attr in cls.__dict__.items():

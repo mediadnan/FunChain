@@ -19,8 +19,8 @@ from typing import (
 )
 
 from .reporter import Reporter, Severity, OPTIONAL, Failure, FailureLogger
-from ._util import asyncify, is_async, get_name, validate_name
-from .util.name import get_func_name, guess_var_name
+from .util.name import get_func_name, guess_var_name, validate
+from .util.tool import is_async, asyncify
 
 Input = TypeVar('Input')
 Output = TypeVar('Output')
@@ -96,9 +96,7 @@ class BaseNode(ABC, Generic[Input, Output]):
     def __len__(self) -> int: ...
 
     def __repr__(self) -> str:
-        name = guess_var_name()
-        name = f'{name!r}, ' if name else ''
-        return f'fastchain.{self.__class__.__name__}({name}nodes={self.__len__()})'
+        return f'fastchain.{self.__class__.__name__}({self.__len__()})'
 
     def __call__(
             self,
@@ -109,6 +107,8 @@ class BaseNode(ABC, Generic[Input, Output]):
         """Processes arg and returns the result"""
         if name is None:
             name = guess_var_name()
+        else:
+            validate(name)
         return self.process(arg, Reporter(name, handler))
 
     def optional(self) -> Self:
@@ -185,8 +185,9 @@ class Node(BaseNode[Input, Output], Generic[Input, Output]):
         return AsyncNode(asyncify(self.func), self.name)
 
     def named(self, name: str) -> Self:
+        validate(name)
         new = self.copy()
-        new.name = validate_name(name)
+        new.name = name
         return new
 
     def process(self, arg: Input, reporter: Reporter) -> Output | None:
@@ -372,6 +373,12 @@ class AsyncDictGroup(AsyncGroup[Input, dict], Generic[Input]):
     convert = staticmethod(dict_converter)
 
 
+class ModelMeta(type):
+    def __new__(mcs, cls_name, bases, attrs):
+        attrs = attrs  # convert attrs
+        return super().__new__(mcs, cls_name, bases, attrs)
+
+
 def is_node_async(obj) -> bool:
     """Checks whether the function or the collection contains an async function"""
     if isinstance(obj, AsyncBaseNode):
@@ -387,7 +394,7 @@ def build(obj: Chainable[Input, Output]) -> BaseNode[Input, Output]:
     if isinstance(obj, BaseNode):
         return obj
     elif callable(obj):
-        return Node(obj, get_name(obj))
+        return Node(obj)
     elif isinstance(obj, (list, dict)):
         if isinstance(obj, dict):
             return DictGroup([(key, build(item)) for key, item in obj.items()])
@@ -399,7 +406,7 @@ def async_build(obj) -> AsyncBaseNode:
     if isinstance(obj, BaseNode):
         return obj.to_async()
     elif callable(obj):
-        return AsyncNode(asyncify(obj), get_name(obj))
+        return AsyncNode(asyncify(obj))
     elif isinstance(obj, (list, dict)):
         if isinstance(obj, dict):
             return AsyncDictGroup([(key, async_build(item)) for key, item in obj.items()])
