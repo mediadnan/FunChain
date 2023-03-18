@@ -3,6 +3,7 @@ The module defines different types of fastchain nodes,
 nodes are built and used by fastchain chains
 to perform the data processing.
 """
+import functools
 from abc import ABC, abstractmethod, ABCMeta
 import asyncio
 from typing import (
@@ -97,7 +98,7 @@ class BaseNode(ABC, Generic[Input, Output]):
     def __len__(self) -> int: ...
 
     def __repr__(self) -> str:
-        return f'fastchain.{self.__class__.__name__}({self.__len__()})'
+        return f"fastchain.{self.__class__.__name__}({self.__len__()})"
 
     def __call__(
             self,
@@ -191,6 +192,15 @@ class Node(BaseNode[Input, Output], Generic[Input, Output]):
         new.name = name
         return new
 
+    def partial(self, *args, **kwargs) -> Self:
+        func = self.func
+        while isinstance(func, functools.partial):
+            args = *func.args, *args
+            kwargs = {**func.keywords, **kwargs}
+            func = func.func
+        self.func = functools.partial(func, *args, **kwargs)
+        return self
+
     def process(self, arg: Input, reporter: Reporter) -> Output | None:
         with reporter(self.name, severity=self.severity, input=arg):
             return self.func(arg)
@@ -218,14 +228,13 @@ class Chain(BaseNode[Input, Output], Generic[Input, Output]):
         if is_node_async(other):
             return self.to_async() | other
         nxt = build(other)
-        self.__len += len(nxt)
-        self.nodes.append(nxt)
-        return self
+        return Chain(*self.nodes, nxt) if nxt else self.copy()
 
     def __mul__(self, other):
         if is_node_async(other):
             return self.to_async() * other
-        return self | Loop(build(other))
+        nxt = build(other)
+        return Chain(*self.nodes, Loop(nxt)) if nxt else self.copy()
 
     def __len__(self) -> int:
         return self.__len
@@ -249,10 +258,12 @@ class Chain(BaseNode[Input, Output], Generic[Input, Output]):
 
 class AsyncChain(Chain[Input, Output], AsyncBaseNode[Input, Output], Generic[Input, Output]):
     def __or__(self, other):
-        return AsyncChain(*self.nodes, async_build(other))
+        nxt = async_build(other)
+        return AsyncChain(*self.nodes, nxt) if nxt else self.copy()
 
     def __mul__(self, other):
-        return AsyncChain(*self.nodes, AsyncLoop(async_build(other)))
+        nxt = async_build(other)
+        return AsyncChain(*self.nodes, AsyncLoop(nxt)) if nxt else self.copy()
 
     async def process(self, arg, reporter: Reporter) -> Any:
         for index, node in enumerate(self.nodes):
@@ -374,57 +385,73 @@ class AsyncDictGroup(AsyncGroup[Input, dict], Generic[Input]):
     convert = staticmethod(dict_converter)
 
 
-class Model(BaseNode):
-    model_type: 'ModelMeta'
+def _node_to_getter(name: str, nd: BaseNode):
+    """binds the node to the bot as a property"""
+    def getter(self: Model):
+        result = nd.process(self._data, self._reporter(name, severity=nd.severity))
+        try:
+            # caching the result for the next call
+            self.__dict__[name] = result
+        except AttributeError:
+            # for objects with __slots__ and no __dict__
+            pass
+        return result
+    return property(getter, doc=f'gets {name!r} (readonly)')
 
-    def __init__(self, model_type: 'ModelMeta'):
-        super().__init__()
-        self.model_type = model_type
 
-    def copy(self) -> Self:
-        return self.__class__(self.model_type)
+class Model(Generic[Input]):
+    _data: Input
+    _reporter: Reporter
+    __len: int
+    __model_name__: str
 
-    def process(self, arg: Input, reporter: Reporter) -> Output | None:
-        return self.model_type(arg, reporter)
+    def __init__(self, data: Input, reporter: Reporter) -> None:
+        self._data = data
+        self._reporter = reporter
 
-
-class ModelMeta(type):
-    def __new__(mcs, cls_name, bases, attrs):
-        cls = super().__new__(mcs, cls_name, (*bases, Generic[Input]), attrs)
-        for name, attr in cls.__dict__.copy().items():
+    def __init_subclass__(cls, **kwargs):
+        for name, attr in cls.__dict__.items():
             if not isinstance(attr, BaseNode) or name.startswith('_'):
                 continue
             annotation = cls.__annotations__.get(name)
             if annotation and is_typed_optional(annotation):
                 attr = attr.optional()
             setattr(cls, name, _node_to_getter(name, attr))
-        cls.__dict__['__model_name__'] = cls.__qualname__
-        cls.__annotations__ = {
-            '__model_name__': str,
-            '_data': Input,
-            '_reporter': Reporter,
-        }
+        if '__model_name__' not in cls.__dict__:
+            setattr(cls, '__model_name__', cls.__qualname__)
 
-        def __init__(self: cls, data: Input, reporter: Reporter):
-            self._data = data
-            self._reporter = reporter
-        cls.__init__ = __init__
-        return cls
-
-    def __or__(cls, t):
-        return super().__or__(t)
+    @classmethod
+    def __len__(cls):
+        return cls.__len
 
 
-def _node_to_getter(name: str, nd: BaseNode):
-    """binds the node to the bot as a property"""
-    def getter(self):
-        result = nd.process(self._data, self._reporter(name, severity=nd.severity))
-        try:
-            self.__dict__[name] = result
-        except AttributeError:
-            pass
-        return result
-    return property(getter, doc=f'gets {name!r} (readonly)')
+ModelType = TypeVar('ModelType', bound=type[Model])
+
+
+class ModelNode(BaseNode[Input, ModelType], Generic[Input, ModelType]):
+    __slots__ = 'model',
+    model: ModelType
+
+    def __init__(self, model: ModelType) -> None:
+        super().__init__()
+        self.model = model
+
+    def process(self, arg: Input, reporter: Reporter) -> ModelType:
+        return self.model(arg, reporter)
+
+    def copy(self) -> Self:
+        return self.__class__(self.model)
+
+    def to_async(self) -> 'AsyncBaseNode[Input, Output]':
+        return AsyncModelNode(self.model)
+
+    def __len__(self) -> int:
+        return len(self.model)
+
+
+class AsyncModelNode(ModelNode[Input, ModelType], AsyncBaseNode[Input, ModelType], Generic[Input, ModelType]):
+    async def process(self, arg, reporter: Reporter) -> ModelType:
+        return self.model(arg, reporter)
 
 
 def is_node_async(obj) -> bool:
@@ -447,6 +474,10 @@ def build(obj: Chainable[Input, Output]) -> BaseNode[Input, Output]:
         if isinstance(obj, dict):
             return DictGroup([(key, build(item)) for key, item in obj.items()])
         return ListGroup([(index, build(item)) for index, item in enumerate(obj)])
+    elif obj is Ellipsis:
+        return Chain()
+    elif isinstance(obj, type) and issubclass(obj, Model):
+        return ModelNode(obj)
     raise TypeError(f"Unsupported type {type(obj).__name__} for chaining")
 
 
@@ -459,4 +490,8 @@ def async_build(obj) -> AsyncBaseNode:
         if isinstance(obj, dict):
             return AsyncDictGroup([(key, async_build(item)) for key, item in obj.items()])
         return AsyncListGroup([(index, async_build(item)) for index, item in enumerate(obj)])
+    elif obj is Ellipsis:
+        return AsyncChain()
+    elif isinstance(obj, type) and issubclass(obj, Model):
+        return AsyncModelNode(obj)
     raise TypeError(f"Unsupported type {type(obj).__name__} for chaining")

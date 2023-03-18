@@ -39,6 +39,48 @@ To check which version of ``fastchain`` is installed in your environment, run th
 
     pip show fastchain
 
+
+Usage
+-----
+To get a bit familiar with ``fastchain``'s syntax, here's a basic example showing how easy it is to compose functions
+
+.. code-block:: python
+
+    >>> from fastchain import node
+    >>> def double(num):
+    ...     return num * 2
+    >>> twice = node(int) | double | str    # composing functions sequentially
+    >>> twice("5")
+    '10'
+    >>> twice("-4")
+    '-8'
+    >>> twice_all = node(str.split) * twice | ' '.join  # iterating over results
+    >>> # same as twice_all = node(str.split) * (node(int) | double | str) | ' '.join
+    >>> twice_all('3 7 12 2')
+    '6 14 24 4'
+    >>> model = {'number': ..., 'double': double, 'half': node(lambda x: x/2) | node(round).partial(ndigits=2), 'pair': lambda x: not x%2}
+    >>> model_chain = node(str.split) * (node(int) | model) # complex chain with a collection of nodes
+    >>> model_chain('3 2')
+    [{'number': 3, 'double': 6, 'half': 1.5, 'pair': False}, {'number': 2, 'double': 4, 'half': 1.0, 'pair': True}]
+
+Fastchain has builtin support for ``async`` functions and callables, the following example shows how easy it is to work with async functions
+
+.. code-block:: python
+
+    >>> from fastchain import node
+    >>> import asyncio
+    >>> async def get_data(id: str) -> str:
+    ...     await asyncio.sleep(1)  # mimics the client request IO
+    ...     return f"got data for item: {id}"
+    >>> request_data = node(str) | get_data
+    >>> await request_data(756342)  # takes ~1s to execute
+    'got data for item: 756342'
+    >>> request_multiple_data = node() * request_data
+    >>> await request_multiple_data([2342, 5677, 75634, 23456])  # takes ~1s to execute
+    ['got data for: 2342', 'got data for: 5677', 'got data for: 75634', 'got data for: 23456']
+
+More examples will be covered in later chapters.
+
 Versioning
 ----------
 This python package follows the |semver_link| specification, so breaking changes
@@ -60,12 +102,16 @@ This document contains the following pages
 
 
 .. toctree::
-   :includehidden:
-   :maxdepth: 2
-   :caption: User Guide
+    :includehidden:
+    :maxdepth: 2
+    :caption: User Guide
 
-   user_guide/getting_started
-   user_guide/best_practices
+    user_guide/getting_started
+    user_guide/node_types
+    user_guide/node_customization
+    user_guide/models
+    user_guide/handling_failures
+    user_guide/best_practices
 
 
 .. |semver_link| raw:: html
