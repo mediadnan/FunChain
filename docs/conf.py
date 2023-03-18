@@ -11,6 +11,7 @@ extensions = [
     "sphinx.ext.autodoc",
     "sphinx.ext.mathjax",
     "sphinxcontrib.mermaid",
+    "myst_parser"
 ]
 templates_path = ['_templates']
 exclude_patterns = []
@@ -47,5 +48,8 @@ autoclass_content = "both"
 autodoc_class_signature = "mixed"
 
 # mermaid config
-
-mermaid_output_format = "png"
+mermaid_params = [
+    '--theme', 'dark',
+    '--backgroundColor', 'transparent',
+    '--width', '600'
+]
