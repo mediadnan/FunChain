@@ -48,7 +48,7 @@ class Model:
 
     def __init__(self, data: Input, reporter: Reporter):
         self._data = data
-        self._reporter = reporter(getattr(self.__class__, '__model_name__', self.__class__.__qualname__))
+        self._reporter = reporter(self.__class__.__model_name__)
 
     def __init_subclass__(cls, **kwargs):
         for name, attr in cls.__dict__.items():
@@ -58,6 +58,8 @@ class Model:
             if annotation and is_typed_optional(annotation):
                 attr = attr.optional()
             setattr(cls, name, _node_to_getter(name, attr))
+        if '__model_name__' not in cls.__dict__:
+            cls.__dict__['__model_name__'] = cls.__qualname__
 
 
 def _node_to_getter(name: str, nd: BaseNode):
@@ -70,3 +72,12 @@ def _node_to_getter(name: str, nd: BaseNode):
             pass
         return result
     return property(getter, doc=f'gets {name!r} (readonly)')
+
+
+class MyModel(Model):
+    upper: node(str) | str.upper
+    lower: node(str) | str.lower
+
+
+my_chain = node() * MyModel
+

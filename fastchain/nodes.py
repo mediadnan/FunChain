@@ -19,6 +19,7 @@ from typing import (
 )
 
 from .reporter import Reporter, Severity, OPTIONAL, Failure, FailureLogger
+from .util.annotation import is_typed_optional
 from .util.name import get_func_name, guess_var_name, validate
 from .util.tool import is_async, asyncify
 
@@ -373,10 +374,57 @@ class AsyncDictGroup(AsyncGroup[Input, dict], Generic[Input]):
     convert = staticmethod(dict_converter)
 
 
+class Model(BaseNode):
+    model_type: 'ModelMeta'
+
+    def __init__(self, model_type: 'ModelMeta'):
+        super().__init__()
+        self.model_type = model_type
+
+    def copy(self) -> Self:
+        return self.__class__(self.model_type)
+
+    def process(self, arg: Input, reporter: Reporter) -> Output | None:
+        return self.model_type(arg, reporter)
+
+
 class ModelMeta(type):
     def __new__(mcs, cls_name, bases, attrs):
-        attrs = attrs  # convert attrs
-        return super().__new__(mcs, cls_name, bases, attrs)
+        cls = super().__new__(mcs, cls_name, (*bases, Generic[Input]), attrs)
+        for name, attr in cls.__dict__.copy().items():
+            if not isinstance(attr, BaseNode) or name.startswith('_'):
+                continue
+            annotation = cls.__annotations__.get(name)
+            if annotation and is_typed_optional(annotation):
+                attr = attr.optional()
+            setattr(cls, name, _node_to_getter(name, attr))
+        cls.__dict__['__model_name__'] = cls.__qualname__
+        cls.__annotations__ = {
+            '__model_name__': str,
+            '_data': Input,
+            '_reporter': Reporter,
+        }
+
+        def __init__(self: cls, data: Input, reporter: Reporter):
+            self._data = data
+            self._reporter = reporter
+        cls.__init__ = __init__
+        return cls
+
+    def __or__(cls, t):
+        return super().__or__(t)
+
+
+def _node_to_getter(name: str, nd: BaseNode):
+    """binds the node to the bot as a property"""
+    def getter(self):
+        result = nd.process(self._data, self._reporter(name, severity=nd.severity))
+        try:
+            self.__dict__[name] = result
+        except AttributeError:
+            pass
+        return result
+    return property(getter, doc=f'gets {name!r} (readonly)')
 
 
 def is_node_async(obj) -> bool:
