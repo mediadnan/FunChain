@@ -111,6 +111,7 @@ This document contains the following pages
     user_guide/node_customization
     user_guide/models
     user_guide/handling_failures
+    user_guide/async_support
     user_guide/best_practices
 
 

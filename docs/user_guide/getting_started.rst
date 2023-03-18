@@ -232,6 +232,3 @@ And as expected all nodes are executed in isolation from the rest
 and failures are well reported out of the box. Of course as we will later see,
 the failure handling behaviour is fully customizable, but the default logging
 handler is already not bad.
-
-
-
