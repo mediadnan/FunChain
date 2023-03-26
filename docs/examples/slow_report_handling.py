@@ -1,5 +1,5 @@
 from time import sleep
-from fastchain import Chain
+from funchain import Chain
 
 
 def report_handler(report: dict) -> None:

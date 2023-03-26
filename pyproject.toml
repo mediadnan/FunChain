@@ -1,9 +1,13 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
 [project]
-name = "fastchain"
-version = "0.1.0"
+name = "funchain"
+dynamic = ["version"]
 description = "Chain functions easily and safely"
 readme = "README.md"
-requires-python = ">=3.9"
+requires-python = ">=3.11"
 license = {file = "LICENSE"}
 keywords = [
     "function",
@@ -11,19 +15,13 @@ keywords = [
     "chain",
     "chaining",
     "pipe",
-    "piping",
-    "pipeline",
     "compose",
-    "composing",
     "composition",
-    "flow",
-    "data",
-    "process",
     "processing",
     "safe",
-    "node",
     "handle",
-    "report"
+    "report",
+    "failure",
 ]
 authors = [{name =  "MARSO Adnan" , email = "mediadnan@gmail.com"}]
 maintainers = [{name =  "MARSO Adnan" , email = "mediadnan@gmail.com"}]
@@ -41,17 +39,26 @@ classifiers = [
     "Typing :: Typed"
 ]
 
+[tool.setuptools]
+zip-safe = false
+package-data = ["py.typed"]
+packages = ["funchain"]
 
-[build-system]
-requires = ["setuptools>=65.5.1", "wheel"]
-build-backend = "setuptools.build_meta"
+[tool.setuptools.dynamic]
+version = {attr = "funchain.__version__"}
+
+
+[project.urls]
+repository = "https://github.com/mediadnan/funchain"
+documentation = "https://funchain.readthedocs.com"
+bugs = "https://github.com/mediadnan/funchain/issues"
 
 [tool.pytest.ini_options]
-addopts = "--cov=fastchain"
+addopts = "--cov=funchain"
 testpaths = [
     "tests"
 ]
 
 [tool.mypy]
-mypy_path = "fastchain"
+mypy_path = "funchain"
 check_untyped_defs = true

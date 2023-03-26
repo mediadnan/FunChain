@@ -1,10 +1,10 @@
 =========
-FastChain
+FunChain
 =========
 
 Overview
 --------
-**FastChain** is an open-source python library that provides tools for chaining and composing functions easily,
+**FunChain** is an open-source python library that provides tools for chaining and composing functions easily,
 it abstracts away and reduces the code needed to validate results (*like* ``None``) and handle exceptions
 for individual function call, and isolates each chain call *(sequence of functions' calls)* into its own context
 making the main program fault-tolerant.
@@ -12,7 +12,7 @@ making the main program fault-tolerant.
 This library encourages the use of small reusable functions and uses them as building blocks to make more complex
 chains *(function pipelines)* all with just a **simple**, **intuitive** and **declarative** syntax,
 making the process of **designing**, **maintaining**, **monitoring** and **editing** those chains easier
-and less error prone, so developers only focus on the functionality and fastchain implements the logic to make it work
+and less error prone, so developers only focus on the functionality and funchain implements the logic to make it work
 automatically.
 
 Audience
@@ -27,26 +27,26 @@ This project is distributed under the MIT license.
 
 Installation
 ------------
-You can get fastchain from PyPI with the following command
+You can get funchain from PyPI with the following command
 
 .. code-block:: shell
 
-    pip install fastchain
+    pip install funchain
 
-To check which version of ``fastchain`` is installed in your environment, run the following command
+To check which version of ``funchain`` is installed in your environment, run the following command
 
 .. code-block:: shell
 
-    pip show fastchain
+    pip show funchain
 
 
 Usage
 -----
-To get a bit familiar with ``fastchain``'s syntax, here's a basic example showing how easy it is to compose functions
+To get a bit familiar with ``funchain``'s syntax, here's a basic example showing how easy it is to compose functions
 
 .. code-block:: python
 
-    >>> from fastchain import node
+    >>> from funchain import node
     >>> def double(num):
     ...     return num * 2
     >>> twice = node(int) | double | str    # composing functions sequentially
@@ -67,7 +67,7 @@ Fastchain has builtin support for ``async`` functions and callables, the followi
 
 .. code-block:: python
 
-    >>> from fastchain import node
+    >>> from funchain import node
     >>> import asyncio
     >>> async def get_data(id: str) -> str:
     ...     await asyncio.sleep(1)  # mimics the client request IO
@@ -90,12 +90,12 @@ backward compatible.
 
 .. important::
 
-    **fastchain** ``0.1.0`` is still currently experimental 🧪, however, it is fully tested.
+    **funchain** ``0.1.0`` is still currently experimental 🧪, however, it is fully tested.
     Make sure to test it for your specific use case if you plan to integrate it into a production app.
 
 Content
 -------
-This documentation will walk you through on how to get the best out of ``fastchain`` and how it could be
+This documentation will walk you through on how to get the best out of ``funchain`` and how it could be
 integrated into your application.
 
 This document contains the following pages

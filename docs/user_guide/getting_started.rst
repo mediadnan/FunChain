@@ -21,7 +21,7 @@ Fastchain is designed to automate and simplify this process and to give a better
 of what happens between each step *(node)* and how each failure should be handled, and simplifies the definition of
 function pipelines with a declarative, intuitive and easy syntax.
 
-In this chapter we will discover the basic use case of ``fastchain`` and make our first steps,
+In this chapter we will discover the basic use case of ``funchain`` and make our first steps,
 the next chapters will be covering specific and advanced topics in depth.
 
 
@@ -168,16 +168,16 @@ too much for a function that only "evaluates a square root from a string", and t
     The same code is repeated multiple times and this is an anti-pattern, bad practice and tiring process.
 
 Of course any decent developer will create functions that automates these steps and handles failures,
-but even that is additional work... ``fastchain`` handle that for you out of the box.
+but even that is additional work... ``funchain`` handle that for you out of the box.
 
 
-Using fastchain
+Using funchain
 ---------------
-Now we will implement the same function ``find_square_root`` using ``fastchain``'s tools.
+Now we will implement the same function ``find_square_root`` using ``funchain``'s tools.
 
 .. note::
 
-    Make sure to :ref:`install <installation>` ``fastchain`` first to be able to use it.
+    Make sure to :ref:`install <installation>` ``funchain`` first to be able to use it.
 
 
 .. literalinclude:: ../examples/getting_started/fastchain_example_1.py
@@ -185,17 +185,17 @@ Now we will implement the same function ``find_square_root`` using ``fastchain``
     :caption: fastchain_test.py
     :linenos:
 
-That's it, we just declare the functions to be called sequentially and fastchain
+That's it, we just declare the functions to be called sequentially and funchain
 will make a chain from that.
 
 .. important:: 
 
-    It is necessary to wrap the first function within ``fastchain.node()``,
+    It is necessary to wrap the first function within ``funchain.node()``,
     a utility that converts a function into a *"chainable"* node.
 
 .. note:: 
 
-    We could also wrap each function inside ``fastchain.node()``, but fastchain
+    We could also wrap each function inside ``funchain.node()``, but funchain
     does that automatically and it is unecessary to do it manually unless we want to
     customize a specific node.
 
@@ -205,7 +205,7 @@ Now let's see what we got
 
     >>> from fastchain_test import find_square_root
     >>> find_square_root
-    fastchain.Chain('find_square_root', len=6)
+    funchain.Chain('find_square_root', len=6)
 
 It already got the name from the variable's name and the count of nodes *(steps)*.
 now let check it functionality.

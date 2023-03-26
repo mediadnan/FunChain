@@ -1,6 +1,6 @@
 """
-The module defines different types of fastchain nodes,
-nodes are built and used by fastchain chains
+The module defines different types of funchain nodes,
+nodes are built and used by funchain chains
 to perform the data processing.
 """
 import functools
@@ -20,7 +20,6 @@ from typing import (
 )
 
 from .reporter import Reporter, Severity, OPTIONAL, Failure, FailureLogger
-from .util.annotation import is_typed_optional
 from .util.name import get_func_name, guess_var_name, validate
 from .util.tool import is_async, asyncify
 
@@ -48,7 +47,7 @@ AsyncListGroupChainable: TypeAlias = list[AsyncChainable[Input, Any] | Chainable
 
 
 class BaseNode(ABC, Generic[Input, Output]):
-    """Base class for all fastchain nodes"""
+    """Base class for all funchain nodes"""
     __slots__ = 'severity',
     severity: Severity
 
@@ -98,7 +97,7 @@ class BaseNode(ABC, Generic[Input, Output]):
     def __len__(self) -> int: ...
 
     def __repr__(self) -> str:
-        return f"fastchain.{self.__class__.__name__}({self.__len__()})"
+        return f"funchain.{self.__class__.__name__}({self.__len__()})"
 
     def __call__(
             self,
@@ -385,75 +384,6 @@ class AsyncDictGroup(AsyncGroup[Input, dict], Generic[Input]):
     convert = staticmethod(dict_converter)
 
 
-def _node_to_getter(name: str, nd: BaseNode):
-    """binds the node to the bot as a property"""
-    def getter(self: Model):
-        result = nd.process(self._data, self._reporter(name, severity=nd.severity))
-        try:
-            # caching the result for the next call
-            self.__dict__[name] = result
-        except AttributeError:
-            # for objects with __slots__ and no __dict__
-            pass
-        return result
-    return property(getter, doc=f'gets {name!r} (readonly)')
-
-
-class Model(Generic[Input]):
-    _data: Input
-    _reporter: Reporter
-    __len: int
-    __model_name__: str
-
-    def __init__(self, data: Input, reporter: Reporter) -> None:
-        self._data = data
-        self._reporter = reporter
-
-    def __init_subclass__(cls, **kwargs):
-        for name, attr in cls.__dict__.items():
-            if not isinstance(attr, BaseNode) or name.startswith('_'):
-                continue
-            annotation = cls.__annotations__.get(name)
-            if annotation and is_typed_optional(annotation):
-                attr = attr.optional()
-            setattr(cls, name, _node_to_getter(name, attr))
-        if '__model_name__' not in cls.__dict__:
-            setattr(cls, '__model_name__', cls.__qualname__)
-
-    @classmethod
-    def __len__(cls):
-        return cls.__len
-
-
-ModelType = TypeVar('ModelType', bound=type[Model])
-
-
-class ModelNode(BaseNode[Input, ModelType], Generic[Input, ModelType]):
-    __slots__ = 'model',
-    model: ModelType
-
-    def __init__(self, model: ModelType) -> None:
-        super().__init__()
-        self.model = model
-
-    def process(self, arg: Input, reporter: Reporter) -> ModelType:
-        return self.model(arg, reporter)
-
-    def copy(self) -> Self:
-        return self.__class__(self.model)
-
-    def to_async(self) -> 'AsyncBaseNode[Input, Output]':
-        return AsyncModelNode(self.model)
-
-    def __len__(self) -> int:
-        return len(self.model)
-
-
-class AsyncModelNode(ModelNode[Input, ModelType], AsyncBaseNode[Input, ModelType], Generic[Input, ModelType]):
-    async def process(self, arg, reporter: Reporter) -> ModelType:
-        return self.model(arg, reporter)
-
-
 def is_node_async(obj) -> bool:
     """Checks whether the function or the collection contains an async function"""
     if isinstance(obj, AsyncBaseNode):
@@ -476,8 +406,6 @@ def build(obj: Chainable[Input, Output]) -> BaseNode[Input, Output]:
         return ListGroup([(index, build(item)) for index, item in enumerate(obj)])
     elif obj is Ellipsis:
         return Chain()
-    elif isinstance(obj, type) and issubclass(obj, Model):
-        return ModelNode(obj)
     raise TypeError(f"Unsupported type {type(obj).__name__} for chaining")
 
 
@@ -492,6 +420,4 @@ def async_build(obj) -> AsyncBaseNode:
         return AsyncListGroup([(index, async_build(item)) for index, item in enumerate(obj)])
     elif obj is Ellipsis:
         return AsyncChain()
-    elif isinstance(obj, type) and issubclass(obj, Model):
-        return AsyncModelNode(obj)
     raise TypeError(f"Unsupported type {type(obj).__name__} for chaining")

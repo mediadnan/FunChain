@@ -1,6 +1,6 @@
 import re
 import math
-from fastchain import node
+from funchain import node
 
 NUMBERS_RE = re.compile(r'[+-]?(\d+(\.\d*)?|\.\d+)')
 

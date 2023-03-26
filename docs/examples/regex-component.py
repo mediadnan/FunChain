@@ -1,5 +1,5 @@
 import re
-from fastchain import funfact
+from funchain import node
 
 
 @funfact(name="regex.findall", default_factory=list)

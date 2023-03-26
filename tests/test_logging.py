@@ -3,7 +3,7 @@ from datetime import datetime
 import pytest
 import logging
 
-from fastchain.reporter import (
+from funchain.reporter import (
     Severity,
     OPTIONAL,
     NORMAL,
@@ -46,7 +46,7 @@ def test_failure_data_object():
     (REQUIRED, logging.ERROR, 'ERROR'),
 ])
 def test_failure_logger(caplog, severity, log_level, log_name):
-    logger_name = 'FastChain'
+    logger_name = 'FunChain'
     logger = FailureLogger(logger_name)
     dt = datetime(2023, 6, 6)
     assert logger._logger.name == logger_name, "Logger name should be set by FailureLogger constructor"

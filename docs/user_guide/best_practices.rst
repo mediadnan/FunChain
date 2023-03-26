@@ -1,16 +1,16 @@
 ==============
 Best practices
 ==============
-To get the best out of FastChain, this section helps you with some good practices to follow,
+To get the best out of FunChain, this section helps you with some good practices to follow,
 some of them are performance related and others are about conveniance and quality.
 
 Optimization
 ============
 Make chains global
 ------------------
-When we define chains, fastchain runs some code to build a callable object with the right features,
+When we define chains, funchain runs some code to build a callable object with the right features,
 this code is most of the time recursive and involves some validation and inspection.
-So the those FastChain objects have to main phases, **definition** and **usage**, the definition
+So the those FunChain objects have to main phases, **definition** and **usage**, the definition
 should only execute once per program session, and then the objects are cached and ready for use for 
 multiple times.
 
@@ -64,7 +64,7 @@ To give an example, let's consider a chain that will be extracting links from a 
     :caption: BAD
 
     import re
-    from fastchain import node
+    from funchain import node
     
     markup = """
         <html>
@@ -97,7 +97,47 @@ And use it like this
 .. code-block:: pycon
 
     >>> from pprint import pp
-    >>> from fastchain import Chain
+    >>> from funchain import Chain
+    >>> from components import regex_findall
+    >>> markup = """
+    ... <html>
+    ...     <body>
+    ...         <a href="https://justasimpleexample.com/path1">click here</a>
+    ...         <a href="https://justasimpleexample.com/path2">click here</a>
+    ...         <a href="https://justasimpleexample.com/path3">click here</a>
+    ...     </body>
+    ... </html>
+    ... """
+    >>> chain = Chain('my_chain', regex_findall(r'href="(.+?)"'))
+    >>> pp(chain(markup))
+    ['https://justasimpleexample.com/path1',
+     'https://justasimpleexample.com/path2',
+     'https://justasimpleexample.com/path3']
+
+We get the same result but now the pattern is compiled once, this optimizes resources usage and
+result in a faster processing.
+    >>> from pprint import pp
+    >>> from funchain import Chain
+    >>> from components import regex_findall
+    >>> markup = """
+    ... <html>
+    ...     <body>
+    ...         <a href="https://justasimpleexample.com/path1">click here</a>
+    ...         <a href="https://justasimpleexample.com/path2">click here</a>
+    ...         <a href="https://justasimpleexample.com/path3">click here</a>
+    ...     </body>
+    ... </html>
+    ... """
+    >>> chain = Chain('my_chain', regex_findall(r'href="(.+?)"'))
+    >>> pp(chain(markup))
+    ['https://justasimpleexample.com/path1',
+     'https://justasimpleexample.com/path2',
+     'https://justasimpleexample.com/path3']
+
+We get the same result but now the pattern is compiled once, this optimizes resources usage and
+result in a faster processing.
+    >>> from pprint import pp
+    >>> from funchain import Chain
     >>> from components import regex_findall
     >>> markup = """
     ... <html>
@@ -145,12 +185,12 @@ With that in mind, we have two options to fix this:
 
 Conventions
 ===========
-This sections will cover tips about the ideal usage of ``FastChain`` and mistakes to avoid 💡
+This sections will cover tips about the ideal usage of ``FunChain`` and mistakes to avoid 💡
 
 Use chains to simplify
 ----------------------
 The main goal of this library is to simplify the creation of pipelines, however creating a chain with a single function
-will only add unnecessary complications. Any thing that could be achieved more easily without ``FastChain`` should
+will only add unnecessary complications. Any thing that could be achieved more easily without ``FunChain`` should
 be achieved without it, knowing that nothing prevents us from creating this :code:`Chain('twice', lambda x: x*2)`
 *which ironically enough is what we've been doing through this guide*, but this is merely allowed for testing or examples
 and it will only add unnecessary complications and obscure our code for other especially when having no intention
@@ -160,7 +200,7 @@ Use simple functions
 --------------------
 It is always recommended to define chains with multiple small specific functions that do only one thing
 *(single responsibility principle)* over using fewer more complex functions, this advice is not exclusive
-to ``FastChain`` but it is a good practice in general, it increases re-usability, simplifies testing, separation
+to ``FunChain`` but it is a good practice in general, it increases re-usability, simplifies testing, separation
 of concerns, increases cohesiveness... But particularly when we define a chain with *'monolithic'* functions
 that contain internal pipelines we are missing the whole point about chains and it's considered an anti-pattern,
 it's good to remember that their main strength is the isolation of each processing step.

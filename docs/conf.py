@@ -1,5 +1,5 @@
 # -- Project Info
-project = 'FastChain'
+project = 'FunChain'
 copyright = '2022, MARSO Adnan'
 author = 'MARSO Adnan'
 version = '0.1'

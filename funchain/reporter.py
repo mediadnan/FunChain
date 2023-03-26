@@ -1,9 +1,9 @@
 """
-fastchain.reporter module contains the Reporter object definition,
+funchain.reporter module contains the Reporter object definition,
 used to keep trace and state between nested node calls and keeps
 references to (default or custom) failure handler.
 
-The module also defines a fastchain universal enumerator for different
+The module also defines a funchain universal enumerator for different
 levels of failure reaction called Severity; and defines 3 levels
 OPTIONAL for expected failures, NORMAL for less important failures
 and REQUIRED for tolerated failures, a user defined handler
@@ -52,7 +52,7 @@ REQUIRED = Severity.REQUIRED
 @dataclass(order=False, frozen=True, slots=True)
 class Failure:
     """
-    Structured failure data automatically created by fastchain.reporter.Reporter,
+    Structured failure data automatically created by funchain.reporter.Reporter,
     this object holds key information about a specific processing failure.
 
     :param source: dot-separated location where the failure occurred (path.to.source)
@@ -73,7 +73,7 @@ class FailureLogger:
 
     def __init__(
             self,
-            _name: str = 'FastChain',
+            _name: str = 'funchain',
             _format: str = "%(failure_source)s [%(levelname)s] :: %(message)s (%(asctime)s)",
             _file: str | PathLike[str] | None = None,
             _write_mode: str = 'a',

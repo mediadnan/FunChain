@@ -1,5 +1,5 @@
 import re
-from fastchain import node
+from funchain import node
 
 URL_PATTERN = re.compile(r'(([a-zA-Z]+:)?//)?(\w+\.)+(\w+)(/.)*?')
 

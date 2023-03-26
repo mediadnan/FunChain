@@ -1,7 +1,7 @@
 ==========
 Node types
 ==========
-Beside chaining functions sequentially *(which was the original purpose)*, fastchain also provides 
+Beside chaining functions sequentially *(which was the original purpose)*, funchain also provides
 ways of branching and iterating a collection of results.
 
 Here we will talk about different ways of designing chains using simple functions to keep focus on syntax and workflow.
@@ -9,15 +9,15 @@ Here we will talk about different ways of designing chains using simple function
 Basic node
 ==========
 An obvious but worth to be mentioned type of nodes are functions, functions are building blocks for chains,
-any functions or callable objects is wrapped by fastchain into a special callable that adds chain functionality and error handling
-mechanism, the first chain function must be explicitly wrapped by ``fastchain.node()``, the next piped functions
-are converted into nodes automatically by fastchain.
+any functions or callable objects is wrapped by funchain into a special callable that adds chain functionality and error handling
+mechanism, the first chain function must be explicitly wrapped by ``funchain.node()``, the next piped functions
+are converted into nodes automatically by funchain.
 
-The ``fastchain.node()`` takes a function as argument to make a node, but also takes a group of functions as we'll later see.
+The ``funchain.node()`` takes a function as argument to make a node, but also takes a group of functions as we'll later see.
 
 .. code-block:: python
 
-    >>> from fastchain import node
+    >>> from funchain import node
     >>> def triple(num: int) -> int:
     ...     return num*3
     >>> basic_node = node(triple)
@@ -41,7 +41,7 @@ Examples of *chainable* functions' signature are:
 
 etc...
 
-At the end that function will be called by ``fastchain`` with exactly one argument when processing data.
+At the end that function will be called by ``funchain`` with exactly one argument when processing data.
 
 The chain
 =========

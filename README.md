@@ -1,27 +1,27 @@
 <div align="center" id="heading">
-  <h1><img src="./docs/_static/favicon/favicon.svg" alt="logo" width="24" height="24" /> FastChain</h1>
+  <h1><img src="./docs/_static/favicon/favicon.svg" alt="logo" width="24" height="24" /> FunChain</h1>
   <strong style="">chain functions easily and safely</strong>
   <div>
     <br/>
-    <a href="https://github.com/mediadnan/fastchain/actions/workflows/tests.yml"><img src="https://github.com/mediadnan/fastchain/actions/workflows/tests.yml/badge.svg" alt="Tests" /></a>
-    <img src="https://img.shields.io/github/license/mediadnan/fastchain" alt="License MIT" />
+    <a href="https://github.com/mediadnan/funchain/actions/workflows/tests.yml"><img src="https://github.com/mediadnan/funchain/actions/workflows/tests.yml/badge.svg" alt="Tests" /></a>
+    <img src="https://img.shields.io/github/license/mediadnan/funchain" alt="License MIT" />
     <a href="https://fast-chain.readthedocs.io/en/latest/"><img src="https://img.shields.io/readthedocs/fast-chain" alt="Read the Docs"></a>
-    <img src="https://img.shields.io/pypi/pyversions/fastchain" alt="Python versions" />
-    <img src="https://img.shields.io/pypi/v/fastchain" alt="PyPI version" />
-    <img src="https://img.shields.io/pypi/dm/fastchain" alt="PyPI - Downloads"/>
+    <img src="https://img.shields.io/pypi/pyversions/funchain" alt="Python versions" />
+    <img src="https://img.shields.io/pypi/v/funchain" alt="PyPI version" />
+    <img src="https://img.shields.io/pypi/dm/funchain" alt="PyPI - Downloads"/>
   </div>
 </div> 
 
 
 ## Introduction
-FastChain is a package that provides tools and utilities to easily compose ***chain*** functions sequentially, 
+FunChain is a package that provides tools and utilities to easily compose ***chain*** functions sequentially, 
 and create simple processing pipelines with minimum code and simple syntax *(such as OR operator ``func1 | func2``)*
 
 ## Installation
-Install FastChain from PyPI by running this command
+Install FunChain from PyPI by running this command
 
 ````shell
-pip install fastchain
+pip install funchain
 ````
 
 ## Audience
@@ -61,7 +61,7 @@ which function failed, together with the **description** and the **data** *(inpu
 
 
 In these example we will only scratch the surface to get and idea,
-to learn more about FastChain please visit the [documentation page](https://fast-chain.readthedocs.io/en/latest/)
+to learn more about FunChain please visit the [documentation page](https://fast-chain.readthedocs.io/en/latest/)
 
 Consider that we want a function that takes a string with comma separated numbers 
 then returns the square roots of each number rounded to 2 decimal places,
@@ -170,19 +170,19 @@ it is already too much work for a function supposed to do a simple task like thi
 
 ### Solution
 We see now that the previous steps need to be isolated and safely handled, this can be automated because it's a clear
-and constant repetitive pattern, and that where we can use ``fastchain.Chain`` to that can automate this task for us.
+and constant repetitive pattern, and that where we can use ``funchain.Chain`` to that can automate this task for us.
 
 chains are defined globally with a name and a set of small functions that define the processing steps,
 those functions will be the chain's nodes and composed automatically and safely.
 
-for this example we will also need a utility function ``fastchain.chainable`` to partially apply shared arguments
+for this example we will also need a utility function ``funchain.chainable`` to partially apply shared arguments
 *(similar to ``functools.partial`` with some additional functionalities)*
 
 The new code will look like this
 
 ````python
 from math import sqrt
-from fastchain import Chain, node_maker
+from funchain import Chain, node_maker
 
 rounded_square_roots = Chain(
     "rounded_square_roots",
@@ -217,7 +217,7 @@ by passing an additional keyword argument to the constructor ``print_stats=True`
 
 ````python
 from math import sqrt
-from fastchain import Chain, node_maker
+from funchain import Chain, node_maker
 
 rounded_square_roots = Chain(
     "rounded_square_roots",
