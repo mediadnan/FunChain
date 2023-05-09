@@ -18,8 +18,8 @@ from typing import (
     Union,
     overload,
 )
+from failures import Reporter
 
-from .reporter import Reporter, Severity, OPTIONAL, Failure, FailureLogger
 from .util.name import get_func_name, guess_var_name, validate
 from .util.tool import is_async, asyncify
 
@@ -44,6 +44,30 @@ DictGroupChainable: TypeAlias = dict[Any, Chainable[Input, Any]]
 ListGroupChainable: TypeAlias = list[Chainable[Input, Any]]
 AsyncDictGroupChainable: TypeAlias = dict[Any, AsyncChainable[Input, Any] | Chainable[Input, Any]]
 AsyncListGroupChainable: TypeAlias = list[AsyncChainable[Input, Any] | Chainable[Input, Any]]
+
+
+class Severity(IntEnum):
+    """
+    Defines different levels of severity, each one for a different failure reaction
+
+    OPTIONAL
+        Basically indicates that the failure should be ignored
+
+    NORMAL
+        Indicates that the failure should be reported but without failure
+
+    REQUIRED
+        Indicates that the failure should be handled and the process should stop
+    """
+    OPTIONAL = 0
+    NORMAL = 1
+    REQUIRED = 2
+
+
+# severity shortcuts
+OPTIONAL = Severity.OPTIONAL
+NORMAL = Severity.NORMAL
+REQUIRED = Severity.REQUIRED
 
 
 class BaseNode(ABC, Generic[Input, Output]):
