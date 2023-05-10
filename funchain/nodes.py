@@ -72,10 +72,12 @@ REQUIRED = Severity.REQUIRED
 
 class BaseNode(ABC, Generic[Input, Output]):
     """Base class for all funchain nodes"""
-    __slots__ = 'severity',
+    __slots__ = 'severity', '_name'
     severity: Severity
+    _name: str | None
 
     def __init__(self) -> None:
+        self._name = None
         self.severity = Severity.NORMAL
 
     @overload
@@ -123,18 +125,11 @@ class BaseNode(ABC, Generic[Input, Output]):
     def __repr__(self) -> str:
         return f"funchain.{self.__class__.__name__}({self.__len__()})"
 
-    def __call__(
-            self,
-            arg, /, *,
-            name: str | None = None,
-            handler: Callable[[Failure], None] | None = FailureLogger()
-    ) -> Output | None:
+    def __call__(self, arg, /, *, reporter: Reporter = None) -> Output | None:
         """Processes arg and returns the result"""
-        if name is None:
-            name = guess_var_name()
-        else:
-            validate(name)
-        return self.process(arg, Reporter(name, handler))
+        assert isinstance(reporter, Reporter), "reporter must be instance of failures.Reporter"
+        if self._name:
+        return self.process(arg, (reporter or Reporter))
 
     def optional(self) -> Self:
         new = self.copy()
