@@ -1,6 +1,6 @@
 import pytest
 from asyncio import iscoroutine, run
-from funchain import node, nodes
+from src import nodes
 
 
 # fixtures
@@ -39,7 +39,7 @@ def add(number: int):   # functional style factory
     pytest.param('node(Add(1))', 3, 4, 1, nodes.Node, id="single node from callable"),
     pytest.param('node(add(1))', 3, 4, 1, nodes.Node, id="single node from function factory"),
     pytest.param('node(increment) | double', 3, 8, 2, nodes.Chain, id="chain with two function nodes"),
-    pytest.param('node(increment) | increment | increment | increment | increment', 2, 2+5, 5, nodes.Chain, id="chain with multiple function nodes"),
+    pytest.param('node(increment) | increment | increment | increment | increment', 2, 2 + 5, 5, nodes.Chain, id="chain with multiple function nodes"),
     pytest.param('node(double) * increment', [3], [4, 4], 2, nodes.Chain, id="chain with spread results"),
     pytest.param('node() * increment | sum', [3, 4], 9, 2, nodes.Chain, id="chain with spread results wrapped"),
     pytest.param('node() * (node(increment) | double) | sum', [3, 4], 18, 3, nodes.Chain, id="chain with iterating sub chain"),

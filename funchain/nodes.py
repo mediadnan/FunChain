@@ -1,67 +1,46 @@
-"""
-The module defines different types of funchain nodes,
-nodes are built and used by funchain chains
-to perform the data processing.
-"""
+import asyncio
 import functools
 from abc import ABC, abstractmethod, ABCMeta
-import asyncio
-from typing import (
-    Any,
-    Self,
-    Callable,
-    Iterable,
-    Coroutine,
-    TypeAlias,
-    TypeVar,
-    Generic,
-    Union,
-    overload,
-)
+from enum import Enum
+from typing import (TypeVar,
+                    ParamSpec,
+                    TypeAlias,
+                    Union,
+                    Callable,
+                    Coroutine,
+                    Any,
+                    Generic,
+                    Self,
+                    Iterable)
 from failures import Reporter
 
-from .util.name import get_func_name, guess_var_name, validate
-from .util.tool import is_async, asyncify
+from .name import get_func_name, validate as validate_name
 
 Input = TypeVar('Input')
 Output = TypeVar('Output')
 Output2 = TypeVar('Output2')
+SPEC = ParamSpec('SPEC')
+RT = TypeVar('RT')
 
 AsyncCallable: TypeAlias = Callable[[Input], Coroutine[None, None, Output]]
-Chainable: TypeAlias = Union[
-    'BaseNode[Input, Output]',
-    Callable[[Input], Output],
-    'DictGroupChainable[Input]',
-    'ListGroupChainable[Input]'
-]
-AsyncChainable: TypeAlias = Union[
-    'AsyncBaseNode[Input, Output]',
-    AsyncCallable[Input, Output],
-    'AsyncDictGroupChainable[Input]',
-    'AsyncListGroupChainable[Input]'
-]
+Chainable: TypeAlias = Union['BaseNode[Input, Output]',
+                             Callable[[Input], Output],
+                             'DictGroupChainable[Input]',
+                             'ListGroupChainable[Input]']
+AsyncChainable: TypeAlias = Union['AsyncBaseNode[Input, Output]',
+                                  AsyncCallable[Input, Output],
+                                  'AsyncDictGroupChainable[Input]',
+                                  'AsyncListGroupChainable[Input]']
 DictGroupChainable: TypeAlias = dict[Any, Chainable[Input, Any]]
 ListGroupChainable: TypeAlias = list[Chainable[Input, Any]]
 AsyncDictGroupChainable: TypeAlias = dict[Any, AsyncChainable[Input, Any] | Chainable[Input, Any]]
 AsyncListGroupChainable: TypeAlias = list[AsyncChainable[Input, Any] | Chainable[Input, Any]]
 
 
-class Severity(IntEnum):
-    """
-    Defines different levels of severity, each one for a different failure reaction
-
-    OPTIONAL
-        Basically indicates that the failure should be ignored
-
-    NORMAL
-        Indicates that the failure should be reported but without failure
-
-    REQUIRED
-        Indicates that the failure should be handled and the process should stop
-    """
-    OPTIONAL = 0
-    NORMAL = 1
-    REQUIRED = 2
+class Severity(Enum):
+    OPTIONAL = 0    # Basically indicates that the failure should be ignored
+    NORMAL = 1      # Indicates that the failure should be reported but without failure
+    REQUIRED = 2    # Indicates that the failure should be handled and the process should stop
 
 
 # severity shortcuts
@@ -72,46 +51,15 @@ REQUIRED = Severity.REQUIRED
 
 class BaseNode(ABC, Generic[Input, Output]):
     """Base class for all funchain nodes"""
-    __slots__ = 'severity', '_name'
-    severity: Severity
+    __slots__ = '_severity', '_name'
+    _severity: Severity
     _name: str | None
 
-    def __init__(self) -> None:
-        self._name = None
-        self.severity = Severity.NORMAL
-
-    @overload
-    def __or__(self, other: 'AsyncBaseNode[Output, Output2]') -> 'AsyncChain[Input, Output2]': ...
-    @overload
-    def __or__(self, other: 'BaseNode[Output, Output2]') -> 'Chain[Input, Output2]': ...
-    @overload
-    def __or__(self, other: AsyncCallable[Output, Output2]) -> 'AsyncChain[Input, Output2]': ...
-    @overload
-    def __or__(self, other: Callable[[Output], Output2]) -> 'Chain[Input, Output2]': ...
-    @overload
-    def __or__(self, other: AsyncDictGroupChainable[Output]) -> 'AsyncChain[Input, dict]': ...
-    @overload
-    def __or__(self, other: DictGroupChainable[Output]) -> 'Chain[Input, dict]': ...
-    @overload
-    def __or__(self, other: AsyncListGroupChainable[Output]) -> 'AsyncChain[Input, list]': ...
-    @overload
-    def __or__(self, other: ListGroupChainable[Output]) -> 'Chain[Input, list]': ...
-    @overload
-    def __mul__(self, other: 'AsyncBaseNode[Output, Output2]') -> 'AsyncChain[Input, list[Output2]]': ...
-    @overload
-    def __mul__(self, other: 'BaseNode[Output, Output2]') -> 'Chain[Input, list[Output2]]': ...
-    @overload
-    def __mul__(self, other: AsyncCallable[Output, Output2]) -> 'AsyncChain[Input, list[Output2]]': ...
-    @overload
-    def __mul__(self, other: Callable[[Output], Output2]) -> 'Chain[Input, list[Output2]]': ...
-    @overload
-    def __mul__(self, other: AsyncDictGroupChainable[Output]) -> 'AsyncChain[Input, list[dict]]': ...
-    @overload
-    def __mul__(self, other: DictGroupChainable[Output]) -> 'Chain[Input, list[dict]]': ...
-    @overload
-    def __mul__(self, other: AsyncListGroupChainable[Output]) -> 'AsyncChain[Input, list[list]]': ...
-    @overload
-    def __mul__(self, other: ListGroupChainable[Output]) -> 'Chain[Input, list[list]]': ...
+    def __init__(self, *, name: str = None, severity: Severity = NORMAL) -> None:
+        if name is not None:
+            validate_name(name)
+        self._name = name
+        self._severity = severity
 
     def __or__(self, other: Chainable[Output, Output2] | AsyncChainable[Output, Output2]) -> 'Chain[Output, Output2]':
         return Chain(self) | other
@@ -119,27 +67,19 @@ class BaseNode(ABC, Generic[Input, Output]):
     def __mul__(self, other: Chainable[Output, Output2] | AsyncChainable[Output, Output2]) -> 'Chain[Output, Output2]':
         return Chain(self) * other
 
-    @abstractmethod
-    def __len__(self) -> int: ...
-
     def __repr__(self) -> str:
         return f"funchain.{self.__class__.__name__}({self.__len__()})"
 
     def __call__(self, arg, /, *, reporter: Reporter = None) -> Output | None:
         """Processes arg and returns the result"""
-        assert isinstance(reporter, Reporter), "reporter must be instance of failures.Reporter"
-        if self._name:
+        if reporter is None:
+            reporter = Reporter
+        elif not isinstance(reporter, Reporter):
+            raise TypeError("reporter must be instance of failures.Reporter")
         return self.process(arg, (reporter or Reporter))
 
-    def optional(self) -> Self:
-        new = self.copy()
-        new.severity = Severity.OPTIONAL
-        return new
-
-    def required(self) -> Self:
-        new = self.copy()
-        new.severity = Severity.REQUIRED
-        return new
+    @abstractmethod
+    def __len__(self) -> int: ...
 
     @abstractmethod
     def process(self, arg, reporter: Reporter) -> Output | None: ...
@@ -152,72 +92,89 @@ class BaseNode(ABC, Generic[Input, Output]):
     def to_async(self) -> 'AsyncBaseNode[Input, Output]':
         """Returns an async version of the current node"""
 
+    @property
+    def severity(self) -> Severity:
+        """Gets the severity level of the node."""
+        return self._severity
+
+    @severity.setter
+    def severity(self, severity: Severity) -> None:
+        if not isinstance(severity, Severity):
+            raise TypeError("Node severity must be either OPTIONAL, NORMAL or REQUIRED")
+        self._severity = severity
+
+    @property
+    def name(self) -> str | None:
+        """Gets the name of the node"""
+        return self._name
+
+    @name.setter
+    def name(self, name: str) -> None:
+        validate_name(name)
+        self._name = name
+
+    def rn(self, name: str) -> Self:
+        """Clones the node with a new name"""
+        _node = self.copy()
+        _node.name = name
+        return _node
+
 
 class AsyncBaseNode(BaseNode[Input, Coroutine[None, None, Output]], Generic[Input, Output]):
-    @overload
-    def __or__(self, other: 'BaseNode[Output, Output2]') -> 'AsyncChain[Input, Output2]': ...
-    @overload
-    def __or__(self, other: Callable[[Output], Output2]) -> 'AsyncChain[Input, Output2]': ...
-    @overload
-    def __or__(self, other: DictGroupChainable[Output]) -> 'AsyncChain[Input, dict]': ...
-    @overload
-    def __or__(self, other: ListGroupChainable[Output]) -> 'AsyncChain[Input, list]': ...
-    @overload
-    def __mul__(self, other: 'BaseNode[Output, Output2]') -> 'AsyncChain[Input, list[Output2]]': ...
-    @overload
-    def __mul__(self, other: Callable[[Output], Output2]) -> 'AsyncChain[Input, list[Output2]]': ...
-    @overload
-    def __mul__(self, other: DictGroupChainable[Output]) -> 'AsyncChain[Input, list[dict]]': ...
-    @overload
-    def __mul__(self, other: ListGroupChainable[Output]) -> 'AsyncChain[Input, list[list]]': ...
-
-    def __or__(self, other):
+    def __or__(
+            self,
+            other: Chainable[Output, Output2] | AsyncChainable[Output, Output2]
+    ) -> AsyncChainable[Input, Output2]:
         return AsyncChain(self) | other
 
     def __mul__(self, other):
         return AsyncChain(self) * other
 
     def to_async(self) -> Self:
-        """Returns the current node"""
-        return self
+        """Returns a clone for the current node"""
+        return self.copy()
 
     @abstractmethod
     async def process(self, arg, reporter: Reporter) -> Output | None: ...
 
 
 class Node(BaseNode[Input, Output], Generic[Input, Output]):
-    __slots__ = 'func', 'name'
-    name: str
+    __slots__ = 'func',
     func: Callable[[Input], Output]
 
-    def __init__(self, func: Callable[[Input], Output], name: str | None = None) -> None:
-        super().__init__()
+    def __init__(
+            self,
+            func: Callable[[Input], Output],
+            *,
+            name: str = None,
+            severity: Severity = NORMAL
+    ) -> None:
+        if name is None:
+            name = get_func_name(func)
+        else:
+            validate_name(name)
+        super().__init__(name=name, severity=severity)
         self.func = func
-        self.name = name or get_func_name(func)
 
     def __len__(self) -> int:
         return 1
 
     def copy(self) -> Self:
-        return self.__class__(self.func, self.name)
+        return self.__class__(self.func, name=self.name, severity=self.severity)
 
     def to_async(self) -> 'AsyncNode[Input, Output]':
-        return AsyncNode(asyncify(self.func), self.name)
-
-    def named(self, name: str) -> Self:
-        validate(name)
-        new = self.copy()
-        new.name = name
-        return new
+        return AsyncNode(asyncify(self.func), name=self.name, severity=self.severity)
 
     def partial(self, *args, **kwargs) -> Self:
+        """Clones the node and partially applies the arguments"""
+        _node = self.copy()
         func = self.func
         while isinstance(func, functools.partial):
             args = *func.args, *args
             kwargs = {**func.keywords, **kwargs}
             func = func.func
-        self.func = functools.partial(func, *args, **kwargs)
-        return self
+        _node.func = functools.partial(func, *args, **kwargs)
+        return _node
 
     def process(self, arg: Input, reporter: Reporter) -> Output | None:
         with reporter(self.name, severity=self.severity, input=arg):
@@ -403,20 +360,46 @@ class AsyncDictGroup(AsyncGroup[Input, dict], Generic[Input]):
     convert = staticmethod(dict_converter)
 
 
+def is_async(func: Callable) -> bool:
+    """
+    Checks if the function / callable is defined as asynchronous
+
+    :param func: the function to be checked
+    :return: True if function is async else False
+    """
+    # Inspired from the Starlette library
+    # https://github.com/encode/starlette/blob/4fdfad20abf8981e15babe015eb5d8330d9c7662/starlette/_utils.py#L13
+    while isinstance(func, functools.partial):
+        func = func.func
+    return asyncio.iscoroutinefunction(func) or asyncio.iscoroutinefunction(getattr(func, '__call__', None))
+
+
+def asyncify(func: Callable[SPEC, RT], /) -> Callable[SPEC, Coroutine[None, None, RT]]:
+    """
+    Wraps blocking function to be called in a separate loop's (default) executor
+
+    :param func: the function to be asynchronified
+    :return: async version of function
+    """
+    @functools.wraps(func)
+    async def async_func(*args: SPEC.args, **kwargs: SPEC.kwargs) -> Coroutine[None, None, RT]:
+        loop = asyncio.get_event_loop()
+        return await loop.run_in_executor(None, functools.partial(func, *args, **kwargs))
+    return func if is_async(func) else async_func
+
+
 def is_node_async(obj) -> bool:
     """Checks whether the function or the collection contains an async function"""
-    if isinstance(obj, AsyncBaseNode):
-        return True
-    elif callable(obj):
-        return is_async(obj)
-    elif isinstance(obj, (list, dict)):
-        return any(map(is_node_async, obj.items() if isinstance(obj, dict) else obj))
-    return False
+    return (
+        isinstance(obj, AsyncBaseNode)
+        or (callable(obj) and is_async(obj))
+        or (isinstance(obj, (list, dict)) and any(map(is_node_async, obj.items() if isinstance(obj, dict) else obj)))
+    )
 
 
 def build(obj: Chainable[Input, Output]) -> BaseNode[Input, Output]:
     if isinstance(obj, BaseNode):
-        return obj
+        return obj.copy()
     elif callable(obj):
         return Node(obj)
     elif isinstance(obj, (list, dict)):
