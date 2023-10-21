@@ -11,7 +11,8 @@ from typing import (TypeVar,
                     Any,
                     Generic,
                     Self,
-                    Iterable)
+                    Iterable,
+                    Literal)
 from failures import Reporter
 
 from .name import get_func_name, validate as validate_name
@@ -49,17 +50,31 @@ NORMAL = Severity.NORMAL
 REQUIRED = Severity.REQUIRED
 
 
+REPORTER_CTX = {
+    OPTIONAL: (Reporter.optional, Reporter.optional_async),
+    NORMAL: (Reporter.safe, Reporter.safe_async),
+    REQUIRED: (Reporter.required, Reporter.required_async)
+}
+
 class BaseNode(ABC, Generic[Input, Output]):
-    """Base class for all funchain nodes"""
-    __slots__ = '_severity', '_name'
+    """Base class for all FunChain nodes"""
+    __slots__ = '_severity', '_name', '_ctx'
     _severity: Severity
     _name: str | None
+    _ctx: Union[
+        Literal[Reporter.optional],
+        Literal[Reporter.optional_async],
+        Literal[Reporter.safe],
+        Literal[Reporter.safe_async],
+        Literal[Reporter.required],
+        Literal[Reporter.required_async]
+    ]
 
     def __init__(self, *, name: str = None, severity: Severity = NORMAL) -> None:
         if name is not None:
             validate_name(name)
         self._name = name
-        self._severity = severity
+        self.severity = severity
 
     def __or__(self, other: Chainable[Output, Output2] | AsyncChainable[Output, Output2]) -> 'Chain[Output, Output2]':
         return Chain(self) | other
@@ -68,7 +83,7 @@ class BaseNode(ABC, Generic[Input, Output]):
         return Chain(self) * other
 
     def __repr__(self) -> str:
-        return f"funchain.{self.__class__.__name__}({self.__len__()})"
+        return f"FunChain.{self.__class__.__name__}({self.__len__()})"
 
     def __call__(self, arg, /, *, reporter: Reporter = None) -> Output | None:
         """Processes arg and returns the result"""
@@ -102,6 +117,7 @@ class BaseNode(ABC, Generic[Input, Output]):
         if not isinstance(severity, Severity):
             raise TypeError("Node severity must be either OPTIONAL, NORMAL or REQUIRED")
         self._severity = severity
+        self._ctx = REPORTER_CTX[severity][isinstance(self, AsyncBaseNode)]
 
     @property
     def name(self) -> str | None:
@@ -113,6 +129,9 @@ class BaseNode(ABC, Generic[Input, Output]):
         validate_name(name)
         self._name = name
 
+    def ctx(self, func: Callable[SPEC, RT], *args: SPEC.args, **kwargs: SPEC.kwargs) -> RT | None:
+        pass
+
     def rn(self, name: str) -> Self:
         """Clones the node with a new name"""
         _node = self.copy()
@@ -121,13 +140,10 @@ class BaseNode(ABC, Generic[Input, Output]):
 
 
 class AsyncBaseNode(BaseNode[Input, Coroutine[None, None, Output]], Generic[Input, Output]):
-    def __or__(
-            self,
-            other: Chainable[Output, Output2] | AsyncChainable[Output, Output2]
-    ) -> AsyncChainable[Input, Output2]:
+    def __or__(self, other) -> AsyncChainable[Input, Output2]:
         return AsyncChain(self) | other
 
-    def __mul__(self, other):
+    def __mul__(self, other) -> AsyncChainable[Input, Output2]:
         return AsyncChain(self) * other
 
     def to_async(self) -> Self:
@@ -142,13 +158,7 @@ class Node(BaseNode[Input, Output], Generic[Input, Output]):
     __slots__ = 'func',
     func: Callable[[Input], Output]
 
-    def __init__(
-            self,
-            func: Callable[[Input], Output],
-            *,
-            name: str = None,
-            severity: Severity = NORMAL
-    ) -> None:
+    def __init__(self, func: Callable[[Input], Output], *, name: str = None, severity: Severity = NORMAL) -> None:
         if name is None:
             name = get_func_name(func)
         else:
@@ -177,7 +187,7 @@ class Node(BaseNode[Input, Output], Generic[Input, Output]):
         return _node
 
     def process(self, arg: Input, reporter: Reporter) -> Output | None:
-        with reporter(self.name, severity=self.severity, input=arg):
+        with reporter(self.name, input=arg):
             return self.func(arg)
 
 
@@ -185,18 +195,18 @@ class AsyncNode(Node[Input, Output], AsyncBaseNode[Input, Output], Generic[Input
     func: Callable[[Input], Coroutine[None, None, Output]]
 
     async def process(self, arg: Input, reporter: Reporter) -> Output | None:
-        with reporter(self.name, severity=self.severity, input=arg):
+        with reporter(self.name, input=arg):
             return await self.func(arg)
 
 
 class Chain(BaseNode[Input, Output], Generic[Input, Output]):
-    __slots__ = 'nodes', '__len'
+    __slots__ = '__nodes', '__len'
     __len: int
-    nodes: list[BaseNode]
+    __nodes: list[BaseNode]
 
     def __init__(self, *nodes: BaseNode) -> None:
         super().__init__()
-        self.nodes = list(nodes)
+        self.__nodes = list(nodes)
         self.__len = sum(map(len, nodes)) if nodes else 0
 
     def __or__(self, other):
@@ -213,6 +223,11 @@ class Chain(BaseNode[Input, Output], Generic[Input, Output]):
 
     def __len__(self) -> int:
         return self.__len
+
+    @property
+    def nodes(self) -> list[BaseNode]:
+        """Gets the list of nodes (Read-only)"""
+        return self.__nodes
 
     def copy(self) -> Self:
         return self.__class__(*(node.copy() for node in self.nodes))
@@ -234,14 +249,14 @@ class Chain(BaseNode[Input, Output], Generic[Input, Output]):
 class AsyncChain(Chain[Input, Output], AsyncBaseNode[Input, Output], Generic[Input, Output]):
     def __or__(self, other):
         nxt = async_build(other)
-        return AsyncChain(*self.nodes, nxt) if nxt else self.copy()
+        return AsyncChain(*self.__nodes, nxt) if nxt else self.copy()
 
     def __mul__(self, other):
         nxt = async_build(other)
-        return AsyncChain(*self.nodes, AsyncLoop(nxt)) if nxt else self.copy()
+        return AsyncChain(*self.__nodes, AsyncLoop(nxt)) if nxt else self.copy()
 
     async def process(self, arg, reporter: Reporter) -> Any:
-        for index, node in enumerate(self.nodes):
+        for index, node in enumerate(self.__nodes):
             res = await node.process(arg, reporter(f'c[{index}]'))
             if res is None:
                 if node.severity is OPTIONAL:
