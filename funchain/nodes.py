@@ -11,8 +11,7 @@ from typing import (TypeVar,
                     Any,
                     Generic,
                     Self,
-                    Iterable,
-                    Literal)
+                    Iterable, Literal, )
 from failures import Reporter
 
 from .name import get_func_name, validate as validate_name
@@ -24,24 +23,29 @@ SPEC = ParamSpec('SPEC')
 RT = TypeVar('RT')
 
 AsyncCallable: TypeAlias = Callable[[Input], Coroutine[None, None, Output]]
-Chainable: TypeAlias = Union['BaseNode[Input, Output]',
-                             Callable[[Input], Output],
-                             'DictGroupChainable[Input]',
-                             'ListGroupChainable[Input]']
-AsyncChainable: TypeAlias = Union['AsyncBaseNode[Input, Output]',
-                                  AsyncCallable[Input, Output],
-                                  'AsyncDictGroupChainable[Input]',
-                                  'AsyncListGroupChainable[Input]']
+Chainable: TypeAlias = Union[
+    'BaseNode[Input, Output]',
+    Callable[[Input], Output],
+    'DictGroupChainable[Input]',
+    'ListGroupChainable[Input]'
+]
+AsyncChainable: TypeAlias = Union[
+    'AsyncBaseNode[Input, Output]',
+    AsyncCallable[Input, Output],
+    'AsyncDictGroupChainable[Input]',
+    'AsyncListGroupChainable[Input]'
+]
 DictGroupChainable: TypeAlias = dict[Any, Chainable[Input, Any]]
 ListGroupChainable: TypeAlias = list[Chainable[Input, Any]]
 AsyncDictGroupChainable: TypeAlias = dict[Any, AsyncChainable[Input, Any] | Chainable[Input, Any]]
 AsyncListGroupChainable: TypeAlias = list[AsyncChainable[Input, Any] | Chainable[Input, Any]]
+Feedback: TypeAlias = Union[tuple[Literal[True], Output], tuple[Literal[False], None]]
 
 
 class Severity(Enum):
-    OPTIONAL = 0    # Basically indicates that the failure should be ignored
-    NORMAL = 1      # Indicates that the failure should be reported but without failure
-    REQUIRED = 2    # Indicates that the failure should be handled and the process should stop
+    OPTIONAL = 0  # Basically indicates that the failure should be ignored
+    NORMAL = 1  # Indicates that the failure should be reported but without failure
+    REQUIRED = 2  # Indicates that the failure should be handled and the process should stop
 
 
 # severity shortcuts
@@ -50,31 +54,14 @@ NORMAL = Severity.NORMAL
 REQUIRED = Severity.REQUIRED
 
 
-REPORTER_CTX = {
-    OPTIONAL: (Reporter.optional, Reporter.optional_async),
-    NORMAL: (Reporter.safe, Reporter.safe_async),
-    REQUIRED: (Reporter.required, Reporter.required_async)
-}
-
 class BaseNode(ABC, Generic[Input, Output]):
     """Base class for all FunChain nodes"""
-    __slots__ = '_severity', '_name', '_ctx'
+    __slots__ = '_severity', '_name'
     _severity: Severity
     _name: str | None
-    _ctx: Union[
-        Literal[Reporter.optional],
-        Literal[Reporter.optional_async],
-        Literal[Reporter.safe],
-        Literal[Reporter.safe_async],
-        Literal[Reporter.required],
-        Literal[Reporter.required_async]
-    ]
 
-    def __init__(self, *, name: str = None, severity: Severity = NORMAL) -> None:
-        if name is not None:
-            validate_name(name)
-        self._name = name
-        self.severity = severity
+    def __init__(self) -> None:
+        self.severity = NORMAL
 
     def __or__(self, other: Chainable[Output, Output2] | AsyncChainable[Output, Output2]) -> 'Chain[Output, Output2]':
         return Chain(self) | other
@@ -94,10 +81,12 @@ class BaseNode(ABC, Generic[Input, Output]):
         return self.process(arg, (reporter or Reporter))
 
     @abstractmethod
-    def __len__(self) -> int: ...
+    def __len__(self) -> int:
+        ...
 
     @abstractmethod
-    def process(self, arg, reporter: Reporter) -> Output | None: ...
+    def process(self, arg: Input, reporter: Reporter) -> Feedback[Output]:
+        ...
 
     @abstractmethod
     def copy(self) -> Self:
@@ -117,7 +106,6 @@ class BaseNode(ABC, Generic[Input, Output]):
         if not isinstance(severity, Severity):
             raise TypeError("Node severity must be either OPTIONAL, NORMAL or REQUIRED")
         self._severity = severity
-        self._ctx = REPORTER_CTX[severity][isinstance(self, AsyncBaseNode)]
 
     @property
     def name(self) -> str | None:
@@ -129,10 +117,7 @@ class BaseNode(ABC, Generic[Input, Output]):
         validate_name(name)
         self._name = name
 
-    def ctx(self, func: Callable[SPEC, RT], *args: SPEC.args, **kwargs: SPEC.kwargs) -> RT | None:
-        pass
-
-    def rn(self, name: str) -> Self:
+    def rn(self, name: str | None = None) -> Self:
         """Clones the node with a new name"""
         _node = self.copy()
         _node.name = name
@@ -151,7 +136,32 @@ class AsyncBaseNode(BaseNode[Input, Coroutine[None, None, Output]], Generic[Inpu
         return self.copy()
 
     @abstractmethod
-    async def process(self, arg, reporter: Reporter) -> Output | None: ...
+    async def process(self, arg, reporter: Reporter) -> Feedback[Output]: ...
+
+
+class SemanticNode(BaseNode):
+    """This node holds the label for to be reported in case of failure"""
+    __slots__ = '__node',
+    __label: str
+    __node: BaseNode
+
+    def __int__(self, label: str, node: BaseNode) -> None:
+        validate_name(label)
+        self.__label = label
+        self.__node = node
+
+    def __len__(self) -> int:
+        return len(self.__node)
+
+    def process(self, arg: Input, reporter: Reporter) -> Feedback[Output]:
+        return self.__node.process(arg, reporter(self.__label))
+
+    def copy(self) -> Self:
+        # TODO: implement
+        pass
+
+    def to_async(self) -> 'AsyncBaseNode[Input, Output]':
+        pass
 
 
 class Node(BaseNode[Input, Output], Generic[Input, Output]):
@@ -161,8 +171,6 @@ class Node(BaseNode[Input, Output], Generic[Input, Output]):
     def __init__(self, func: Callable[[Input], Output], *, name: str = None, severity: Severity = NORMAL) -> None:
         if name is None:
             name = get_func_name(func)
-        else:
-            validate_name(name)
         super().__init__(name=name, severity=severity)
         self.func = func
 
@@ -186,17 +194,23 @@ class Node(BaseNode[Input, Output], Generic[Input, Output]):
         _node.func = functools.partial(func, *args, **kwargs)
         return _node
 
-    def process(self, arg: Input, reporter: Reporter) -> Output | None:
-        with reporter(self.name, input=arg):
-            return self.func(arg)
+    def process(self, arg: Input, reporter: Reporter) -> Feedback[Output]:
+        try:
+            return True, self.func(arg)
+        except Exception as error:
+            reporter(self.name).report(error, input=arg)
+            return False, None
 
 
 class AsyncNode(Node[Input, Output], AsyncBaseNode[Input, Output], Generic[Input, Output]):
     func: Callable[[Input], Coroutine[None, None, Output]]
 
-    async def process(self, arg: Input, reporter: Reporter) -> Output | None:
-        with reporter(self.name, input=arg):
-            return await self.func(arg)
+    async def process(self, arg: Input, reporter: Reporter) -> tuple[bool, Output]:
+        try:
+            return True, await self.func(arg)
+        except Exception as error:
+            reporter(self.name).report(error, input=arg)
+            return False, None
 
 
 class Chain(BaseNode[Input, Output], Generic[Input, Output]):
@@ -235,18 +249,22 @@ class Chain(BaseNode[Input, Output], Generic[Input, Output]):
     def to_async(self) -> 'AsyncChain[Input, Output]':
         return AsyncChain(*(node.to_async() for node in self.nodes))
 
-    def process(self, arg, reporter: Reporter) -> Any | None:
-        for index, node in enumerate(self.nodes):
-            res = node.process(arg, reporter(f'c[{index}]'))
-            if res is None:
+    def process(self, arg: Input, reporter: Reporter) -> Feedback[Output]:
+        if self.name is not None:
+            reporter = reporter(self.name)
+        for node in self.nodes:
+            success, res = node.process(arg, reporter)
+            if not success:
                 if node.severity is OPTIONAL:
                     continue
-                return
+                return False, None
             arg = res
-        return arg
+        return True, arg
 
 
 class AsyncChain(Chain[Input, Output], AsyncBaseNode[Input, Output], Generic[Input, Output]):
+    __nodes: list[AsyncBaseNode]
+
     def __or__(self, other):
         nxt = async_build(other)
         return AsyncChain(*self.__nodes, nxt) if nxt else self.copy()
@@ -255,15 +273,17 @@ class AsyncChain(Chain[Input, Output], AsyncBaseNode[Input, Output], Generic[Inp
         nxt = async_build(other)
         return AsyncChain(*self.__nodes, AsyncLoop(nxt)) if nxt else self.copy()
 
-    async def process(self, arg, reporter: Reporter) -> Any:
-        for index, node in enumerate(self.__nodes):
-            res = await node.process(arg, reporter(f'c[{index}]'))
-            if res is None:
+    async def process(self, arg, reporter: Reporter) -> Feedback[Output]:
+        if self.name is not None:
+            reporter = reporter(self.name)
+        for node in self.__nodes:
+            success, res = await node.process(arg, reporter)
+            if not success:
                 if node.severity is OPTIONAL:
                     continue
-                return
+                return False, None
             arg = res
-        return arg
+        return True, arg
 
 
 class Loop(BaseNode[Iterable[Input], list[Output]], Generic[Input, Output]):
@@ -285,14 +305,14 @@ class Loop(BaseNode[Iterable[Input], list[Output]], Generic[Input, Output]):
     def to_async(self) -> 'AsyncLoop[Input, Output]':
         return AsyncLoop(self.node.to_async())
 
-    def process(self, args: Iterable[Input], reporter: Reporter) -> list[Output]:
+    def process(self, args: Iterable[Input], reporter: Reporter) -> Feedback[Output]:
         node = self.node
         results = (node.process(arg, reporter(f'i[{i}]')) for i, arg in enumerate(args))
         return [res for res in results if res is not None]
 
 
 class AsyncLoop(Loop[Input, Output], AsyncBaseNode[Input, Output], Generic[Input, Output]):
-    async def process(self, args: Iterable[Input], reporter: Reporter) -> list[Output]:
+    async def process(self, args: Iterable[Input], reporter: Reporter) -> Feedback[Output]:
         node = self.node
         tasks = (asyncio.create_task(node.process(arg, reporter(f'i[{i}]'))) for i, arg in enumerate(args))
         results = await asyncio.gather(*tasks)
@@ -323,7 +343,7 @@ class Group(BaseNode[Input, Output], Generic[Input, Output]):
     def to_async(self) -> 'AsyncGroup[Input, Output]':
         return AsyncGroup([(branch, node.to_async()) for branch, node in self.nodes])
 
-    def process(self, arg: Input, reporter: Reporter) -> Output:
+    def process(self, arg: Input, reporter: Reporter) -> Feedback[Output]:
         return self.convert(
             (branch, result)
             for branch, result, severity
@@ -336,13 +356,15 @@ class Group(BaseNode[Input, Output], Generic[Input, Output]):
 
 
 class AsyncGroup(Group[Input, Output], AsyncBaseNode[Input, Output], Generic[Input, Output], metaclass=ABCMeta):
-    async def process(self, arg: Input, reporter: Reporter) -> Output:
-        branches, severities, tasks = zip(*[
-            (branch,
-             node.severity,
-             asyncio.create_task(node.process(arg, reporter(f'b[{branch}]'))))
-            for branch, node in self.nodes
-        ])
+    async def process(self, arg: Input, reporter: Reporter) -> Feedback[Output]:
+        branches, severities, tasks = zip(
+            *[
+                (branch,
+                 node.severity,
+                 asyncio.create_task(node.process(arg, reporter(f'b[{branch}]'))))
+                for branch, node in self.nodes
+            ]
+        )
         return self.convert(
             (branch, result)
             for branch, result, severity
@@ -396,19 +418,21 @@ def asyncify(func: Callable[SPEC, RT], /) -> Callable[SPEC, Coroutine[None, None
     :param func: the function to be asynchronified
     :return: async version of function
     """
+
     @functools.wraps(func)
     async def async_func(*args: SPEC.args, **kwargs: SPEC.kwargs) -> Coroutine[None, None, RT]:
         loop = asyncio.get_event_loop()
         return await loop.run_in_executor(None, functools.partial(func, *args, **kwargs))
+
     return func if is_async(func) else async_func
 
 
 def is_node_async(obj) -> bool:
     """Checks whether the function or the collection contains an async function"""
     return (
-        isinstance(obj, AsyncBaseNode)
-        or (callable(obj) and is_async(obj))
-        or (isinstance(obj, (list, dict)) and any(map(is_node_async, obj.items() if isinstance(obj, dict) else obj)))
+            isinstance(obj, AsyncBaseNode)
+            or (callable(obj) and is_async(obj))
+            or (isinstance(obj, (list, dict)) and any(map(is_node_async, obj.items() if isinstance(obj, dict) else obj)))
     )
 
 

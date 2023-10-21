@@ -14,7 +14,7 @@
 
 
 ## Introduction
-FunChain is a package that provides tools and utilities to easily compose functions sequentially
+**FunChain** is a package that provides tools and utilities to easily compose functions sequentially
 to create processing pipelines with minimum code and simple syntax *(such as OR operator ``func1 | func2``)*,
 all while tracking, reporting and containing any crash that could occur in any step.  
 
@@ -41,8 +41,6 @@ Continue reading the documentation to find out if ``FunChain`` offers tools that
 or aligns with your design pattern.
 
 ## Features
-Some of ``FunChain``'s features are the following :
-
 ### Composing functions sequentially 🔗
 Composing functions in a sequence to create a pipeline
 is the **main functionality** of this library, the sequence
@@ -91,8 +89,9 @@ and labeled with a qualified name indicating its location, and
 the exact input that caused it.
 
 ### Good and minimal syntax 🎈
-...TODO
-
+The syntax of this library was intentionally made easy and minimal users to compose functions,
+to achieve complex pipeline structures with the least amount of code, and make it more readable and intuitive
+to be easily maintained. It also makes it a beginner-friendly tool with a gentle learning.
 
 ### Async support 🪄
 All the previously mentioned features are available for asynchronous
