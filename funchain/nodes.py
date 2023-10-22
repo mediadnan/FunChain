@@ -42,26 +42,20 @@ AsyncListGroupChainable: TypeAlias = list[AsyncChainable[Input, Any] | Chainable
 Feedback: TypeAlias = Union[tuple[Literal[True], Output], tuple[Literal[False], None]]
 
 
-class Severity(Enum):
-    OPTIONAL = 0  # Basically indicates that the failure should be ignored
-    NORMAL = 1  # Indicates that the failure should be reported but without failure
-    REQUIRED = 2  # Indicates that the failure should be handled and the process should stop
-
-
-# severity shortcuts
-OPTIONAL = Severity.OPTIONAL
-NORMAL = Severity.NORMAL
-REQUIRED = Severity.REQUIRED
+class OnFail(Enum):
+    SKIP = 0    # Skips the node if it fails, as if it doesn't exist
+    IGNORE = 1  # Ignores (never reports) the failure, but stops the chain
+    REPORT = 2  # Reports the failures without raising any exception
+    STOP = 3    # Raises the exception wrapped inside a special metadata class
 
 
 class BaseNode(ABC, Generic[Input, Output]):
     """Base class for all FunChain nodes"""
-    __slots__ = '_severity', '_name'
-    _severity: Severity
-    _name: str | None
+    __slots__ = '__ofb',
+    __ofb: OnFail
 
-    def __init__(self) -> None:
-        self.severity = NORMAL
+    def __init__(self, on_fail_behaviour: OnFail = OnFail.REPORT) -> None:
+        self.__ofb = on_fail_behaviour
 
     def __or__(self, other: Chainable[Output, Output2] | AsyncChainable[Output, Output2]) -> 'Chain[Output, Output2]':
         return Chain(self) | other
@@ -69,24 +63,16 @@ class BaseNode(ABC, Generic[Input, Output]):
     def __mul__(self, other: Chainable[Output, Output2] | AsyncChainable[Output, Output2]) -> 'Chain[Output, Output2]':
         return Chain(self) * other
 
-    def __repr__(self) -> str:
-        return f"FunChain.{self.__class__.__name__}({self.__len__()})"
-
     def __call__(self, arg, /, *, reporter: Reporter = None) -> Output | None:
         """Processes arg and returns the result"""
         if reporter is None:
             reporter = Reporter
         elif not isinstance(reporter, Reporter):
             raise TypeError("reporter must be instance of failures.Reporter")
-        return self.process(arg, (reporter or Reporter))
+        return self.process(arg, reporter)
 
     @abstractmethod
-    def __len__(self) -> int:
-        ...
-
-    @abstractmethod
-    def process(self, arg: Input, reporter: Reporter) -> Feedback[Output]:
-        ...
+    def process(self, arg: Input, reporter: Reporter) -> Feedback[Output]: ...
 
     @abstractmethod
     def copy(self) -> Self:
@@ -97,31 +83,19 @@ class BaseNode(ABC, Generic[Input, Output]):
         """Returns an async version of the current node"""
 
     @property
-    def severity(self) -> Severity:
-        """Gets the severity level of the node."""
-        return self._severity
+    def on_fail_behavior(self) -> OnFail:
+        """Gets the behavior that should be done in case of failure, default REPORT"""
+        return self.__ofb
 
-    @severity.setter
-    def severity(self, severity: Severity) -> None:
-        if not isinstance(severity, Severity):
-            raise TypeError("Node severity must be either OPTIONAL, NORMAL or REQUIRED")
-        self._severity = severity
-
-    @property
-    def name(self) -> str | None:
-        """Gets the name of the node"""
-        return self._name
-
-    @name.setter
-    def name(self, name: str) -> None:
-        validate_name(name)
-        self._name = name
+    @on_fail_behavior.setter
+    def on_fail_behavior(self, on_fail_behaviour: OnFail) -> None:
+        if not isinstance(on_fail_behaviour, OnFail):
+            raise TypeError("The failure behavior must be either SKIP, IGNORE, REPORT or STOP")
+        self.__ofb = on_fail_behaviour
 
     def rn(self, name: str | None = None) -> Self:
         """Clones the node with a new name"""
-        _node = self.copy()
-        _node.name = name
-        return _node
+        return SemanticNode(name, self.copy()) if name is not None else self.copy()
 
 
 class AsyncBaseNode(BaseNode[Input, Coroutine[None, None, Output]], Generic[Input, Output]):
@@ -135,6 +109,9 @@ class AsyncBaseNode(BaseNode[Input, Coroutine[None, None, Output]], Generic[Inpu
         """Returns a clone for the current node"""
         return self.copy()
 
+    def rn(self, name: str | None = None) -> Self:
+        return AsyncSemanticNode(name, self.copy()) if name is not None else self.copy()
+
     @abstractmethod
     async def process(self, arg, reporter: Reporter) -> Feedback[Output]: ...
 
@@ -145,65 +122,101 @@ class SemanticNode(BaseNode):
     __label: str
     __node: BaseNode
 
-    def __int__(self, label: str, node: BaseNode) -> None:
+    def __init__(self, label: str, node: BaseNode) -> None:
+        super().__init__()
         validate_name(label)
         self.__label = label
         self.__node = node
 
-    def __len__(self) -> int:
-        return len(self.__node)
-
     def process(self, arg: Input, reporter: Reporter) -> Feedback[Output]:
         return self.__node.process(arg, reporter(self.__label))
 
+    def rn(self, name: str | None = None) -> Self:
+        if name is None:
+            return self.copy()
+        return self.__class__(name, self.__node)
+
     def copy(self) -> Self:
-        # TODO: implement
-        pass
+        return self.__class__(self.__label, self.__node.copy())
 
     def to_async(self) -> 'AsyncBaseNode[Input, Output]':
-        pass
+        return AsyncSemanticNode(self.__label, self.__node.to_async())
+
+    @property
+    def label(self) -> str:
+        return self.__label
+
+
+class AsyncSemanticNode(SemanticNode[Input, Output], AsyncBaseNode[Input, Output], Generic[Input, Output]):
+    __node: AsyncBaseNode
+
+    async def process(self, arg: Input, reporter: Reporter) -> Feedback[Output]:
+        return await self.__node.process(arg, reporter(self.label))
+
+    def to_async(self) -> 'AsyncBaseNode[Input, Output]':
+        return self.copy()
 
 
 class Node(BaseNode[Input, Output], Generic[Input, Output]):
-    __slots__ = 'func',
-    func: Callable[[Input], Output]
+    __slots__ = '__func', '__name'
+    __func: Callable[[Input], Output]
+    __name: str
 
-    def __init__(self, func: Callable[[Input], Output], *, name: str = None, severity: Severity = NORMAL) -> None:
+    def __init__(self, func: Callable[[Input], Output], name: str = None) -> None:
+        super().__init__()
+        self.__func = func
         if name is None:
             name = get_func_name(func)
-        super().__init__(name=name, severity=severity)
-        self.func = func
+        elif name == '<lambda>':
+            name = 'lambda'
+        else:
+            validate_name(name)
+        self.__name = name
 
-    def __len__(self) -> int:
-        return 1
+    @property
+    def func(self) -> Callable[[Input], Output]:
+        """Gets the internal function"""
+        return self.__func
+
+    @property
+    def name(self) -> str:
+        """Gets the name of the leaf node (function)"""
+        return self.__name
 
     def copy(self) -> Self:
-        return self.__class__(self.func, name=self.name, severity=self.severity)
+        return self.__class__(self.__func, self.__name)
 
     def to_async(self) -> 'AsyncNode[Input, Output]':
-        return AsyncNode(asyncify(self.func), name=self.name, severity=self.severity)
+        return AsyncNode(asyncify(self.__func), self.__name)
 
     def partial(self, *args, **kwargs) -> Self:
         """Clones the node and partially applies the arguments"""
-        _node = self.copy()
-        func = self.func
+        func = self.__func
         while isinstance(func, functools.partial):
             args = *func.args, *args
             kwargs = {**func.keywords, **kwargs}
             func = func.func
-        _node.func = functools.partial(func, *args, **kwargs)
-        return _node
+        return self.__class__(functools.partial(func, *args, **kwargs), self.__name)
+
+    def rn(self, name: str | None = None) -> Self:
+        """
+        Returns a clone of the current node with the new name,
+        or a clone with the default function name if no name is passed
+        """
+        if name is None:
+            return self.__class__(self.__func, get_func_name(self.__func))
+        return self.__class__(self.__func, name)
 
     def process(self, arg: Input, reporter: Reporter) -> Feedback[Output]:
         try:
-            return True, self.func(arg)
+            return True, self.__func(arg)
         except Exception as error:
             reporter(self.name).report(error, input=arg)
             return False, None
 
 
 class AsyncNode(Node[Input, Output], AsyncBaseNode[Input, Output], Generic[Input, Output]):
-    func: Callable[[Input], Coroutine[None, None, Output]]
+    __func: Callable[[Input], Coroutine[None, None, Output]]
 
     async def process(self, arg: Input, reporter: Reporter) -> tuple[bool, Output]:
         try:
@@ -214,14 +227,12 @@ class AsyncNode(Node[Input, Output], AsyncBaseNode[Input, Output], Generic[Input
 
 
 class Chain(BaseNode[Input, Output], Generic[Input, Output]):
-    __slots__ = '__nodes', '__len'
-    __len: int
+    __slots__ = '__nodes',
     __nodes: list[BaseNode]
 
     def __init__(self, *nodes: BaseNode) -> None:
         super().__init__()
         self.__nodes = list(nodes)
-        self.__len = sum(map(len, nodes)) if nodes else 0
 
     def __or__(self, other):
         if is_node_async(other):
@@ -235,13 +246,10 @@ class Chain(BaseNode[Input, Output], Generic[Input, Output]):
         nxt = build(other)
         return Chain(*self.nodes, Loop(nxt)) if nxt else self.copy()
 
-    def __len__(self) -> int:
-        return self.__len
-
     @property
     def nodes(self) -> list[BaseNode]:
         """Gets the list of nodes (Read-only)"""
-        return self.__nodes
+        return list(self.__nodes)
 
     def copy(self) -> Self:
         return self.__class__(*(node.copy() for node in self.nodes))
@@ -250,8 +258,6 @@ class Chain(BaseNode[Input, Output], Generic[Input, Output]):
         return AsyncChain(*(node.to_async() for node in self.nodes))
 
     def process(self, arg: Input, reporter: Reporter) -> Feedback[Output]:
-        if self.name is not None:
-            reporter = reporter(self.name)
         for node in self.nodes:
             success, res = node.process(arg, reporter)
             if not success:
