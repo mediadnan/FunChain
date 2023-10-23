@@ -14,7 +14,7 @@ from typing import (TypeVar,
                     Iterable)
 from failures import Reporter
 
-from .name import get_func_name, validate as validate_name
+from .name import validate as validate_name
 
 Input = TypeVar('Input')
 Output = TypeVar('Output')
@@ -35,9 +35,9 @@ AsyncChainable: TypeAlias = Union[
     'AsyncDictGroupChainable[Input]',
     'AsyncListGroupChainable[Input]'
 ]
-DictGroupChainable: TypeAlias = dict[Any, Chainable[Input, Any]]
+DictGroupChainable: TypeAlias = dict[str, Chainable[Input, Any]]
 ListGroupChainable: TypeAlias = list[Chainable[Input, Any]]
-AsyncDictGroupChainable: TypeAlias = dict[Any, AsyncChainable[Input, Any] | Chainable[Input, Any]]
+AsyncDictGroupChainable: TypeAlias = dict[str, AsyncChainable[Input, Any] | Chainable[Input, Any]]
 AsyncListGroupChainable: TypeAlias = list[AsyncChainable[Input, Any] | Chainable[Input, Any]]
 Feedback: TypeAlias = tuple[bool, Output | None]
 
@@ -62,8 +62,8 @@ class BaseNode(ABC, Generic[Input, Output]):
     __slots__ = ('__severity',)
     __severity: Severity
 
-    def __init__(self, severity: Severity = NORMAL):
-        self.__severity = severity
+    def __init__(self, severity: Severity = NORMAL) -> None:
+        self.severity = severity
 
     def __or__(self, other: Chainable[Output, Output2] | AsyncChainable[Output, Output2]) -> 'Chain[Output, Output2]':
         return Chain([self]) | other
@@ -82,10 +82,10 @@ class BaseNode(ABC, Generic[Input, Output]):
     def _process_reporter(reporter: Reporter = None) -> Union[Reporter, type[Reporter]]:
         """Prepares the reporter"""
         if reporter is None:
-            reporter = Reporter
-        elif not isinstance(reporter, Reporter):
-            raise TypeError("reporter must be instance of failures.Reporter")
-        return reporter
+            return Reporter
+        elif isinstance(reporter, Reporter):
+            return reporter
+        raise TypeError("reporter must be instance of failures.Reporter")
 
     @abstractmethod
     def process(self, arg: Input, reporter: Union[Reporter, type[Reporter]]) -> Feedback[Output]: ...
@@ -158,13 +158,7 @@ class Node(BaseNode[Input, Output], Generic[Input, Output]):
     def __init__(self, fun: Callable[[Input], Output], name: str = None, severity: Severity = NORMAL) -> None:
         super().__init__(severity=severity)
         self.__fun = fun
-        if name is None:
-            name = get_func_name(fun)
-        elif name == '<lambda>':
-            name = 'lambda'
-        else:
-            validate_name(name)
-        self.__name = name
+        self.name = name
 
     @property
     def fun(self) -> Callable[[Input], Output]:
@@ -175,6 +169,19 @@ class Node(BaseNode[Input, Output], Generic[Input, Output]):
     def name(self) -> str:
         """Gets the name of the leaf node (function)"""
         return self.__name
+
+    @name.setter
+    def name(self, name: str | None) -> None:
+        if name is None:
+            try:
+                name = self.__fun.__name__
+                if name == '<lambda>':
+                    name = 'lambda'
+            except AttributeError:
+                name = type(self.__fun).__name__
+        else:
+            validate_name(name)
+        self.__name = name
 
     def copy(self) -> Self:
         return self.__class__(self.__fun, self.__name)
@@ -196,8 +203,6 @@ class Node(BaseNode[Input, Output], Generic[Input, Output]):
         Returns a clone of the current node with the new name,
         or a clone with the default function name if no name is passed
         """
-        if name is None:
-            return self.__class__(self.__fun, get_func_name(self.__fun))
         return self.__class__(self.__fun, name)
 
     def process(self, arg: Input, reporter: Reporter) -> Feedback[Output]:
@@ -226,7 +231,7 @@ class AsyncNode(Node[Input, Output], AsyncBaseNode[Input, Output], Generic[Input
             return self.handle_failure(error, arg, reporter)
 
 
-class WrapperNode(BaseNode[Input, Output], Generic[Input, Output], ABC):
+class WrapperNode(BaseNode[Input, Output], Generic[Input, Output], metaclass=ABCMeta):
     __slots__ = ('__node',)
     __node: BaseNode
 
@@ -247,14 +252,6 @@ class WrapperNode(BaseNode[Input, Output], Generic[Input, Output], ABC):
 
     def copy(self) -> Self:
         return self.__class__(self.__node.copy())
-
-    @property
-    def severity(self) -> Severity:
-        return self.__node.severity
-
-    @severity.setter
-    def severity(self, severity: Severity) -> None:
-        self.__node.severity = severity
 
     def optional(self) -> Self:
         return self.__class__(self.__node.optional())
@@ -294,10 +291,10 @@ class SemanticNode(WrapperNode[Input, Output], Generic[Input, Output]):
 
 
 class AsyncSemanticNode(SemanticNode[Input, Output], AsyncBaseNode[Input, Output], Generic[Input, Output]):
-    __node: AsyncBaseNode
+    node: AsyncBaseNode
 
     async def process(self, arg: Input, reporter: Reporter) -> Feedback[Output]:
-        return await self.__node.process(arg, reporter(self.name))
+        return await self.node.process(arg, reporter(self.name))
 
 
 class Chain(BaseNode[Input, Output], Generic[Input, Output]):
@@ -364,10 +361,10 @@ class Loop(WrapperNode[Iterable[Input], list[Output]], Generic[Input, Output]):
     def to_async(self) -> 'AsyncLoop[Input, Output]':
         return AsyncLoop(self.node.to_async())
 
-    def process(self, args: Iterable[Input], reporter: Reporter) -> Feedback[[Output]]:
+    def process(self, args: Iterable[Input], reporter: Reporter) -> Feedback[Output]:
         node = self.node
         successes: set[bool] = set()
-        results:  list[Output] = []
+        results: list[Output] = []
         for arg in args:
             success, res = node.process(arg, reporter)
             successes.add(success)

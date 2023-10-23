@@ -1,6 +1,6 @@
 import pytest
 from asyncio import iscoroutine, run
-from src import nodes
+from funchain import nd, nodes
 
 
 # fixtures
