@@ -1,49 +1,61 @@
-from typing import overload, Callable
+from copy import copy
+from typing import Any, Callable, List, Optional, Union, Dict
 
-
+from ._tools import asyncify, is_async
 from .nodes import (
-    build, async_build, is_node_async,
-    Input, Output, AsyncCallable,
-    DictGroupChainable, ListGroupChainable, AsyncDictGroupChainable, AsyncListGroupChainable,
     BaseNode, Node, AsyncNode, Chain, DictGroup, ListGroup,
-    AsyncDictGroup, AsyncListGroup, Chainable, Severity,
+    AsyncDictGroup, AsyncListGroup, AsyncBaseNode, SemanticNode, AsyncSemanticNode, AsyncChain,
 )
 
 
-@overload
-def nd(*, name: str | None = ...) -> Chain[Input, Input]: ...
-@overload
-def nd(function: AsyncCallable[Input, Output], *, name: str | None = ...) -> AsyncNode[Input, Output]: ...
-@overload
-def nd(function: Callable[[Input], Output], *, name: str | None = ...) -> Node[Input, Output]: ...
-@overload
-def nd(function: AsyncCallable[Input, Output], *, name: str | None = ...) -> AsyncNode[Input, Output]: ...
-@overload
-def nd(function: Callable[[Input], Output], *, name: str | None = ...) -> Node[Input, Output]: ...
-@overload
-def nd(structure: AsyncDictGroupChainable[Input], *, name: str | None = ...) -> AsyncDictGroup[Input]: ...
-@overload
-def nd(structure: AsyncListGroupChainable[Input], *, name: str | None = ...) -> AsyncListGroup[Input]: ...
-@overload
-def nd(structure: DictGroupChainable[Input], *, name: str | None = ...) -> DictGroup[Input]: ...
-@overload
-def nd(structure: ListGroupChainable[Input], *, name: str | None = ...) -> ListGroup[Input]: ...
+Chainable = Union[BaseNode, Callable, List[Any], Dict[str, Any], Ellipsis]
 
 
-def nd(obj=None, *, name: str | None = None) -> BaseNode:
-    """Makes a chainable node from the given object"""
-    if obj is None:
-        node = Chain([])
-    elif is_node_async(obj):
-        node = async_build(obj)
-    else:
-        node = build(obj)
-    return node if (name is None) else node.rn(name)
+def foreach(node: Chainable) -> BaseNode:
+    """Builds a node that applies to each element of the input"""
+    raise NotImplementedError
+
+
+def optional(node: Chainable) -> BaseNode:
+    """Builds a node that will be ignored in case of failures"""
+    raise NotImplementedError
+
+
+def required(node: Chainable) -> BaseNode:
+    """Builds a node that stops the entire chain in case of failures"""
+    raise NotImplementedError
 
 
 def chain(*nodes: Chainable, name: str = None) -> BaseNode:
-    if len(nodes) == 1:
-        _node = nodes[0]
-    else:
-        pass
+    """Builds a chain of nodes"""
+    raise NotImplementedError
 
+
+def _build(obj: Chainable) -> BaseNode:
+    if isinstance(obj, BaseNode):
+        return copy(obj)
+    elif callable(obj):
+        return Node(obj)
+    elif isinstance(obj, (list, dict)):
+        if isinstance(obj, dict):
+            return DictGroup([(key, SemanticNode(_build(item), str(key))) for key, item in obj.items()])
+        return ListGroup([(index, SemanticNode(_build(item), str(index))) for index, item in enumerate(obj)])
+    elif obj is Ellipsis:
+        return Chain([])
+    raise TypeError(f"Unsupported type {type(obj).__name__} for chaining")
+
+
+def _async_build(obj) -> AsyncBaseNode:
+    if isinstance(obj, BaseNode):
+        return obj.to_async()
+    elif callable(obj):
+        return AsyncNode(asyncify(obj))
+    elif isinstance(obj, (list, dict)):
+        if isinstance(obj, dict):
+            return AsyncDictGroup([(key, AsyncSemanticNode(_async_build(item), str(key))) for key, item in obj.items()])
+        return AsyncListGroup(
+            [(index, AsyncSemanticNode(_async_build(item), str(index))) for index, item in enumerate(obj)]
+        )
+    elif obj is Ellipsis:
+        return AsyncChain([])
+    raise TypeError(f"Unsupported type {type(obj).__name__} for chaining")

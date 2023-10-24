@@ -6,8 +6,12 @@ Chain is the main component, it parses the given model and creates the right exe
 it also takes a callback that takes a report as its only parameter.
 chains are callables, they take an input and returns the last result.
 """
-from .factory import nd
-from .nodes import BaseNode, Severity, OPTIONAL, NORMAL, REQUIRED
+from .factory import chain, foreach
+from .nodes import BaseNode, Severity
 from failures import Reporter   # shortcut # noqa # pylint: disable=unused-import
+
+OPTIONAL = Severity.OPTIONAL
+NORMAL = Severity.NORMAL
+REQUIRED = Severity.REQUIRED
 
 __version__ = '0.1.0'
