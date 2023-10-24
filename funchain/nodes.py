@@ -1,7 +1,7 @@
 import asyncio
 import functools
 from abc import ABC, abstractmethod, ABCMeta
-from enum import Enum, auto
+from enum import Enum
 from typing import (TypeVar,
                     TypeAlias,
                     Union,
@@ -24,9 +24,10 @@ SingleInputAsyncFunction: TypeAlias = Callable[[T], Coroutine[None, None, U]]
 
 
 class Severity(Enum):
-    OPTIONAL = auto()
-    NORMAL = auto()
-    REQUIRED = auto()
+    """Specifies the behavior in case of failure"""
+    OPTIONAL = -1   # Ignores the node in case of failure
+    NORMAL = 0      # Reports the failure and returns None as alternative
+    REQUIRED = 1    # Breaks the entire chain execution and reports
 
 
 class Failed(Exception):
@@ -155,11 +156,8 @@ class Node(BaseNode):
             func = func.func
         return self.__class__(functools.partial(func, *args, **kwargs), self.__name)
 
-    def rn(self, name: str | None = None) -> Self:
-        """
-        Returns a clone of the current node with the new name,
-        or a clone with the default function name if no name is passed
-        """
+    def rn(self, name: str) -> Self:
+        """Returns a clone of the current node with the new name"""
         return self.__class__(self.__fun, name)
 
     def process(self, arg, reporter: Reporter) -> Feedback:
@@ -174,6 +172,7 @@ class Node(BaseNode):
         if severity is not Severity.OPTIONAL:
             reporter(self.name).report(error, input=arg)
         if severity is Severity.REQUIRED:
+            # Raises native failures Exception later
             raise Failed
         return False, None
 
@@ -201,12 +200,6 @@ class WrapperNode(BaseNode, metaclass=ABCMeta):
         """Returns the wrapped node (Read-only)"""
         return self.__node
 
-    @node.setter
-    def node(self, node: BaseNode) -> None:
-        if not isinstance(node, BaseNode):
-            raise TypeError("node must be instance of failures.BaseNode")
-        self.__node = node
-
 
 class SemanticNode(WrapperNode):
     """This node holds the label for to be reported in case of failure"""
@@ -230,8 +223,8 @@ class SemanticNode(WrapperNode):
         validate_name(name)
         self.__name = name
 
-    def rn(self, name: str | None = None) -> Self:
-        return self.__class__(self.node, name) if name is not None else self.node
+    def rn(self, name: str) -> Self:
+        return self.__class__(self.node, name)
 
     def to_async(self) -> 'AsyncSemanticNode':
         return AsyncSemanticNode(self.node.to_async(), self.name)
@@ -268,8 +261,8 @@ class Chain(BaseNode):
 
     @property
     def nodes(self) -> list[BaseNode]:
-        """Gets a copy of the nodes (Read-only)"""
-        return self.__nodes.copy()
+        """Gets nodes (Read-only / Mutable)"""
+        return self.__nodes
 
     def to_async(self) -> 'AsyncChain':
         return AsyncChain([node.to_async() for node in self.nodes])
@@ -311,9 +304,11 @@ class Loop(WrapperNode):
         return AsyncLoop(self.node.to_async())
 
     def process(self, args: Iterable, reporter: Reporter) -> Feedback:
-        node = self.node
+        if not args:
+            return True, []
         successes: set[bool] = set()
         results = []
+        node = self.node
         for arg in args:
             success, res = node.process(arg, reporter)
             successes.add(success)
@@ -322,18 +317,21 @@ class Loop(WrapperNode):
 
 
 class AsyncLoop(Loop, AsyncBaseNode):
-    """A node that processes each element of the input asynchronously through the wrapped node and returns a list of results"""
+    """A node that processes each element of the input asynchronously through the wrapped node and returns a list of
+    results"""
     node: AsyncBaseNode
 
     async def process(self, args: Iterable, reporter: Reporter) -> Feedback:
+        if not args:
+            return True, []
         node = self.node
-        jobs = await asyncio.gather(*[asyncio.create_task(node.process(arg, reporter)) for arg in args])
+        jobs = await asyncio.gather(*(asyncio.create_task(node.process(arg, reporter)) for arg in args))
         successes, results = zip(*jobs)
         return any(successes), results
 
 
 class Group(BaseNode):
-    """A node that processes the input through multiple branches and returns a collection type as result"""
+    """A node that processes the input through multiple branches and returns a collection type as a result"""
     __slots__ = ('__nodes',)
     __nodes: list[tuple[str, BaseNode]]
 
@@ -370,7 +368,8 @@ class Group(BaseNode):
 
 
 class AsyncGroup(Group, AsyncBaseNode, metaclass=ABCMeta):
-    """A node that processes asynchronously the input through multiple branches and returns a collection type as result"""
+    """A node that processes the input asynchronously through multiple branches and returns a collection type as
+    a result"""
     nodes: list[tuple[str, AsyncBaseNode]]
 
     async def process(self, arg, reporter: Reporter) -> Feedback:
@@ -398,20 +397,20 @@ def _list_converter(results: Iterable[tuple[str, Any]]) -> list:
 
 
 class ListGroup(Group):
-    """A node that processes the input through multiple branches and returns a list as result"""
+    """A node that processes the input through multiple branches and returns a list as a result"""
     convert = staticmethod(_list_converter)
 
 
 class AsyncListGroup(AsyncGroup):
-    """A node that processes asynchronously the input through multiple branches and returns a list as result"""
+    """A node that asynchronously processes the input through multiple branches and returns a list as a result"""
     convert = staticmethod(_list_converter)
 
 
 class DictGroup(Group):
-    """A node that processes the input through multiple branches and returns a dictionary as result"""
+    """A node that processes the input through multiple branches and returns a dictionary as a result"""
     convert = staticmethod(_dict_converter)
 
 
 class AsyncDictGroup(AsyncGroup):
-    """A node that processes asynchronously the input through multiple branches and returns a dictionary as result"""
+    """A node that asynchronously processes the input through multiple branches and returns a dictionary as a result"""
     convert = staticmethod(_dict_converter)
