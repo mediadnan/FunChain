@@ -52,6 +52,11 @@ def static(obj: Any, /) -> Node:
     return _build_node(lambda _: obj, f'static_node({_name})')
 
 
+def chain(*nodes: Chainable, name: str | None = None) -> BaseNode:
+    """Composes nodes in a sequential chain"""
+    return build(nodes, name)
+
+
 def build(obj: Chainable, /, name: str | None = None) -> BaseNode:
     """Creates a callable object from the given composition"""
     if isinstance(obj, BaseNode):
@@ -77,13 +82,13 @@ def _build_node(fun: SingleInputFunction, /, name: str | None = None) -> Node:
 
 
 @overload
-def facto(fun: Callable[PS, SingleInputFunction] | None, /) -> Callable[PS, Node]: ...
+def component(fun: Callable[PS, SingleInputFunction] | None, /) -> Callable[PS, Node]: ...
 @overload
-def facto(*, name: str | None = ...) -> Callable[[Callable[PS, SingleInputFunction]], Callable[PS, Node]]: ...
+def component(*, name: str | None = ...) -> Callable[[Callable[PS, SingleInputFunction]], Callable[PS, Node]]: ...
 
 
-def facto(fun: Callable[PS, SingleInputFunction] = None, /, *, name: str = None):
-    """Decorator for function factories (higher order functions) that produce callables with single input"""
+def component(fun: Callable[PS, SingleInputFunction] = None, /, *, name: str = None):
+    """Decorates function generators to make them produce nodes instead of functions"""
     def decorator(function: Callable[PS, SingleInputFunction], /) -> Callable[PS, Node]:
         @wraps(fun)
         def wrapper(*args: PS.args, **kwargs: PS.kwargs) -> Node:
@@ -108,7 +113,7 @@ def _build_group(struct: dict[str, Chainable] | list[Chainable], /, name: str | 
         _branch = build(branch)
         any_async.add(isinstance(_branch, AsyncBaseNode))
         branches.append((str(key), _branch))
-    _node = DictGroup(branches) if is_dict else ListGroup(branches)
+    _node = (DictGroup if is_dict else ListGroup)(branches)
     if any(any_async):
         _node = _node.to_async()
     if name is not None:

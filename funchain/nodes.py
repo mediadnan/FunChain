@@ -101,7 +101,7 @@ class AsyncBaseNode(BaseNode):
         return AsyncSemanticNode(self, name)
 
     @abstractmethod
-    async def process(self, arg, reporter: Reporter) -> Feedback: ...
+    async def process(self, arg, reporter: Reporter | type[Reporter]) -> Feedback: ...
 
     async def __call__(self, arg, /, reporter: Reporter = None):
         try:
@@ -147,7 +147,7 @@ class Node(BaseNode):
         validate_name(name)
         return self.__class__(self.__fun, name)
 
-    def process(self, arg, reporter: Reporter) -> Feedback:
+    def process(self, arg, reporter: Reporter | type[Reporter]) -> Feedback:
         try:
             return True, self.__fun(arg)
         except Exception as error:
@@ -166,7 +166,7 @@ class Node(BaseNode):
 class AsyncNode(Node, AsyncBaseNode):
     fun: SingleInputAsyncFunction
 
-    async def process(self, arg, reporter: Reporter) -> Feedback:
+    async def process(self, arg, reporter: Reporter | type[Reporter]) -> Feedback:
         try:
             return True, await self.fun(arg)
         except Exception as error:
@@ -210,7 +210,7 @@ class SemanticNode(WrapperNode):
         super().__init__(node)
         self.name = name
 
-    def process(self, arg, reporter: Reporter) -> Feedback:
+    def process(self, arg, reporter: Reporter | type[Reporter]) -> Feedback:
         return self.node.process(arg, reporter(self.name))
 
     @property
@@ -233,7 +233,7 @@ class SemanticNode(WrapperNode):
 class AsyncSemanticNode(SemanticNode, AsyncBaseNode):
     node: AsyncBaseNode
 
-    async def process(self, arg, reporter: Reporter) -> Feedback:
+    async def process(self, arg, reporter: Reporter | type[Reporter]) -> Feedback:
         return await self.node.process(arg, reporter(self.name))
 
 
@@ -267,7 +267,7 @@ class Chain(BaseNode):
     def to_async(self) -> 'AsyncChain':
         return AsyncChain([node.to_async() for node in self.nodes])
 
-    def process(self, arg, reporter: Reporter) -> Feedback:
+    def process(self, arg, reporter: Reporter | type[Reporter]) -> Feedback:
         for node in self.nodes:
             success, res = node.process(arg, reporter)
             if not success:
@@ -282,12 +282,12 @@ class AsyncChain(Chain, AsyncBaseNode):
     nodes: list[AsyncBaseNode]
 
     def __or__(self, other: BaseNode | AsyncBaseNode) -> 'AsyncChain':
-        return AsyncChain([*self.nodes, other])
+        return AsyncChain([*self.nodes, other.to_async()])
 
     def __mul__(self, other) -> 'AsyncChain':
-        return AsyncChain([*self.nodes, AsyncLoop(other)])
+        return AsyncChain([*self.nodes, AsyncLoop(other.to_async())])
 
-    async def process(self, arg, reporter: Reporter) -> Feedback:
+    async def process(self, arg, reporter: Reporter | type[Reporter]) -> Feedback:
         for node in self.nodes:
             success, res = await node.process(arg, reporter)
             if not success:
@@ -352,7 +352,7 @@ class Group(BaseNode):
         """Returns the node list (mutable)"""
         return self.__nodes
 
-    def process(self, arg, reporter: Reporter) -> Feedback:
+    def process(self, arg, reporter: Reporter | type[Reporter]) -> Feedback:
         successes: set[bool] = set()
         results: list[tuple[str, Any]] = []
         for name, node in self.__nodes:
@@ -372,7 +372,7 @@ class AsyncGroup(Group, AsyncBaseNode, metaclass=ABCMeta):
     a result"""
     nodes: list[tuple[str, AsyncBaseNode]]
 
-    async def process(self, arg, reporter: Reporter) -> Feedback:
+    async def process(self, arg, reporter: Reporter | type[Reporter]) -> Feedback:
         names, severities, tasks = zip(
             *((name, node.severity, asyncio.create_task(node.process(arg, reporter))) for name, node in self.nodes)
         )

@@ -26,7 +26,7 @@ def asyncify(func: Callable[SPEC, RT], /) -> Callable[SPEC, Coroutine[None, None
     """
     Wraps blocking function to be called in a separate loop's (default) executor
 
-    :param func: the function to be asynchronified
+    :param func: The function to be asyncified
     :return: async version of function
     """
 
