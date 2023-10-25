@@ -1,61 +1,138 @@
-from copy import copy
-from typing import Any, Callable, List, Optional, Union, Dict
+from functools import wraps
+from typing import Any, Callable, Union, ParamSpec, overload
 
-from ._tools import asyncify, is_async
+from ._tools import validate_name, get_function_name
+from ._tools import is_async
 from .nodes import (
-    BaseNode, Node, AsyncNode, Chain, DictGroup, ListGroup,
-    AsyncDictGroup, AsyncListGroup, AsyncBaseNode, SemanticNode, AsyncSemanticNode, AsyncChain,
+    BaseNode,
+    Node,
+    AsyncNode,
+    Chain,
+    DictGroup,
+    ListGroup,
+    AsyncBaseNode,
+    SingleInputFunction,
+    PassiveNode,
+    Loop,
+    AsyncLoop,
+    Severity
 )
 
 
-Chainable = Union[BaseNode, Callable, List[Any], Dict[str, Any], Ellipsis]
+PS = ParamSpec('PS')
+Chainable = Union[BaseNode, Callable, list[Any], dict[str, Any], Ellipsis]
 
 
-def foreach(node: Chainable) -> BaseNode:
+def foreach(node: Chainable, /) -> BaseNode:
     """Builds a node that applies to each element of the input"""
-    raise NotImplementedError
+    _node = build(node)
+    return (AsyncLoop if isinstance(_node, AsyncBaseNode) else Loop)(_node)
 
 
-def optional(node: Chainable) -> BaseNode:
+def optional(node: Chainable, /) -> BaseNode:
     """Builds a node that will be ignored in case of failures"""
-    raise NotImplementedError
+    _node = build(node)
+    _node.severity = Severity.OPTIONAL
+    return _node
 
 
-def required(node: Chainable) -> BaseNode:
+def required(node: Chainable, /) -> BaseNode:
     """Builds a node that stops the entire chain in case of failures"""
-    raise NotImplementedError
+    _node = build(node)
+    _node.severity = Severity.REQUIRED
+    return _node
 
 
-def chain(*nodes: Chainable, name: str = None) -> BaseNode:
-    """Builds a chain of nodes"""
-    raise NotImplementedError
+def static(obj: Any, /) -> Node:
+    """Builds a node that returns that same object regardless of the input"""
+    _name = str(obj)
+    if len(_name) > 20:
+        # Shorten long names
+        _name = _name[: 8] + '...' + _name[len(_name) - 7:]
+    return _build_node(lambda _: obj, f'static_node({_name})')
 
 
-def _build(obj: Chainable) -> BaseNode:
+def build(obj: Chainable, /, name: str | None = None) -> BaseNode:
+    """Creates a callable object from the given composition"""
     if isinstance(obj, BaseNode):
-        return copy(obj)
+        return obj if name is None else obj.rn(name)
     elif callable(obj):
-        return Node(obj)
+        return _build_node(obj, name)
+    elif isinstance(obj, tuple):
+        return _build_chain(obj, name)
     elif isinstance(obj, (list, dict)):
-        if isinstance(obj, dict):
-            return DictGroup([(key, SemanticNode(_build(item), str(key))) for key, item in obj.items()])
-        return ListGroup([(index, SemanticNode(_build(item), str(index))) for index, item in enumerate(obj)])
+        return _build_group(obj, name)
     elif obj is Ellipsis:
-        return Chain([])
-    raise TypeError(f"Unsupported type {type(obj).__name__} for chaining")
+        return PassiveNode()
+    return static(obj)
 
 
-def _async_build(obj) -> AsyncBaseNode:
-    if isinstance(obj, BaseNode):
-        return obj.to_async()
-    elif callable(obj):
-        return AsyncNode(asyncify(obj))
-    elif isinstance(obj, (list, dict)):
-        if isinstance(obj, dict):
-            return AsyncDictGroup([(key, AsyncSemanticNode(_async_build(item), str(key))) for key, item in obj.items()])
-        return AsyncListGroup(
-            [(index, AsyncSemanticNode(_async_build(item), str(index))) for index, item in enumerate(obj)]
-        )
-    elif obj is Ellipsis:
-        return AsyncChain([])
-    raise TypeError(f"Unsupported type {type(obj).__name__} for chaining")
+def _build_node(fun: SingleInputFunction, /, name: str | None = None) -> Node:
+    """Builds a leaf node from a function"""
+    if name is None:
+        name = get_function_name(fun)
+    else:
+        validate_name(name)
+    return (AsyncNode if is_async(fun) else Node)(fun, name)
+
+
+@overload
+def facto(fun: Callable[PS, SingleInputFunction] | None, /) -> Callable[PS, Node]: ...
+@overload
+def facto(*, name: str | None = ...) -> Callable[[Callable[PS, SingleInputFunction]], Callable[PS, Node]]: ...
+
+
+def facto(fun: Callable[PS, SingleInputFunction] = None, /, *, name: str = None):
+    """Decorator for function factories (higher order functions) that produce callables with single input"""
+    def decorator(function: Callable[PS, SingleInputFunction], /) -> Callable[PS, Node]:
+        @wraps(fun)
+        def wrapper(*args: PS.args, **kwargs: PS.kwargs) -> Node:
+            return _build_node(function(*args, **kwargs), name)
+        if not callable(function):
+            raise TypeError("The @facto decorator expects a function as argument")
+        nonlocal name
+        if name is None:
+            name = get_function_name(function)
+        return wrapper
+    if fun is None:
+        return decorator
+    return decorator(fun)
+
+
+def _build_group(struct: dict[str, Chainable] | list[Chainable], /, name: str | None = None) -> BaseNode:
+    """Builds a branched node group from the structure"""
+    is_dict = isinstance(struct, dict)
+    any_async: set[bool] = set()
+    branches: list[tuple[str, BaseNode]] = []
+    for key, branch in (struct.items() if is_dict else enumerate(struct)):
+        _branch = build(branch)
+        any_async.add(isinstance(_branch, AsyncBaseNode))
+        branches.append((str(key), _branch))
+    _node = DictGroup(branches) if is_dict else ListGroup(branches)
+    if any(any_async):
+        _node = _node.to_async()
+    if name is not None:
+        _node = _node.rn(name)
+    return _node
+
+
+def _build_chain(nodes: tuple[Chainable, ...], /, name: str | None = None) -> BaseNode:
+    """Builds a sequential chain of nodes or returns"""
+    if not nodes:
+        return PassiveNode()
+    if len(nodes) == 1:
+        return build(nodes[0], name)
+    any_async: set[bool] = set()
+    _nodes: list[BaseNode] = []
+    for nd in nodes:
+        _node = build(nd)
+        if isinstance(_node, PassiveNode):
+            continue
+        any_async.add(isinstance(_node, AsyncBaseNode))
+        _nodes.append(_node)
+    _node = Chain(_nodes)
+    if any(any_async):
+        _node = _node.to_async()
+    if name is not None:
+        _node = _node.rn(name)
+    return _node

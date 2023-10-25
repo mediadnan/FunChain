@@ -12,8 +12,7 @@ from typing import (TypeVar,
                     Iterable)
 from failures import Reporter
 
-from ._tools import asyncify
-from .name import validate as validate_name
+from ._tools import asyncify, validate_name
 
 
 T = TypeVar('T')
@@ -42,13 +41,13 @@ class BaseNode(ABC):
     def __init__(self) -> None:
         self.severity = Severity.NORMAL
 
-    def __or__(self, other: 'BaseNode') -> 'Chain' | 'AsyncChain':
+    def __or__(self, other: 'BaseNode') -> 'Chain':
         return Chain([self]) | other
 
-    def __mul__(self, other: 'BaseNode') -> 'Chain' | 'AsyncChain':
+    def __mul__(self, other: 'BaseNode') -> 'Chain':
         return Chain([self]) * other
 
-    def __call__(self, arg, /, *, reporter: Reporter = None):
+    def __call__(self, arg, /, reporter: Reporter = None):
         """Processes arg and returns the result"""
         try:
             return self.process(arg, self._process_reporter(reporter))[1]
@@ -88,10 +87,10 @@ class BaseNode(ABC):
 
 
 class AsyncBaseNode(BaseNode):
-    def __or__(self, other: BaseNode | 'AsyncBaseNode') -> 'AsyncChain':
+    def __or__(self, other: BaseNode) -> 'AsyncChain':
         return AsyncChain([self]) | other
 
-    def __mul__(self, other: BaseNode | 'AsyncBaseNode') -> 'AsyncChain':
+    def __mul__(self, other: BaseNode) -> 'AsyncChain':
         return AsyncChain([self]) * other
 
     def to_async(self) -> Self:
@@ -104,7 +103,7 @@ class AsyncBaseNode(BaseNode):
     @abstractmethod
     async def process(self, arg, reporter: Reporter) -> Feedback: ...
 
-    async def __call__(self, arg, /, *, reporter: Reporter = None):
+    async def __call__(self, arg, /, reporter: Reporter = None):
         try:
             return (await self.process(arg, self._process_reporter(reporter)))[1]
         except Failed:
@@ -119,7 +118,7 @@ class Node(BaseNode):
     def __init__(self, fun: SingleInputFunction, name: str = None) -> None:
         super().__init__()
         self.__fun = fun
-        self.name = name
+        self.__name = name
 
     @property
     def fun(self) -> SingleInputFunction:
@@ -130,19 +129,6 @@ class Node(BaseNode):
     def name(self) -> str:
         """Gets the name of the leaf node (function)"""
         return self.__name
-
-    @name.setter
-    def name(self, name: str | None) -> None:
-        if name is None:
-            try:
-                name = self.__fun.__name__
-                if name == '<lambda>':
-                    name = 'lambda'
-            except AttributeError:
-                name = type(self.__fun).__name__
-        else:
-            validate_name(name)
-        self.__name = name
 
     def to_async(self) -> 'AsyncNode':
         return AsyncNode(asyncify(self.__fun), self.__name)
@@ -158,6 +144,7 @@ class Node(BaseNode):
 
     def rn(self, name: str) -> Self:
         """Returns a clone of the current node with the new name"""
+        validate_name(name)
         return self.__class__(self.__fun, name)
 
     def process(self, arg, reporter: Reporter) -> Feedback:
@@ -172,7 +159,6 @@ class Node(BaseNode):
         if severity is not Severity.OPTIONAL:
             reporter(self.name).report(error, input=arg)
         if severity is Severity.REQUIRED:
-            # Raises native failures Exception later
             raise Failed
         return False, None
 
@@ -185,6 +171,20 @@ class AsyncNode(Node, AsyncBaseNode):
             return True, await self.fun(arg)
         except Exception as error:
             return self.handle_failure(error, arg, reporter)
+
+
+class PassiveNode(BaseNode):
+    """A node that returns the input as it is"""
+    def process(self, arg, reporter: Union[Reporter, type[Reporter]]) -> Feedback:
+        return True, arg
+
+    def to_async(self) -> 'AsyncBaseNode':
+        return AsyncPassiveNode()
+
+
+class AsyncPassiveNode(PassiveNode, AsyncBaseNode):
+    async def process(self, arg, reporter: Union[Reporter, type[Reporter]]) -> Feedback:
+        return True, arg
 
 
 class WrapperNode(BaseNode, metaclass=ABCMeta):
@@ -241,7 +241,7 @@ class Chain(BaseNode):
     __slots__ = '__nodes',
     __nodes: list[BaseNode]
 
-    def __init__(self, nodes: Iterable[BaseNode], /) -> None:
+    def __init__(self, nodes: list[BaseNode], /) -> None:
         super().__init__()
         self.__nodes = list(nodes)
 
