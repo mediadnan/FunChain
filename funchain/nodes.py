@@ -377,15 +377,15 @@ class AsyncGroup(Group, AsyncBaseNode, metaclass=ABCMeta):
             *((name, node.severity, asyncio.create_task(node.process(arg, reporter))) for name, node in self.nodes)
         )
         successes, results = zip(*(await asyncio.gather(*tasks)))
+        _results = []
         for name, success, severity, result in zip(names, successes, severities, results):
             if not success:
                 if severity is Severity.OPTIONAL:
                     continue
                 if severity is Severity.REQUIRED:
                     raise Failed
-            successes.add(success)
-            results.append((name, result))
-        return any(successes), self.convert(results)
+            _results.append((name, result))
+        return any(successes), self.convert(_results)
 
 
 def _dict_converter(results: Iterable[tuple[str, Any]]) -> dict:
@@ -400,6 +400,9 @@ class ListGroup(Group):
     """A node that processes the input through multiple branches and returns a list as a result"""
     convert = staticmethod(_list_converter)
 
+    def to_async(self) -> 'AsyncListGroup':
+        return AsyncListGroup([(key, node.to_async()) for key, node in self.nodes])
+
 
 class AsyncListGroup(AsyncGroup):
     """A node that asynchronously processes the input through multiple branches and returns a list as a result"""
@@ -409,6 +412,9 @@ class AsyncListGroup(AsyncGroup):
 class DictGroup(Group):
     """A node that processes the input through multiple branches and returns a dictionary as a result"""
     convert = staticmethod(_dict_converter)
+
+    def to_async(self) -> 'AsyncDictGroup':
+        return AsyncDictGroup([(key, node.to_async()) for key, node in self.nodes])
 
 
 class AsyncDictGroup(AsyncGroup):
