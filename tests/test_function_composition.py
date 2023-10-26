@@ -1,5 +1,5 @@
 import pytest
-from funchain import nd
+from funchain import chain, build
 from funchain.nodes import BaseNode, Node, Severity
 
 
@@ -10,7 +10,7 @@ def double(number: int) -> int:
 
 # testing nd() function
 def test_nd_for_lambda():
-    node = nd(lambda x: x*2)
+    node = build(lambda x: x*2)
     assert isinstance(node, BaseNode), "Expected node to be of type BaseNode"
     assert isinstance(node, Node), "Expected node to be of type Node"
     assert node.name == "lambda", "Expected default name to be 'lambda'"
@@ -18,14 +18,14 @@ def test_nd_for_lambda():
 
 
 @pytest.mark.parametrize('src', [
-    'nd()',
-    'nd(lambda x: x*2)',
-    'nd(double)',
-    'nd({\'a\': double, \'b\': lambda x: x - 1})',
-    'nd([double, lambda x: x - 1])',
-    'nd(double) | double',
-    'nd() | double | double',
-    'nd(double) | [lambda x: x + 1, lambda x: x - 1, double] * double'
+    'build(...)',
+    'build(lambda x: x*2)',
+    'build(double)',
+    'build({\'a\': double, \'b\': lambda x: x - 1})',
+    'build([double, lambda x: x - 1])',
+    'chain(double, double)',
+    'build(double) | build(double)',
+    'build(double) | build([lambda x: x + 1, lambda x: x - 1, double]) * build(double)'
 ])
 def test_nd_default_severity(src: str):
     node = eval(src)
@@ -33,6 +33,6 @@ def test_nd_default_severity(src: str):
 
 
 def test_single_inline_node_function(reporter):
-    node = nd(lambda x: x * 2).rn("double")
+    node = build(lambda x: x * 2).rn("double")
     result = node(3, reporter=reporter)
     assert result == 6
