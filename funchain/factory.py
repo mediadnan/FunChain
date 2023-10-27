@@ -1,5 +1,5 @@
 from functools import wraps
-from typing import Any, Callable, Union, ParamSpec, overload
+from typing import Any, Callable, Union, ParamSpec, overload, Literal
 
 from ._tools import validate_name, get_function_name
 from ._tools import is_async
@@ -9,7 +9,7 @@ from .nodes import (
     AsyncNode,
     Chain,
     DictGroup,
-    ListGroup,
+    Group,
     AsyncBaseNode,
     SingleInputFunction,
     PassiveNode,
@@ -20,7 +20,7 @@ from .nodes import (
 
 
 PS = ParamSpec('PS')
-Chainable = Union[BaseNode, Callable, list[Any], dict[str, Any], Ellipsis]
+Chainable = Any
 
 
 def foreach(node: Chainable, /) -> BaseNode:
@@ -90,7 +90,7 @@ def component(*, name: str | None = ...) -> Callable[[Callable[PS, SingleInputFu
 def component(fun: Callable[PS, SingleInputFunction] = None, /, *, name: str = None):
     """Decorates function generators to make them produce nodes instead of functions"""
     def decorator(function: Callable[PS, SingleInputFunction], /) -> Callable[PS, Node]:
-        @wraps(fun)
+        @wraps(function)
         def wrapper(*args: PS.args, **kwargs: PS.kwargs) -> Node:
             return _build_node(function(*args, **kwargs), name)
         if not callable(function):
@@ -107,14 +107,13 @@ def component(fun: Callable[PS, SingleInputFunction] = None, /, *, name: str = N
 def _build_group(struct: dict[str, Chainable] | list[Chainable], /, name: str | None = None) -> BaseNode:
     """Builds a branched node group from the structure"""
     is_dict = isinstance(struct, dict)
-    any_async: set[bool] = set()
-    branches: list[tuple[str, BaseNode]] = []
-    for key, branch in (struct.items() if is_dict else enumerate(struct)):
-        _branch = build(branch)
-        any_async.add(isinstance(_branch, AsyncBaseNode))
-        branches.append((str(key), _branch))
-    _node = (DictGroup if is_dict else ListGroup)(branches)
-    if any(any_async):
+    branch_names: tuple[str, ...] = ()
+    if is_dict:
+        branch_names, struct = zip(*struct.items())
+        branch_names = tuple(map(str, branch_names))
+    _nodes = [build(branch) for branch in struct]
+    _node: BaseNode = DictGroup(_nodes, branch_names) if is_dict else Group(_nodes)
+    if any(isinstance(node, AsyncBaseNode) for node in _nodes):
         _node = _node.to_async()
     if name is not None:
         _node = _node.rn(name)

@@ -45,9 +45,9 @@ test_cases = [
     param('chain(foreach(increment), sum)', [3, 4], 9, nodes.Chain, id="chain with spread results wrapped"),
     param('chain(foreach((increment, double)), sum)', [3, 4], 18, nodes.Chain, id="chain with iterating sub chain"),
     param('build({"double": double, "increment": increment})', 7, {'double': 14, 'increment': 8}, nodes.DictGroup, id="simple node (dict) group"),
-    param('build([increment, double])', 7, [8, 14], nodes.ListGroup, id="simple node (list) group"),
+    param('build([increment, double])', 7, [8, 14], nodes.Group, id="simple node (list) group"),
     param('build({"double": double, "increment": chain(increment, increment)})', 7, {'double': 14, 'increment': 9}, nodes.DictGroup, id="node (dict) group with chain"),
-    param('chain([double, chain(increment, increment)])', 7, [14, 9], nodes.ListGroup, id="node (list) group with chain"),
+    param('chain([double, chain(increment, increment)])', 7, [14, 9], nodes.Group, id="node (list) group with chain"),
 
     # Testing async nodes creation and execution
     param('build(a_increment)', 3, 4, nodes.AsyncNode, id="single async node function"),
@@ -58,9 +58,9 @@ test_cases = [
     param('foreach(a_increment)', [3, 4, 5], (4, 5, 6), nodes.AsyncLoop, id="chain of iterating async func"),
     param('chain(foreach(a_increment), sum)', [3, 4, 5], 15, nodes.AsyncChain, id="chain of iterating async func wrapped"),
     param('build({"ai": a_increment, "i": increment})', 7, {'ai': 8, 'i': 8}, nodes.AsyncDictGroup, id="async - sync node (dict) group"),
-    param('build([a_increment, increment])', 7, [8, 8], nodes.AsyncListGroup, id="async - sync node (list) group"),
+    param('build([a_increment, increment])', 7, [8, 8], nodes.AsyncGroup, id="async - sync node (list) group"),
     param('build({"ai": a_increment, "ai2": a_increment})', 7, {'ai': 8, 'ai2': 8}, nodes.AsyncDictGroup, id="async - async node (dict) group"),
-    param('build([a_increment, a_increment])', 7, [8, 8], nodes.AsyncListGroup, id="async - async node (list) group"),
+    param('build([a_increment, a_increment])', 7, [8, 8], nodes.AsyncGroup, id="async - async node (list) group"),
 ]
 
 

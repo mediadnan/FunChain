@@ -7,7 +7,6 @@ from typing import (TypeVar,
                     Union,
                     Callable,
                     Coroutine,
-                    Any,
                     Self,
                     Iterable)
 from failures import Reporter
@@ -81,7 +80,7 @@ class BaseNode(ABC):
             raise TypeError("severity must be either NORMAL, OPTIONAL or REQUIRED")
         self.__severity = severity
 
-    def rn(self, name: str) -> Self:
+    def rn(self, name: str) -> 'BaseNode':
         """Returns a clone of the current node with the new name"""
         return SemanticNode(self, name)
 
@@ -97,7 +96,7 @@ class AsyncBaseNode(BaseNode):
         """Returns the current node"""
         return self
 
-    def rn(self, name: str) -> Self:
+    def rn(self, name: str) -> 'AsyncBaseNode':
         return AsyncSemanticNode(self, name)
 
     @abstractmethod
@@ -331,92 +330,105 @@ class AsyncLoop(Loop, AsyncBaseNode):
 
 
 class Group(BaseNode):
-    """A node that processes the input through multiple branches and returns a collection type as a result"""
-    __slots__ = ('__nodes',)
-    __nodes: list[tuple[str, BaseNode]]
+    """A node that processes the input through multiple branches and returns a list as a result"""
+    __slots__ = ('__nodes', '__severities')
+    __severities: tuple[Severity, ...]
+    __nodes: tuple[BaseNode, ...]
 
-    def __init__(self, nodes: Iterable[tuple[str, BaseNode]], /):
+    def __init__(self, nodes: Iterable[BaseNode], /):
         super().__init__()
-        self.__nodes = list(nodes)
-
-    @staticmethod
-    @abstractmethod
-    def convert(results: Iterable[tuple[Any, Any]]) -> Any:
-        """Converts the branched results to a specific collection type"""
+        self.__severities = tuple(node.severity for node in nodes)
+        self.__nodes = tuple(nodes)
 
     def to_async(self) -> 'AsyncGroup':
-        return AsyncGroup([(branch, node.to_async()) for branch, node in self.__nodes])
+        return AsyncGroup([node.to_async() for node in self.__nodes])
 
     @property
-    def nodes(self) -> list[tuple[str, BaseNode]]:
-        """Returns the node list (mutable)"""
+    def nodes(self) -> tuple[BaseNode, ...]:
+        """Gets nodes (Read-only / Mutable)"""
         return self.__nodes
 
-    def process(self, arg, reporter: Reporter | type[Reporter]) -> Feedback:
-        successes: set[bool] = set()
-        results: list[tuple[str, Any]] = []
-        for name, node in self.__nodes:
-            success, result = node.process(arg, reporter)
-            if not success:
-                if node.severity is Severity.OPTIONAL:
-                    continue
-                if node.severity is Severity.REQUIRED:
-                    raise Failed
-            successes.add(success)
-            results.append((name, result))
-        return any(successes), self.convert(results)
+    @property
+    def severities(self) -> tuple[Severity, ...]:
+        """Gets severities (Read-only / Mutable)"""
+        return self.__severities
 
-
-class AsyncGroup(Group, AsyncBaseNode, metaclass=ABCMeta):
-    """A node that processes the input asynchronously through multiple branches and returns a collection type as
-    a result"""
-    nodes: list[tuple[str, AsyncBaseNode]]
-
-    async def process(self, arg, reporter: Reporter | type[Reporter]) -> Feedback:
-        names, severities, tasks = zip(
-            *((name, node.severity, asyncio.create_task(node.process(arg, reporter))) for name, node in self.nodes)
-        )
-        successes, results = zip(*(await asyncio.gather(*tasks)))
+    def process(self, arg, reporter: Reporter | type[Reporter]) -> Feedback[list]:
+        successes, results = zip(*(node.process(arg, reporter) for node in self.nodes))
         _results = []
-        for name, success, severity, result in zip(names, successes, severities, results):
+        for success, result, severity in zip(successes, results, self.severities, strict=True):
             if not success:
                 if severity is Severity.OPTIONAL:
                     continue
                 if severity is Severity.REQUIRED:
                     raise Failed
-            _results.append((name, result))
-        return any(successes), self.convert(_results)
+            _results.append(result)
+        return any(successes) if _results else True, _results
 
 
-def _dict_converter(results: Iterable[tuple[str, Any]]) -> dict:
-    return {branch: result for branch, result in results}
+class AsyncGroup(Group, AsyncBaseNode):
+    """A node that processes the input asynchronously through multiple branches and returns a list as a result"""
+    nodes: tuple[AsyncBaseNode, ...]
 
-
-def _list_converter(results: Iterable[tuple[str, Any]]) -> list:
-    return [result for _, result in results]
-
-
-class ListGroup(Group):
-    """A node that processes the input through multiple branches and returns a list as a result"""
-    convert = staticmethod(_list_converter)
-
-    def to_async(self) -> 'AsyncListGroup':
-        return AsyncListGroup([(key, node.to_async()) for key, node in self.nodes])
-
-
-class AsyncListGroup(AsyncGroup):
-    """A node that asynchronously processes the input through multiple branches and returns a list as a result"""
-    convert = staticmethod(_list_converter)
+    async def process(self, arg, reporter: Reporter | type[Reporter]) -> Feedback[list]:
+        successes, results = zip(*(
+            await asyncio.gather(*(asyncio.create_task(node.process(arg, reporter)) for node in self.nodes))
+        ))
+        _results = []
+        for success, result, severity in zip(successes, results, self.severities, strict=True):
+            if not success:
+                if severity is Severity.OPTIONAL:
+                    continue
+                if severity is Severity.REQUIRED:
+                    raise Failed
+            _results.append(result)
+        return any(successes) if _results else True, _results
 
 
 class DictGroup(Group):
     """A node that processes the input through multiple branches and returns a dictionary as a result"""
-    convert = staticmethod(_dict_converter)
+    __slots__ = ('__branches',)
+    __branches: tuple[str, ...]
+
+    def __init__(self, nodes: Iterable[BaseNode], branches: Iterable[str], /):
+        super().__init__(nodes)
+        self.__branches = tuple(branches)
+
+    @property
+    def branches(self) -> tuple[str, ...]:
+        """Gets branches (Read-only / Mutable)"""
+        return self.__branches
 
     def to_async(self) -> 'AsyncDictGroup':
-        return AsyncDictGroup([(key, node.to_async()) for key, node in self.nodes])
+        return AsyncDictGroup([node.to_async() for node in self.nodes], self.branches)
+
+    def process(self, arg, reporter: Reporter | type[Reporter]) -> Feedback[dict]:
+        successes, results = zip(*(node.process(arg, reporter) for node in self.nodes))
+        _results = {}
+        for branch, success, result, severity in zip(self.branches, successes, results, self.severities, strict=True):
+            if not success:
+                if severity is Severity.OPTIONAL:
+                    continue
+                if severity is Severity.REQUIRED:
+                    raise Failed
+            _results[branch] = result
+        return any(successes) if _results else True, _results
 
 
-class AsyncDictGroup(AsyncGroup):
-    """A node that asynchronously processes the input through multiple branches and returns a dictionary as a result"""
-    convert = staticmethod(_dict_converter)
+class AsyncDictGroup(DictGroup, AsyncBaseNode):
+    """A node that processes the input asynchronously through multiple branches and returns a dictionary as a result"""
+    nodes: tuple[AsyncBaseNode, ...]
+
+    async def process(self, arg, reporter: Reporter | type[Reporter]) -> Feedback[dict]:
+        successes, results = zip(*(
+            await asyncio.gather(*(asyncio.create_task(node.process(arg, reporter)) for node in self.nodes))
+        ))
+        _results = {}
+        for branch, success, result, severity in zip(self.branches, successes, results, self.severities, strict=True):
+            if not success:
+                if severity is Severity.OPTIONAL:
+                    continue
+                if severity is Severity.REQUIRED:
+                    raise Failed
+            _results[branch] = result
+        return any(successes) if _results else True, _results

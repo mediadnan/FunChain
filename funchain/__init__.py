@@ -8,7 +8,7 @@ Chains are callables, they take an input and return the last result.
 """
 from .factory import build, chain, foreach, static, optional, required, component
 from .nodes import BaseNode, Severity
-from failures import Reporter   # shortcut # noqa # pylint: disable=unused-import
+from failures import Reporter   # shortcut # noqa: F401 # pylint: disable=unused-import
 
 OPTIONAL = Severity.OPTIONAL
 NORMAL = Severity.NORMAL
