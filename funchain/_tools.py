@@ -1,7 +1,9 @@
 import asyncio
 import functools
 import re
-from typing import Callable, ParamSpec, Coroutine, TypeVar
+from typing import Callable, ParamSpec, TypeVar
+
+from failures.core import NamePattern
 
 
 SPEC = ParamSpec('SPEC')
@@ -22,22 +24,6 @@ def is_async(func: Callable) -> bool:
     return asyncio.iscoroutinefunction(func) or asyncio.iscoroutinefunction(getattr(func, '__call__', None))
 
 
-def asyncify(func: Callable[SPEC, RT], /) -> Callable[SPEC, Coroutine[None, None, RT]]:
-    """
-    Wraps blocking function to be called in a separate loop's (default) executor
-
-    :param func: The function to be asyncified
-    :return: async version of function
-    """
-
-    @functools.wraps(func)
-    async def async_func(*args: SPEC.args, **kwargs: SPEC.kwargs) -> Coroutine[None, None, RT]:
-        loop = asyncio.get_event_loop()
-        return await loop.run_in_executor(None, functools.partial(func, *args, **kwargs))
-
-    return func if is_async(func) else async_func
-
-
 def pascal_to_snake(name: str) -> str:
     """converts PascalCase names to snake_case names"""
     assert isinstance(name, str), "name must be a string"
@@ -52,7 +38,7 @@ def validate_name(name: str) -> None:
     """Ensures that the name is valid"""
     if not isinstance(name, str):
         raise TypeError(f"name must be {str}")
-    elif not name.isidentifier():
+    elif not NamePattern.match(name):
         raise ValueError(f"{name!r} is not a valid name")
 
 

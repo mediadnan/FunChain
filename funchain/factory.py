@@ -1,5 +1,5 @@
 from functools import wraps
-from typing import Any, Callable, Union, ParamSpec, overload, Literal
+from typing import Any, Callable, ParamSpec, overload, Iterable
 
 from ._tools import validate_name, get_function_name
 from ._tools import is_async
@@ -7,43 +7,41 @@ from .nodes import (
     BaseNode,
     Node,
     AsyncNode,
-    Chain,
-    DictGroup,
-    Group,
-    AsyncBaseNode,
+    NodeChain,
+    NodeDict,
+    NodeList,
     SingleInputFunction,
     PassiveNode,
     Loop,
-    AsyncLoop,
     Severity
 )
 
 
 PS = ParamSpec('PS')
-Chainable = Any
+PASS = object()
 
 
-def foreach(node: Chainable, /) -> BaseNode:
+def foreach(node, /) -> BaseNode:
     """Builds a node that applies to each element of the input"""
     _node = build(node)
     return (AsyncLoop if isinstance(_node, AsyncBaseNode) else Loop)(_node)
 
 
-def optional(node: Chainable, /) -> BaseNode:
+def optional(node, /) -> BaseNode:
     """Builds a node that will be ignored in case of failures"""
     _node = build(node)
     _node.severity = Severity.OPTIONAL
     return _node
 
 
-def required(node: Chainable, /) -> BaseNode:
+def required(node, /) -> BaseNode:
     """Builds a node that stops the entire chain in case of failures"""
     _node = build(node)
     _node.severity = Severity.REQUIRED
     return _node
 
 
-def static(obj: Any, /) -> Node:
+def static(obj, /) -> Node:
     """Builds a node that returns that same object regardless of the input"""
     _name = str(obj)
     if len(_name) > 20:
@@ -52,22 +50,24 @@ def static(obj: Any, /) -> Node:
     return _build_node(lambda _: obj, f'static_node({_name})')
 
 
-def chain(*nodes: Chainable, name: str | None = None) -> BaseNode:
+def chain(*nodes, name: str | None = None) -> BaseNode:
     """Composes nodes in a sequential chain"""
     return build(nodes, name)
 
 
-def build(obj: Chainable, /, name: str | None = None) -> BaseNode:
+def build(obj=PASS, /, name: str | None = None) -> BaseNode:
     """Creates a callable object from the given composition"""
     if isinstance(obj, BaseNode):
-        return obj if name is None else obj.rn(name)
+        return obj if (name is None) else obj.rn(name)
     elif callable(obj):
         return _build_node(obj, name)
     elif isinstance(obj, tuple):
         return _build_chain(obj, name)
-    elif isinstance(obj, (list, dict)):
+    elif isinstance(obj, dict):
+        return _build_dict_group(obj, name)
+    elif isinstance(obj, list):
         return _build_group(obj, name)
-    elif obj is Ellipsis:
+    elif obj is PASS:
         return PassiveNode()
     return static(obj)
 
@@ -81,62 +81,37 @@ def _build_node(fun: SingleInputFunction, /, name: str | None = None) -> Node:
     return (AsyncNode if is_async(fun) else Node)(fun, name)
 
 
-@overload
-def component(fun: Callable[PS, SingleInputFunction] | None, /) -> Callable[PS, Node]: ...
-@overload
-def component(*, name: str | None = ...) -> Callable[[Callable[PS, SingleInputFunction]], Callable[PS, Node]]: ...
+def _build_group(struct: list[Any], /, name: str | None = None) -> BaseNode:
+    """Builds a branched node dict"""
+    _nodes = tuple(map(build, struct))
+    node = NodeList(_nodes)
+    return _process_node_group(node, _nodes, name)
 
 
-def component(fun: Callable[PS, SingleInputFunction] = None, /, *, name: str = None):
-    """Decorates function generators to make them produce nodes instead of functions"""
-    def decorator(function: Callable[PS, SingleInputFunction], /) -> Callable[PS, Node]:
-        @wraps(function)
-        def wrapper(*args: PS.args, **kwargs: PS.kwargs) -> Node:
-            return _build_node(function(*args, **kwargs), name)
-        if not callable(function):
-            raise TypeError("The @facto decorator expects a function as argument")
-        nonlocal name
-        if name is None:
-            name = get_function_name(function)
-        return wrapper
-    if fun is None:
-        return decorator
-    return decorator(fun)
+def _build_dict_group(struct: dict[str, Any], /, name: str | None = None) -> BaseNode:
+    """Builds a branched node list"""
+    _branches = tuple(map(str, struct.keys()))
+    _nodes = tuple(map(build, struct.values()))
+    node = NodeDict(_nodes, _branches)
+    return _process_node_group(node, _nodes, name)
 
 
-def _build_group(struct: dict[str, Chainable] | list[Chainable], /, name: str | None = None) -> BaseNode:
-    """Builds a branched node group from the structure"""
-    is_dict = isinstance(struct, dict)
-    branch_names: tuple[str, ...] = ()
-    if is_dict:
-        branch_names, struct = zip(*struct.items())
-        branch_names = tuple(map(str, branch_names))
-    _nodes = [build(branch) for branch in struct]
-    _node: BaseNode = DictGroup(_nodes, branch_names) if is_dict else Group(_nodes)
-    if any(isinstance(node, AsyncBaseNode) for node in _nodes):
-        _node = _node.to_async()
-    if name is not None:
-        _node = _node.rn(name)
-    return _node
-
-
-def _build_chain(nodes: tuple[Chainable, ...], /, name: str | None = None) -> BaseNode:
-    """Builds a sequential chain of nodes or returns"""
+def _build_chain(nodes: tuple, /, name: str | None = None) -> BaseNode:
+    """Builds a sequential chain of nodes"""
     if not nodes:
         return PassiveNode()
     if len(nodes) == 1:
         return build(nodes[0], name)
-    any_async: set[bool] = set()
-    _nodes: list[BaseNode] = []
-    for nd in nodes:
-        _node = build(nd)
-        if isinstance(_node, PassiveNode):
-            continue
-        any_async.add(isinstance(_node, AsyncBaseNode))
-        _nodes.append(_node)
-    _node = Chain(_nodes)
-    if any(any_async):
-        _node = _node.to_async()
+    _nodes: list[BaseNode] = list(filter(lambda x: not isinstance(x, PassiveNode), map(build, nodes)))
+    _node: BaseNode = NodeChain(_nodes)
+    return _process_node_group(_node, _nodes, name)
+
+
+def _process_node_group(node: BaseNode, nodes: Iterable[BaseNode], name: str | None) -> BaseNode:
+    """Converts all nodes into async if there's any async node present, \
+    and optionally renames the wrapper node if the name is given."""
+    if any(isinstance(_node, AsyncBaseNode) for _node in nodes):
+        node = node.to_async()
     if name is not None:
-        _node = _node.rn(name)
-    return _node
+        node = node.rn(name)
+    return node
