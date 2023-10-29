@@ -262,7 +262,7 @@ class NodeChain(NodeGroup):
 
     def __add__(self, other):
         return chain(*self._nodes, other)
-    
+
     def __iadd__(self, other):
         return chain(other, *self._nodes)
 
