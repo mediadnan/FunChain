@@ -7,7 +7,7 @@ name = "FunChain"
 dynamic = ["version", "dependencies"]
 description = "Chain functions easily and safely"
 readme = "README.md"
-requires-python = ">=3.11"
+requires-python = ">=3.9"
 license = {file = "LICENSE"}
 keywords = [
     "function",
@@ -24,7 +24,6 @@ keywords = [
     "failure",
 ]
 authors = [{ name =  "MARSO Adnan" }]
-maintainers = [{ name =  "MARSO Adnan" }]
 classifiers = [
     "Intended Audience :: Developers",
     "Intended Audience :: Science/Research",
@@ -32,7 +31,10 @@ classifiers = [
     "Operating System :: OS Independent",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
     "Topic :: Scientific/Engineering",
     "Topic :: Software Development",
     "Topic :: Utilities",
@@ -40,9 +42,11 @@ classifiers = [
 ]
 
 [tool.setuptools]
-zip-safe = false
-package-data = ["py.typed"]
+include-package-data = true
 packages = ["funchain"]
+
+[tool.setuptools.package-data]
+"funchain" = ["py.typed"]
 
 [tool.setuptools.dynamic]
 version = {attr = "funchain.__version__"}
