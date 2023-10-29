@@ -74,29 +74,10 @@ backward compatible.
 
 .. important::
 
-    **funchain** ``0.1.0`` is still currently experimental 🧪, however, it is fully tested.
+    **funchain** ``0.1.0`` is still currently experimental 🧪, however, it is tested.
     Make sure to test it for your specific use case if you plan to integrate it into a production app.
 
-Content
--------
-This documentation will walk you through on how to get the best out of ``funchain`` and how it could be
-integrated into your application.
-
-This document contains the following pages
-
-
-.. toctree::
-    :includehidden:
-    :maxdepth: 2
-    :caption: User Guide
-
-    user_guide/getting_started
-    user_guide/node_types
-    user_guide/node_customization
-    user_guide/models
-    user_guide/handling_failures
-    user_guide/async_support
-    user_guide/best_practices
+*TODO: documentation*
 
 
 .. |semver_link| raw:: html
