@@ -353,26 +353,26 @@ async def _async_caller(node: 'BaseNode', arg, reporter: Reporter | None):
 PASS = PassiveNode()
 
 
-def loop(node, /) -> BaseNode:
+def loop(*nodes) -> BaseNode:
     """Builds a node that applies to each element of the input"""
-    node = _build(node)
+    node = _build(nodes)
     if node is PASS:
         return node
     return Loop(node)
 
 
-def optional(node, /) -> BaseNode:
+def optional(*nodes) -> BaseNode:
     """Builds a node that will be ignored in case of failures"""
-    node = _build(node)
+    node = _build(nodes)
     if node is PASS:
         return node
     node.severity = Severity.OPTIONAL
     return node
 
 
-def required(node, /) -> BaseNode:
+def required(*nodes) -> BaseNode:
     """Builds a node that stops the entire chain in case of failures"""
-    node = _build(node)
+    node = _build(nodes)
     if node is PASS:
         return node
     node.severity = Severity.REQUIRED
@@ -384,8 +384,13 @@ def static(obj, /) -> Node:
     _name = str(obj)
     if len(_name) > 20:
         # Shorten long names
-        _name = _name[: 8] + '...' + _name[len(_name) - 7:]
-    return _build_node(lambda _: obj, f'static_node({_name})')
+        _name = _name[: 8] + '-' + _name[len(_name) - 7:]
+    try:
+        validate_name(_name)
+        _name = f'static_node({_name})'
+    except (ValueError, TypeError):
+        _name = 'static_node'
+    return _build_node(lambda _: obj, _name)
 
 
 def chain(*nodes, name: str | None = None) -> BaseNode:
@@ -393,7 +398,7 @@ def chain(*nodes, name: str | None = None) -> BaseNode:
     return _build(nodes, name)
 
 
-def _build(obj: Any = PASS, /, name: str = None) -> BaseNode:
+def _build(obj: Any = ..., /, name: str = None) -> BaseNode:
     if isinstance(obj, BaseNode):
         return obj.rn(name) if name else obj
     if callable(obj):
@@ -404,6 +409,8 @@ def _build(obj: Any = PASS, /, name: str = None) -> BaseNode:
         return _build_node_dict(obj, name)
     elif isinstance(obj, list):
         return _build_node_list(obj, name)
+    elif obj is ...:
+        return PASS
     return static(obj)
 
 
@@ -419,7 +426,7 @@ def _build_node(fun: SingleInputFunction, /, name: str | None = None) -> Node:
 def _build_node_list(struct: list[Any], /, name: str | None = None) -> BaseNode:
     """Builds a branched node dict"""
     _nodes = tuple(map(_build, struct))
-    node = NodeList(_nodes)
+    node: BaseNode = NodeList(_nodes)
     if name:
         node = node.rn(name)
     return node
@@ -429,7 +436,7 @@ def _build_node_dict(struct: dict[str, Any], /, name: str | None = None) -> Base
     """Builds a branched node list"""
     _branches = tuple(map(str, struct.keys()))
     _nodes = tuple(map(_build, struct.values()))
-    node = NodeDict(_nodes, _branches)
+    node: BaseNode = NodeDict(_nodes, _branches)
     if name:
         node = node.rn(name)
     return node
@@ -450,6 +457,8 @@ def _build_chain(nodes: tuple, /, name: str | None = None) -> BaseNode:
 
 @overload
 def _node(fun: SingleInputAsyncFunction, /, name: str | None = ...) -> AsyncNode: ...
+@overload
+def _node(fun: SingleInputFunction, /, name: str | None = ...) -> Node: ...
 
 
 def _node(fun: SingleInputFunction, /, name: str | None = None) -> Node:
