@@ -1,5 +1,5 @@
 import pytest
-from collections import namedtuple
+from typing import Any
 from asyncio import run
 from funchain import core, chain, loop, BaseNode, optional, required, static, node
 
@@ -35,41 +35,39 @@ def add(number: int):  # functional style factory
     return _add
 
 
-TestData = namedtuple('TestData', ['src', 'inp', 'out'])
-
-test_cases = [
+test_cases: list[tuple[str, Any, Any]] = [
     # Testing simple nodes creation and execution
-    TestData('chain()', 5, 5),
-    TestData('chain(increment)', 3, 4),
-    TestData('chain(Add(1))', 3, 4),
-    TestData('chain(add(1))', 3, 4),
-    TestData('chain(increment, double)', 3, 8),
-    TestData('chain(increment) + double', 3, 8),
-    TestData('chain(increment, increment, increment, increment, increment)', 2, 2 + 5),
-    TestData('chain(double) * chain(increment)', [3], [4, 4]),
-    TestData('chain(double) * increment', [3], [4, 4]),
-    TestData('chain(double, loop(increment))', [3], [4, 4]),
-    TestData('chain(loop(increment), sum)', [3, 4], 9),
-    TestData('loop(increment) + sum', [3, 4], 9),
-    TestData('chain(loop(increment, double), sum)', [3, 4], 18),
-    TestData('loop(increment, double) + sum', [3, 4], 18),
-    TestData('chain({"d": double, "i": increment})', 7, {'d': 14, 'i': 8}),
-    TestData('chain([increment, double])', 7, [8, 14]),
-    TestData('chain({"d": double, "i": (increment, increment)})', 7, {'d': 14, 'i': 9}),
-    TestData('chain([double, chain(increment, increment)])', 7, [14, 9]),
+    ('chain()', 5, 5),
+    ('chain(increment)', 3, 4),
+    ('chain(Add(1))', 3, 4),
+    ('chain(add(1))', 3, 4),
+    ('chain(increment, double)', 3, 8),
+    ('chain(increment) + double', 3, 8),
+    ('chain(increment, increment, increment, increment, increment)', 2, 2 + 5),
+    ('chain(double) * chain(increment)', [3], [4, 4]),
+    ('chain(double) * increment', [3], [4, 4]),
+    ('chain(double, loop(increment))', [3], [4, 4]),
+    ('chain(loop(increment), sum)', [3, 4], 9),
+    ('loop(increment) + sum', [3, 4], 9),
+    ('chain(loop(increment, double), sum)', [3, 4], 18),
+    ('loop(increment, double) + sum', [3, 4], 18),
+    ('chain({"d": double, "i": increment})', 7, {'d': 14, 'i': 8}),
+    ('chain([increment, double])', 7, [8, 14]),
+    ('chain({"d": double, "i": (increment, increment)})', 7, {'d': 14, 'i': 9}),
+    ('chain([double, chain(increment, increment)])', 7, [14, 9]),
 
     # Testing async nodes creation and execution
-    TestData('chain(a_increment)', 3, 4),
-    TestData('chain(a_increment, a_increment)', 3, 5),
-    TestData('chain(increment, a_increment)', 3, 5),
-    TestData('chain(increment) + chain(a_increment)', 3, 5),
-    TestData('chain(a_increment) + chain(increment)', 3, 5),
-    TestData('loop(a_increment)', [3, 4, 5], (4, 5, 6)),
-    TestData('chain(loop(a_increment), sum)', [3, 4, 5], 15),
-    TestData('chain({"ai": a_increment, "i": increment})', 7, {'ai': 8, 'i': 8}),
-    TestData('chain([a_increment, increment])', 7, [8, 8]),
-    TestData('chain({"ai": a_increment, "ai2": a_increment})', 7, {'ai': 8, 'ai2': 8}),
-    TestData('chain([a_increment, a_increment])', 7, [8, 8]),
+    ('chain(a_increment)', 3, 4),
+    ('chain(a_increment, a_increment)', 3, 5),
+    ('chain(increment, a_increment)', 3, 5),
+    ('chain(increment) + chain(a_increment)', 3, 5),
+    ('chain(a_increment) + chain(increment)', 3, 5),
+    ('loop(a_increment)', [3, 4, 5], (4, 5, 6)),
+    ('chain(loop(a_increment), sum)', [3, 4, 5], 15),
+    ('chain({"ai": a_increment, "i": increment})', 7, {'ai': 8, 'i': 8}),
+    ('chain([a_increment, increment])', 7, [8, 8]),
+    ('chain({"ai": a_increment, "ai2": a_increment})', 7, {'ai': 8, 'ai2': 8}),
+    ('chain([a_increment, a_increment])', 7, [8, 8]),
 ]
 
 
