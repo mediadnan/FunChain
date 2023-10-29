@@ -1,14 +1,23 @@
 import asyncio
 import functools
+import sys
 from abc import ABC, abstractmethod
 from enum import Enum
 from typing import (TypeVar,
-                    TypeAlias,
                     Callable,
                     Coroutine,
-                    Self,
                     Iterable,
-                    Any, overload, )
+                    Any,
+                    overload,
+                    Optional, )
+if sys.version_info < (3, 11):
+    from typing_extensions import Self
+else:
+    from typing import Self
+if sys.version_info < (3, 10):
+    from typing_extensions import TypeAlias
+else:
+    from typing import TypeAlias
 from failures import Reporter
 
 from ._tools import validate_name, is_async, get_function_name
@@ -44,12 +53,12 @@ class BaseNode(ABC):
     def is_async(self) -> bool: ...
 
     @abstractmethod
-    def proc(self, arg, /, reporter: Reporter | None) -> Feedback:
+    def proc(self, arg, /, reporter: Optional[Reporter]) -> Feedback:
         """Processes the argument and returns a success indicator (bool) \
         together with the result, reporting any failures if a reporter is passed."""
 
     @abstractmethod
-    async def aproc(self, arg, /, reporter: Reporter | None) -> Feedback:
+    async def aproc(self, arg, /, reporter: Optional[Reporter]) -> Feedback:
         """Processes the input asynchronously and returns a success \
         indicator (bool) with the result, reporting any failures if a reporter is passed"""
 
@@ -100,18 +109,18 @@ class Node(BaseNode):
         validate_name(name)
         return self.__class__(self.fun, name)
 
-    def proc(self, arg, reporter: Reporter | None) -> Feedback:
+    def proc(self, arg, reporter: Optional[Reporter]) -> Feedback:
         try:
             return True, self.fun(arg)
         except Exception as error:
             return self.handle_failure(error, arg, reporter)
 
-    async def aproc(self, arg, /, reporter: Reporter | None) -> Feedback:
+    async def aproc(self, arg, /, reporter: Optional[Reporter]) -> Feedback:
         # loop = asyncio.get_event_loop()
         # return await loop.run_in_executor(None, lambda: self.proc(arg, reporter))
         return self.proc(arg, reporter)
 
-    def handle_failure(self, error: Exception, arg, reporter: Reporter | None) -> Feedback:
+    def handle_failure(self, error: Exception, arg, reporter: Optional[Reporter]) -> Feedback:
         """Reports the failure according to the node severity"""
         severity = self.severity
         if not (severity is Severity.OPTIONAL or reporter is None):
@@ -125,13 +134,13 @@ class AsyncNode(Node):
     fun: SingleInputAsyncFunction
     is_async = True
 
-    async def aproc(self, arg, /, reporter: Reporter | None) -> Feedback:
+    async def aproc(self, arg, /, reporter: Optional[Reporter]) -> Feedback:
         try:
             return True, await self.fun(arg)
         except Exception as error:
             return self.handle_failure(error, arg, reporter)
 
-    def proc(self, arg, reporter: Reporter | None) -> Feedback:
+    def proc(self, arg, reporter: Optional[Reporter]) -> Feedback:
         return asyncio.run(self.aproc(arg, reporter))
 
 
@@ -139,10 +148,10 @@ class PassiveNode(BaseNode):
     """A node that returns the input as it is"""
     is_async = False
 
-    def proc(self, arg, /, reporter: Reporter | None) -> Feedback:
+    def proc(self, arg, /, reporter: Optional[Reporter]) -> Feedback:
         return True, arg
 
-    async def aproc(self, arg, /, reporter: Reporter | None) -> Feedback:
+    async def aproc(self, arg, /, reporter: Optional[Reporter]) -> Feedback:
         return True, arg
 
     def rn(self, name: str) -> 'PassiveNode':
@@ -171,10 +180,10 @@ class SemanticNode(WrapperNode):
         super().__init__(node)
         self.name = name
 
-    def proc(self, arg, reporter: Reporter | None) -> Feedback:
+    def proc(self, arg, reporter: Optional[Reporter]) -> Feedback:
         return self.node.proc(arg, reporter and reporter(self.name))
 
-    async def aproc(self, arg, /, reporter: Reporter | None) -> Feedback:
+    async def aproc(self, arg, /, reporter: Optional[Reporter]) -> Feedback:
         return await self.node.aproc(arg, reporter and reporter(self.name))
 
     @property
@@ -194,7 +203,7 @@ class SemanticNode(WrapperNode):
 class Loop(WrapperNode):
     """Wrapper node that processes each element of the input through the wrapped node and returns a list of results"""
 
-    def proc(self, args: Iterable, /, reporter: Reporter | None) -> Feedback:
+    def proc(self, args: Iterable, /, reporter: Optional[Reporter]) -> Feedback:
         if not args:
             return True, []
         successes: set[bool] = set()
@@ -206,7 +215,7 @@ class Loop(WrapperNode):
             results.append(res)
         return any(successes), results
 
-    async def aproc(self, args: Iterable, /, reporter: Reporter | None) -> Feedback:
+    async def aproc(self, args: Iterable, /, reporter: Optional[Reporter]) -> Feedback:
         if not args:
             return True, []
         node = self.node
@@ -231,7 +240,7 @@ class NodeGroup(BaseNode, ABC):
 
 
 class NodeChain(NodeGroup):
-    def proc(self, arg, reporter: Reporter | None) -> Feedback:
+    def proc(self, arg, reporter: Optional[Reporter]) -> Feedback:
         for node in self._nodes:
             success, res = node.proc(arg, reporter)
             if not success:
@@ -241,7 +250,7 @@ class NodeChain(NodeGroup):
             arg = res
         return True, arg
 
-    async def aproc(self, arg, /, reporter: Reporter | None) -> Feedback:
+    async def aproc(self, arg, /, reporter: Optional[Reporter]) -> Feedback:
         for node in self._nodes:
             success, res = await node.aproc(arg, reporter)
             if not success:
@@ -263,7 +272,7 @@ class NodeChain(NodeGroup):
 
 class NodeList(NodeGroup):
     """A node that processes the input through multiple branches and returns a list as a result"""
-    def proc(self, arg, reporter: Reporter | None) -> Feedback:
+    def proc(self, arg, reporter: Optional[Reporter]) -> Feedback:
         successes: set[bool] = set()
         results = []
         for node in self._nodes:
@@ -278,7 +287,7 @@ class NodeList(NodeGroup):
         success = (not results) or any(successes)
         return success, results
 
-    async def aproc(self, arg, /, reporter: Reporter | None) -> Feedback:
+    async def aproc(self, arg, /, reporter: Optional[Reporter]) -> Feedback:
         successes: set[bool] = set()
         results = []
         for (success, result), node in zip(
@@ -286,7 +295,7 @@ class NodeList(NodeGroup):
                     *(asyncio.create_task(node.aproc(arg, reporter)) for node in self._nodes)
                 ),
                 self._nodes,
-                strict=True
+                # strict=True
         ):
             if not success:
                 if node.severity is Severity.OPTIONAL:
@@ -308,7 +317,7 @@ class NodeDict(NodeList):
         super().__init__(nodes)
         self._branches = tuple(branches)
 
-    def proc(self, arg, reporter: Reporter | None) -> Feedback:
+    def proc(self, arg, reporter: Optional[Reporter]) -> Feedback:
         successes: set[bool] = set()
         results = {}
         for branch, node in zip(self._branches, self._nodes):
@@ -323,7 +332,7 @@ class NodeDict(NodeList):
         success = (not results) or any(successes)
         return success, results
 
-    async def aproc(self, arg, /, reporter: Reporter | None) -> Feedback:
+    async def aproc(self, arg, /, reporter: Optional[Reporter]) -> Feedback:
         successes: set[bool] = set()
         results = {}
         for (success, result), node, branch in zip(
@@ -332,7 +341,7 @@ class NodeDict(NodeList):
                 ),
                 self._nodes,
                 self._branches,
-                strict=True
+                # strict=True
         ):
             if not success:
                 if node.severity is Severity.OPTIONAL:
@@ -345,14 +354,14 @@ class NodeDict(NodeList):
         return success, results
 
 
-def _caller(node: 'BaseNode', arg, reporter: Reporter | None):
+def _caller(node: 'BaseNode', arg, reporter: Optional[Reporter]):
     try:
         return node.proc(arg, reporter)[1]
     except Failed:
         return
 
 
-async def _async_caller(node: 'BaseNode', arg, reporter: Reporter | None):
+async def _async_caller(node: 'BaseNode', arg, reporter: Optional[Reporter]):
     try:
         return (await node.aproc(arg, reporter))[1]
     except Failed:
@@ -402,7 +411,7 @@ def static(obj, /) -> Node:
     return _build_node(lambda _: obj, _name)
 
 
-def chain(*nodes, name: str | None = None) -> BaseNode:
+def chain(*nodes, name: Optional[str] = None) -> BaseNode:
     """Composes nodes in a sequential chain"""
     return _build(nodes, name)
 
@@ -423,7 +432,7 @@ def _build(obj: Any = ..., /, name: str = None) -> BaseNode:
     return static(obj)
 
 
-def _build_node(fun: SingleInputFunction, /, name: str | None = None) -> Node:
+def _build_node(fun: SingleInputFunction, /, name: Optional[str] = None) -> Node:
     """Builds a leaf node from a function"""
     if name is None:
         name = get_function_name(fun)
@@ -432,7 +441,7 @@ def _build_node(fun: SingleInputFunction, /, name: str | None = None) -> Node:
     return (AsyncNode if is_async(fun) else Node)(fun, name)
 
 
-def _build_node_list(struct: list[Any], /, name: str | None = None) -> BaseNode:
+def _build_node_list(struct: list[Any], /, name: Optional[str] = None) -> BaseNode:
     """Builds a branched node dict"""
     _nodes = tuple(map(_build, struct))
     node: BaseNode = NodeList(_nodes)
@@ -441,7 +450,7 @@ def _build_node_list(struct: list[Any], /, name: str | None = None) -> BaseNode:
     return node
 
 
-def _build_node_dict(struct: dict[str, Any], /, name: str | None = None) -> BaseNode:
+def _build_node_dict(struct: dict[str, Any], /, name: Optional[str] = None) -> BaseNode:
     """Builds a branched node list"""
     _branches = tuple(map(str, struct.keys()))
     _nodes = tuple(map(_build, struct.values()))
@@ -451,7 +460,7 @@ def _build_node_dict(struct: dict[str, Any], /, name: str | None = None) -> Base
     return node
 
 
-def _build_chain(nodes: tuple, /, name: str | None = None) -> BaseNode:
+def _build_chain(nodes: tuple, /, name: Optional[str] = None) -> BaseNode:
     """Builds a sequential chain of nodes"""
     if not nodes:
         return PASS
@@ -465,12 +474,12 @@ def _build_chain(nodes: tuple, /, name: str | None = None) -> BaseNode:
 
 
 @overload
-def _node(fun: SingleInputAsyncFunction, /, name: str | None = ...) -> AsyncNode: ...
+def _node(fun: SingleInputAsyncFunction, /, name: Optional[str] = ...) -> AsyncNode: ...
 @overload
-def _node(fun: SingleInputFunction, /, name: str | None = ...) -> Node: ...
+def _node(fun: SingleInputFunction, /, name: Optional[str] = ...) -> Node: ...
 
 
-def _node(fun: SingleInputFunction, /, name: str | None = None) -> Node:
+def _node(fun: SingleInputFunction, /, name: Optional[str] = None) -> Node:
     if not callable(fun):
         raise TypeError("The node function must be callable")
     return _build_node(fun, name)

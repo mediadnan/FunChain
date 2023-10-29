@@ -1,7 +1,12 @@
 import asyncio
 import functools
 import re
-from typing import Callable, ParamSpec, TypeVar
+import sys
+from typing import Callable, TypeVar
+if sys.version_info < (3, 10):
+    from typing_extensions import ParamSpec
+else:
+    from typing import ParamSpec
 
 from failures.core import NamePattern
 

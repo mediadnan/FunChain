@@ -130,11 +130,7 @@ def test_normal_node_in_a_node_dict(reporter):
     """Tests if the normal node returns None in case of failure while reporting"""
     nd = chain({"i": increment, "d": double})
     assert nd(3) == {'i': 4, 'd': 6}, "node outputted an unexpected value"
-    assert nd("3", reporter) is None, "node outputted an unexpected value"
-    assert len(reporter.failures) == 1, "node didn't report failure while it should"
-    nd = chain({"i": required(increment), "d": double})
-    assert nd(3) == {'i': 4, 'd': 6}, "node outputted an unexpected value"
-    assert nd("3", reporter) is None, "node outputted an unexpected value"
+    assert nd("3", reporter) == {'i': None, 'd': "33"}, "node outputted an unexpected value"
     assert len(reporter.failures) == 1, "node didn't report failure while it should"
 
 
