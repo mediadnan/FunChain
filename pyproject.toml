@@ -1,13 +1,67 @@
 [build-system]
-requires = ["setuptools>=63.2.0", "wheel"]
+requires = ["setuptools"]
 build-backend = "setuptools.build_meta"
 
-[tool.pytest.ini_options]
-addopts = "--cov=fastchain"
-testpaths = [
-    "tests"
+[project]
+name = "FunChain"
+dynamic = ["version", "dependencies"]
+description = "Chain functions easily and safely"
+readme = "README.md"
+requires-python = ">=3.9"
+license = {file = "LICENSE"}
+keywords = [
+    "function",
+    "functional",
+    "chain",
+    "chaining",
+    "pipe",
+    "compose",
+    "composition",
+    "processing",
+    "safe",
+    "handle",
+    "report",
+    "failure",
+]
+authors = [{ name =  "MARSO Adnan" }]
+classifiers = [
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "Intended Audience :: Information Technology",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering",
+    "Topic :: Software Development",
+    "Topic :: Utilities",
+    "Typing :: Typed"
 ]
 
+[tool.setuptools]
+include-package-data = true
+packages = ["funchain"]
+
+[tool.setuptools.package-data]
+"funchain" = ["py.typed"]
+
+[tool.setuptools.dynamic]
+version = {attr = "funchain.__version__"}
+dependencies = {file = "requirements.txt"}
+
+
+[project.urls]
+repository = "https://github.com/mediadnan/funchain"
+documentation = "https://funchain.readthedocs.com"
+bugs = "https://github.com/mediadnan/funchain/issues"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
 [tool.mypy]
-mypy_path = "fastchain"
+mypy_path = "funchain"
 check_untyped_defs = true
+implicit_optional = true

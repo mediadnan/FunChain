@@ -1,140 +1,85 @@
-=============================
-**FastChain**'s Documentation
-=============================
+=========
+FunChain
+=========
 
-Introduction
-============
-**FastChain** is a tool aiming to ease piping functions by safely chaining
-results from a function to the other **sequentially** or **simultaneously** and reporting failures
-without breaking the main program.
+Overview
+--------
 
-It provides tools needed for designing a process pipeline like grouping and branching,
-tools for personalizing components' behaviour and properties,
-and tools for monitoring the chain process, logging and reporting failures.
-All with an easy and pythonic syntax.
+**FunChain** is an open-source python library that provides tools for composing functions,
+it abstracts away and reduces the code needed to create a function pipeline that processes an input sequentially,
+or processes it through multiple branches in isolation to avoid that an exception *(failure)* from a branch
+to affect the entire chain.
 
-**FastChain** was designed for services that need to prepare configuration once *(at start)* and make it ready for use,
-in other words, it favours low-latency use over cold-starts. With that in mind when designing your chains it's always
-a good practice to completely separate configuration state *(constant process values)* that each function needs
-from pure input data that it expects, that will improve the performance of your program for sure.
+To achieve this behavior, ``funchain`` uses a python library called `failures` to gather and report labeled exceptions
+throughout the chain call.
 
-And for this reason it is recommended and best suited to live
-in running container or server instead of a serverless function that only starts when invoked.
+This library encourages the use of small reusable functions as components and uses them as building blocks to make more
+complex chains, with a **simple**, **intuitive** and **declarative** syntax,
+making the process of **designing**, **maintaining** and **monitoring** those chains easier and less error prone,
+so developers only focus on the functionality and ``funchain`` implements the logic to make it work automatically.
+
+Motivation
+----------
+
+Programing in general consists of a series of instructions that get executed one after the other, and when an instruction
+fails or returns an unexpected result, that causes all the remaining instructions that depends on it to fail.
+
+But there are many solution to that out there for that issue, some programing languages *like JavaScript, Dart, Swift ...*
+have the concept of optional chaining that prevent type errors like ``obj?.attribute``, Others give
+developers the responsibility to check results before passing them to the next instruction, and also we have
+great design patterns to follow *(especially in functional programming paradigm)* that target this specific issue
+*(like Monad and Railway oriented programming...)*. But for lazy programmers like myself, bending an entire code base
+to match a specific design pattern or handle each function separately is definitively not what I want to do,
+however in production we never want our application to go down if one part fails or if that fails for a specific input,
+usually we make sure to wrap each part and handle it exceptions and either simply logging them or sending them
+to a remote logging server, store and analyse them.
+
+FunChain is designed to automate and simplify this process and to give a better developer experience, by taking care
+of what happens between each step *(node)* and how each failure should be handled, and simplifies the definition of
+function pipelines with a declarative, intuitive and easy syntax.
+
+In this chapter we will discover the basic use case of ``funchain`` and make our first steps,
+the next chapters will be covering specific and advanced topics in depth.
 
 Audience
-========
-This python tools targets python developers in general, any one that does some kind of data processing
-or designing process with a series of steps that require validation and reporting might find this
-tool useful.
+--------
+Anyone working on a python project that requires processing data through multiple functions and needs to isolate
+each step and report errors with labels and details **can** benefit from the tooling offered by this library,
+using it may reduce boilerplate code and code repetition.
 
-.. warning::
-   **FastChain** was developed with Python 3.10 and kept compatibility with Python 3.8 version,
-   but the support for those earlier versions will be dropped in next releases.
+Continue reading the documentation to find out if ``FunChain`` offers tools that you need
+or aligns with your design pattern.
 
-Need
-====
-The idea came while working in a project that gathers and analyzes data from public websites and gets a set of values,
-usually sources like those are inconsistent and may lead to stopping your main service, and when issues like those occur,
-the maintainers need to locate and fix or update that specific part of the service.
+License
+-------
+This project is distributed under the MIT license.
 
-Of course there's some other ways to deal with this kind of issues, but as the project grows, it becomes tedious and harder
-handling each step of the code separately, or having to dive into the logs to figure out the source of the problem.
+.. _installation:
 
-The goal of this tool is to reduce or even remove the need to interact with a code each time a provider has changed
-the interface or any similar action that may break your code, and to achieve that, ``FastChain`` must
+Installation
+------------
+You can include ``FunChain`` into your environment using this command
 
-+ Provide an easy API to create a process flow abstracting away all the decisions like ``if..else`` or ```try..except``
-  and handle those internally.
+.. code-block:: shell
 
-+ Being able to locate the exact source of problem and report it to a custom handler, decreasing the time to fix it.
-
-+ Isolate components to make sure that if one component breaks, the rest will not be affected and continue.
-
-+ Separate chain structure from the code entirely, and make it possible to edit the process flows without interacting
-  with the core source code.
+    pip install funchain
 
 
-Pillars
-=======
-Using ``FastChain`` comes with beneficial advantages, it's built on to of the following pillars:
+Versioning
+----------
+This python package follows the |semver_link| specification, so breaking changes
+will only be introduced in MAJOR version bumps (i.e. from ``1.x.x`` to ``2.x.x``).
+As long as your app relies on a specific version (i.e. ``1.x.x``), the next MINOR releases will always be
+backward compatible.
 
-**Automation**
-  Create a process pipline by just passing functions in the desired order
-  and you'll get ready to use callable *(chain)*. Piping and creating nodes,
-  grouping, branching, error handling and reporting will be handled automatically.
-  And passing a value to the chain call, this value will go through all the nodes
-  and return the final result.
+.. important::
 
-**Decoupling**
-  Create reusable components in a single logical location, or a report handler,
-  and use them everywhere lowering code dependency, no function or component
-  need to know about the other, and each can be updated without affecting the rest.
+    **funchain** ``0.1.0`` is still currently experimental 🧪, however, it is tested.
+    Make sure to test it for your specific use case if you plan to integrate it into a production app.
 
-**Cohesiveness**
-  Encourages you to create functions that have a single responsibility and chain them as units instead
-  of chaining a function that has it internal sequence, after all the goal was to isolate process
-  steps and identify each node.
-
-**Flexibility**
-  Refactoring a sequence is a lot easier and safer, you can easily modify the structure of your process
-  flow, combine two, or reuse a part in multiple chains. After all, fewer code is always easier to refactor.
-
-**Scalability**
-  Adding more functionality and branching is simpler, you can nest as many structures as you need and design
-  complex flows faster.
-
-**Simplicity**
-  Providing and easy and intuitive syntax, you don't need to learn a lot to start using it
-  because you get what you expect, and it's easier to visualize the process flow by just looking at the structure.
-
-**Typing**
-  Encourages you to use annotations *(type hinting)*, you'll get more support, warnings and debugging
-  information if you use type hints, but you can still skip it if you want...
-
-**Isolation**
-  Each of your functions is converted into a node that runs safely, if it fails *(raises an exception)*
-  your main program will not break but only this chain will stop and report the issue.
-
-**Monitoring**
-  You can provide a callback function to the chain, it will be called with a report after each time this
-  chain is executed, and if any failure occurs the reporter will pinpoint the source and give you detailed information
-  about the issue reducing the debugging time and effort. The chain give you the report object and the rest is up to you.
-
-**Performance**
-  This library has been developed with performance in mind, and it will always aim for improving it by time
-  as long as there is room for better optimization.
-
-**Support**
-  This is an actively maintained project, I do rely on it in my personal projects and if there's any discovered
-  bug it will soon be fixed. Automated tests will be added from time to time to ensure every use case.
-  And if you discover a bug, please let me know.
-
-**Standalone**
-  Currently, this project has no third party dependencies that need to be installed, it only relies on the python
-  standard libraries, this might change in the future if the project encounters a problem that can be fixed with
-  a dependency.
-
-**Integrability**
-  It is easy to use it with other libraries and frameworks as it is a thin layer around your functions,
-  and it supports either ways of integration, to be integrated in or to integrate other tools.
+*TODO: documentation*
 
 
+.. |semver_link| raw:: html
 
-Documentation content
-=====================
-
-.. toctree::
-   :includehidden:
-   :maxdepth: 2
-   :caption: User Guide
-
-   getting_started
-   chainables
-   design_options/index
-
-
-.. toctree::
-   :maxdepth: 3
-   :caption: API Reference
-
-   reference
+    <a href="https://semver.org" target="_blank">semantic versioning</a>

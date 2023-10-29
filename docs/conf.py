@@ -1,49 +1,55 @@
-# Configuration file for the Sphinx documentation builder.
-#
-# This file only contains a selection of the most common options. For a full
-# list see the documentation:
-# https://www.sphinx-doc.org/en/master/usage/configuration.html
-
-# -- Path setup --------------------------------------------------------------
-
-# If extensions (or modules to document with autodoc) are in another directory,
-# add these directories to sys.path here. If the directory is relative to the
-# documentation root, use os.path.abspath to make it absolute, like shown here.
-#
-# import os
-# import sys
-# sys.path.insert(0, os.path.abspath('.'))
-
-
-# -- Project information -----------------------------------------------------
-
-project = 'FastChain'
+# -- Project Info
+project = 'FunChain'
 copyright = '2022, MARSO Adnan'
 author = 'MARSO Adnan'
-version = '1.0.1'
-release = '1.0.1'
+version = '0.1'
+release = '0.1.0'
 
 
-# -- General configuration ---------------------------------------------------
-
+# General Config
 extensions = [
     "sphinx.ext.autodoc",
+    "sphinx.ext.mathjax",
+    "sphinxcontrib.mermaid",
+    "myst_parser"
 ]
-
 templates_path = ['_templates']
-
 exclude_patterns = []
-
 master_doc = 'index'
+_py_docs = 'https://docs.python.org/3/library'
+external_links = {
+    'map': f'{_py_docs}/functions.html#map',
+    'filter': f'{_py_docs}/functions.html#filter',
+    'functools.partial': f'{_py_docs}/functools.html#functools.partial',
+    'logging.Logger': f'{_py_docs}/logging.html#logging.Logger',
+    'statistics.mean': f'{_py_docs}/statistics.html#statistics.mean'
+}
+rst_epilog = '\n'.join(f"""
+.. |{name}| raw:: html
 
-# -- Options for HTML output -------------------------------------------------
+    <a href="{link}" target="_blank">{name}</a>
+""" for name, link in external_links.items())
 
+# HTML Config
 html_theme = 'furo'
-html_static_path = ['_static', '_examples']
-# html_logo = "_static/logo/logo-color.svg"
-html_favicon = "_static/favicon/favicon-black.svg"
+html_title = f"{project} {version}"
+html_short_title = f"{project} docs"
+html_logo = "_static/favicon/favicon.svg"
+html_static_path = ['_static']
+html_favicon = "_static/favicon/favicon.svg"
 html_theme_options = {
     "sidebar_hide_name": True,
-    "light_logo": "logo/logo-black-no-bg.svg",
-    "dark_logo": "logo/logo-white-no-bg.svg",
+    "navigation_with_keys": True,
 }
+
+
+# Autodoc Config
+autoclass_content = "both"
+autodoc_class_signature = "mixed"
+
+# mermaid config
+mermaid_params = [
+    '--theme', 'dark',
+    '--backgroundColor', 'transparent',
+    '--width', '600'
+]

@@ -1,0 +1,9 @@
+flowchart TB
+    A([start]) ---inp[/3/]--> B
+    B[triple] ---D1{OK ?}---|yes|out1[/9/]-->C
+    C[triple] ---D2{OK ?}---|yes|out2[/27/]-->D
+    D[double] ---D3{OK ?}---|yes|out3[/54/]-->Z
+    D1 ---|no|R[report failure]
+    D2 ---|no|R[report failure]
+    D3 ---|no|R[report failure]
+    R ---None[/None/]-->Z([end])

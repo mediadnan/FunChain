@@ -1,0 +1,248 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Acknowledgement -->
+
+<!-- FunChain's logo was created using Inkscape (http://www.inkscape.org/) -->
+
+<!-- FunChain's icon is a combination of two icon's from 'https://www.flaticon.com/uicons'-->
+
+<svg
+   width="1280"
+   height="1280"
+   viewBox="0 0 338.66666 338.66666"
+   version="1.1"
+   id="svg154"
+   inkscape:export-filename="favicon.png"
+   inkscape:export-xdpi="96"
+   inkscape:export-ydpi="96"
+   inkscape:version="1.2.1 (9c6d41e410, 2022-07-14)"
+   sodipodi:docname="favicon.svg"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:xlink="http://www.w3.org/1999/xlink"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:dc="http://purl.org/dc/elements/1.1/">
+  <title
+     id="title363">Fastchain_banner</title>
+  <sodipodi:namedview
+     id="namedview156"
+     pagecolor="#a1a1a1"
+     bordercolor="#000000"
+     borderopacity="0.25"
+     inkscape:showpageshadow="true"
+     inkscape:pageopacity="0"
+     inkscape:pagecheckerboard="true"
+     inkscape:deskcolor="#d1d1d1"
+     inkscape:document-units="px"
+     showgrid="false"
+     showborder="true"
+     borderlayer="true"
+     shape-rendering="auto"
+     inkscape:zoom="0.914906"
+     inkscape:cx="555.7948"
+     inkscape:cy="625.20084"
+     inkscape:window-width="3840"
+     inkscape:window-height="2054"
+     inkscape:window-x="-11"
+     inkscape:window-y="-11"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="layer1" />
+  <defs
+     id="defs151">
+    <linearGradient
+       inkscape:collect="always"
+       id="linearGradient13354">
+      <stop
+         style="stop-color:#353592;stop-opacity:1;"
+         offset="0"
+         id="stop13352" />
+      <stop
+         style="stop-color:#3838b6;stop-opacity:1;"
+         offset="1"
+         id="stop13350" />
+    </linearGradient>
+    <linearGradient
+       inkscape:collect="always"
+       id="linearGradient11803">
+      <stop
+         style="stop-color:#000000;stop-opacity:1;"
+         offset="0"
+         id="stop11799" />
+      <stop
+         style="stop-color:#000000;stop-opacity:0;"
+         offset="1"
+         id="stop11801" />
+    </linearGradient>
+    <linearGradient
+       id="linearGradient1237"
+       inkscape:swatch="gradient">
+      <stop
+         style="stop-color:#ffffff;stop-opacity:1;"
+         offset="0"
+         id="stop1233" />
+      <stop
+         style="stop-color:#ffffff;stop-opacity:0;"
+         offset="1"
+         id="stop1235" />
+    </linearGradient>
+    <linearGradient
+       xlink:href="#grad-fill"
+       id="linearGradient161"
+       x1="2.1352451"
+       y1="-0.045880482"
+       x2="24.144728"
+       y2="-0.045880482"
+       gradientTransform="scale(0.91324296,1.0949989)"
+       gradientUnits="userSpaceOnUse" />
+    <linearGradient
+       id="grad-fill"
+       x1="0"
+       y1="0"
+       x2="1"
+       y2="0">
+      <stop
+         offset="0%"
+         stop-color="#0a063f"
+         stop-opacity="1"
+         id="stop25" />
+      <stop
+         offset="50%"
+         stop-color="#0d0948"
+         stop-opacity="1"
+         id="stop27" />
+      <stop
+         offset="100%"
+         stop-color="#0c0213"
+         stop-opacity="1"
+         id="stop29" />
+    </linearGradient>
+    <clipPath
+       id="clipPath16034">
+      <rect
+         style="opacity:1;fill:none;fill-opacity:1;stroke:#282c4c;stroke-width:0.0369928;stroke-dasharray:none;stroke-opacity:0.707819;filter:url(#filter8458)"
+         id="rect16036"
+         width="29.361238"
+         height="34.395142"
+         x="-2.6806209"
+         y="-1.2218081" />
+    </clipPath>
+    <clipPath
+       id="clipPath15255">
+      <rect
+         style="opacity:1;fill:none;fill-opacity:1;stroke:#282c4c;stroke-width:0.264583;stroke-dasharray:none;stroke-opacity:0.707819"
+         id="rect15257"
+         width="210"
+         height="246.00392"
+         x="0"
+         y="0" />
+    </clipPath>
+    <clipPath
+       id="clipPath15263">
+      <rect
+         style="opacity:1;fill:none;fill-opacity:1;stroke:#282c4c;stroke-width:0.0369928;stroke-dasharray:none;stroke-opacity:0.707819"
+         id="rect15265"
+         width="29.361242"
+         height="34.395145"
+         x="-2.6806207"
+         y="-1.2218081" />
+    </clipPath>
+    <linearGradient
+       xlink:href="#grad-fill"
+       id="linearGradient159"
+       x1="-0.10073491"
+       y1="-0.094781414"
+       x2="24.1008"
+       y2="-0.094781414"
+       gradientTransform="scale(0.99999734)"
+       gradientUnits="userSpaceOnUse" />
+    <clipPath
+       id="clipPath15259">
+      <rect
+         style="opacity:1;fill:none;fill-opacity:1;stroke:#282c4c;stroke-width:0.0739856;stroke-dasharray:none;stroke-opacity:0.707819"
+         id="rect15261"
+         width="58.722485"
+         height="68.790291"
+         x="-17.361242"
+         y="-11.443616" />
+    </clipPath>
+    <linearGradient
+       inkscape:collect="always"
+       xlink:href="#linearGradient11803"
+       id="linearGradient11805"
+       x1="16.172615"
+       y1="84.666664"
+       x2="315.49252"
+       y2="84.666664"
+       gradientUnits="userSpaceOnUse" />
+    <linearGradient
+       inkscape:collect="always"
+       xlink:href="#linearGradient13354"
+       id="linearGradient13356"
+       x1="1.9489613"
+       y1="11.99994"
+       x2="22.051039"
+       y2="11.99994"
+       gradientUnits="userSpaceOnUse" />
+    <linearGradient
+       inkscape:collect="always"
+       xlink:href="#linearGradient13354"
+       id="linearGradient14721"
+       gradientUnits="userSpaceOnUse"
+       x1="1.9489613"
+       y1="11.99994"
+       x2="22.051039"
+       y2="11.99994" />
+    <linearGradient
+       inkscape:collect="always"
+       xlink:href="#linearGradient13354"
+       id="linearGradient14723"
+       gradientUnits="userSpaceOnUse"
+       x1="1.9489613"
+       y1="11.99994"
+       x2="22.051039"
+       y2="11.99994" />
+  </defs>
+  <g
+     inkscape:label="fore"
+     inkscape:groupmode="layer"
+     id="layer1"
+     style="stroke:#242456;stroke-opacity:1;stroke-width:0.26458333;stroke-dasharray:none">
+    <g
+       style="display:inline;fill:url(#linearGradient13356);fill-opacity:1;stroke:#242456;stroke-width:0.0272297;stroke-dasharray:none;stroke-opacity:1"
+       id="g47"
+       transform="matrix(12.76178,0,0,12.76178,16.191972,16.192708)"
+       clip-path="url(#clipPath16034)"
+       inkscape:label="icon">
+      <path
+         d="M 18.581,2.14 12.316,0.051 a 1,1 0 0 0 -0.632,0 L 5.418,2.14 A 4.993,4.993 0 0 0 2,6.883 V 12 c 0,7.563 9.2,11.74 9.594,11.914 a 1,1 0 0 0 0.812,0 C 12.8,23.74 22,19.563 22,12 V 6.883 A 4.993,4.993 0 0 0 18.581,2.14 Z M 20,12 c 0,5.455 -6.319,9.033 -8,9.889 C 10.317,21.036 4,17.469 4,12 V 6.883 A 3,3 0 0 1 6.051,4.037 L 12,2.054 17.948,4.037 A 3,3 0 0 1 20,6.883 Z"
+         id="path34"
+         style="display:inline;fill:url(#linearGradient14721);fill-opacity:1;stroke:#242456;stroke-width:0.0272297;stroke-dasharray:none;stroke-opacity:1"
+         clip-path="url(#clipPath15263)"
+         inkscape:label="shield" />
+      <path
+         d="M 21.864,18.127 A 5.337,5.337 0 0 0 16.674,14 H 13.5 v -1.616 a 6.282,6.282 0 1 0 -3,0 V 14 H 7.326 a 5.337,5.337 0 0 0 -5.19,4.127 3,3 0 1 0 2.921,0.69 A 2.331,2.331 0 0 1 7.326,17 H 10.5 v 1.4 a 3,3 0 1 0 3,0 V 17 h 3.174 a 2.331,2.331 0 0 1 2.269,1.817 3,3 0 1 0 2.921,-0.69 z M 8.718,6.283 A 3.282,3.282 0 1 1 12,9.565 3.286,3.286 0 0 1 8.718,6.283 Z"
+         stroke-width="0.2"
+         transform="matrix(0.5,0,0,0.5,6,4.5)"
+         id="path36"
+         style="display:inline;fill:url(#linearGradient14723);fill-opacity:1;stroke:#242456;stroke-width:0.0544594;stroke-dasharray:none;stroke-opacity:1"
+         clip-path="url(#clipPath15259)"
+         inkscape:label="flow_pipeline" />
+    </g>
+  </g>
+  <metadata
+     id="metadata361">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <dc:title>Fastchain_banner</dc:title>
+        <dc:creator>
+          <cc:Agent>
+            <dc:title>MARSO Adnan</dc:title>
+          </cc:Agent>
+        </dc:creator>
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+</svg>
