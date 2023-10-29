@@ -251,6 +251,15 @@ class NodeChain(NodeGroup):
             arg = res
         return True, arg
 
+    def __add__(self, other):
+        return chain(*self._nodes, other)
+    
+    def __iadd__(self, other):
+        return chain(other, *self._nodes)
+
+    def __mul__(self, other):
+        return chain(*self._nodes, loop(other))
+
 
 class NodeList(NodeGroup):
     """A node that processes the input through multiple branches and returns a list as a result"""
