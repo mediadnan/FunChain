@@ -15,7 +15,7 @@
 
 ## Introduction
 **FunChain** is a package that provides tools and utilities to easily compose functions sequentially
-to create processing pipelines with minimum code and simple syntax *(such as OR operator ``func1 | func2``)*,
+to create processing pipelines with minimum code and simple syntax,
 all while tracking, reporting and containing any crash that could occur in any step.  
 
 The library was part of another API client project and was developed to reduce boilerplate code when dealing
@@ -48,19 +48,18 @@ of functions *(or so-called nodes)* results in a single
 function-like objects that passes the result of one function
 to the next as input.
 
-The sequential composition ***(or piping)*** can be done 
-using the ``|`` operator, like; ``seq = fun1 | fun2 | fun3``
+This means `fun1 ➜ fun2 ➜ fun3`, or programmatically speaking
+`fun3(fun2(fun1(input)))`
 
 ### Iterating multiple items ⛓️
 While composing functions, we might want to apply a function
 to each item of an iterable instead of applying it to the whole
-iterable; this is achieved using the ``*`` operator,
-Like: ``seq = fun1 * fun2``.
+iterable, for example if ``fun1`` returns a list like ``[1, 2, 3]`` 
+the next one will be called like ``[fun2(1), fun2(2), fun2(3)]`` 
+instead of ``fun2([1, 2, 3])``
 
-If ``fun1`` returns a list like
-``[1, 2, 3]`` the next one will be called like 
-``[fun2(1), fun2(2), fun2(3)]`` instead of ``fun2([1, 2, 3])``
-if we used ``fun1 | fun2``
+This means `fun1 ⭄ fun2`, or programmatically speaking 
+`[fun2(item) for item in fun1(input)]`
 
 ### Branching 🦑
 When a returned value needs to take multiple routes at some points,
@@ -69,14 +68,10 @@ of the result and _(either a ``dict`` and ``list``)_ filling it
 with the sequence of functions, and the result will have the same 
 structure.
 
-If we want to extract a dictionary from a given input,
-we can do it like ``fun1 | {'a': fun2, 'b': fun3 | fun4}``,
-so if ``fun1`` returns ``5``, the result will be 
-``{'a': fun(5), 'b': fun4(fun3(5))}``.
+So for dictionaries, the model `{'a': fun1, 'b': fun2}` will return
+`{'a': fun1(input), 'b': fun2(input)}`
 
-The same if we need a list as a result, we can define 
-the structure to be ``fun1 | [fun2, fun3 | fun4]``,
-that way the result will be ``[fun(5), fun4(fun3(5))]``
+And the model `[fun1, fun2]` will return `[fun1(input), fun2(input)]`.
 
 ### Debug friendly 🪲
 Composing multiple functions makes it hard
@@ -91,7 +86,7 @@ the exact input that caused it.
 ### Good and minimal syntax 🎈
 The syntax of this library was intentionally made easy and minimal users to compose functions,
 to achieve complex pipeline structures with the least amount of code, and make it more readable and intuitive
-to be easily maintained. It also makes it a beginner-friendly tool with a gentle learning.
+to be easily maintained. It also makes it a beginner-friendly tool with a gentle learning curve.
 
 ### Async support 🪄
 All the previously mentioned features are available for asynchronous
@@ -99,9 +94,83 @@ operations; coroutines can be composed together the same way to produce
 an asynchronous chain of functions,
 the same if a normal function is piped to an async one.
 
-This makes ``funchain`` a good choice for processing IO intensive
+Normal and asynchronous functions can be mixed together and
+`funchain` will know what to do, and if any async function is chained,
+the result will automatically be an asynchronous callable.
+
+This makes this library a good choice for processing IO intensive
 operations, such as performing network requests or reading files from
 the hard drive in a non-blocking way.
 
+### Flexibility
+The structure of a function chain can be as deep and complex as needed,
+every component is considered a chain node, so a chain can contain a
+dict or list model and each can contain another chain or model and so.
+
 ## Usage
- ... TODO
+### Function chaining
+
+This example illustrates how to compose functions in a sequence
+using `chain()`
+
+```python
+>>> from funchain import chain
+
+>>> def add_two(num: int) -> int:
+...   return num + 2
+
+>>> def double(num: int) -> int:
+...   return num * 2
+
+>>> fun = chain(add_two, double, add_two)
+
+>>> fun(5)
+16
+```
+In this example we created two simple functions `add_two` and `double`
+and we chained them `chain(add_two, double, add_two)`.
+
+This basically means that any input given to `fun` _which is a chain_,
+will be incremented by 2, then doubled, then incremented again by 2;
+
+This mean: `add_two(5) = 7 ⮕ double(7) = 14 ⮕ add_two(14) = 16`
+
+### Predefined nodes
+We can compile nodes in advance using `node()` and chain them later
+by concatenation _(using_ `+` _operator)_
+
+```python
+>>> from funchain import node
+
+>>> add_two = node(lambda x: x + 2, name="add_two")
+
+>>> double = node(lambda x: x * 2, name="double")
+
+>>> fun = add_two + double + add_two
+
+>>> fun(5)
+16
+```
+
+This works the same as the first example and it's more convenient for functions that are meant to be used
+as components.
+
+If we had a functions like the previous example,
+we can integrate compile it to a node like this
+
+```python
+>>> from funchain import node
+
+>>> def double(num: int) -> int:
+...   return num * 2
+
+>>> nd = node(double)
+
+>>> fun = nd + nd
+
+>>> fun(5)
+20
+```
+
+
+_... TODO_
