@@ -5,7 +5,7 @@
     <br/>
     <a href="https://github.com/mediadnan/funchain/actions/workflows/tests.yml"><img src="https://github.com/mediadnan/funchain/actions/workflows/tests.yml/badge.svg" alt="Tests" /></a>
     <img src="https://img.shields.io/github/license/mediadnan/funchain" alt="License MIT" />
-    <a href="https://fast-chain.readthedocs.io/en/latest/"><img src="https://img.shields.io/readthedocs/fast-chain" alt="Read the Docs"></a>
+    <a href="https://funchain.readthedocs.io/en/latest/"><img src="https://img.shields.io/readthedocs/fast-chain" alt="Read the Docs"></a>
     <img src="https://img.shields.io/pypi/pyversions/funchain" alt="Python versions" />
     <img src="https://img.shields.io/pypi/v/funchain" alt="PyPI version" />
     <img src="https://img.shields.io/pypi/dm/funchain" alt="PyPI - Downloads"/>
