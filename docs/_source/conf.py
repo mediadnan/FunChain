@@ -17,18 +17,18 @@ templates_path = ['_templates']
 exclude_patterns = []
 master_doc = 'index'
 _py_docs = 'https://docs.python.org/3/library'
-external_links = {
-    'map': f'{_py_docs}/functions.html#map',
-    'filter': f'{_py_docs}/functions.html#filter',
-    'functools.partial': f'{_py_docs}/functools.html#functools.partial',
-    'logging.Logger': f'{_py_docs}/logging.html#logging.Logger',
-    'statistics.mean': f'{_py_docs}/statistics.html#statistics.mean'
-}
-rst_epilog = '\n'.join(f"""
-.. |{name}| raw:: html
-
-    <a href="{link}" target="_blank">{name}</a>
-""" for name, link in external_links.items())
+# external_links = {
+#     'map': f'{_py_docs}/functions.html#map',
+#     'filter': f'{_py_docs}/functions.html#filter',
+#     'functools.partial': f'{_py_docs}/functools.html#functools.partial',
+#     'logging.Logger': f'{_py_docs}/logging.html#logging.Logger',
+#     'statistics.mean': f'{_py_docs}/statistics.html#statistics.mean'
+# }
+# rst_epilog = '\n'.join(f"""
+# .. |{name}| raw:: html
+#
+#     <a href="{link}" target="_blank">{name}</a>
+# """ for name, link in external_links.items())
 
 # HTML Config
 html_theme = 'furo'
