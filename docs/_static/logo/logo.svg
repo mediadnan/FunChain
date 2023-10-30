@@ -1,6 +1,8 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!-- Acknowledgement -->
+
 <!-- FunChain's logo was created using Inkscape (http://www.inkscape.org/) -->
+
 <!-- FunChain's icon is a combination of two icon's from 'https://www.flaticon.com/uicons'-->
 
 <svg
@@ -39,14 +41,14 @@
      borderlayer="true"
      shape-rendering="auto"
      inkscape:zoom="0.914906"
-     inkscape:cx="638.86345"
-     inkscape:cy="613.17775"
+     inkscape:cx="635.03792"
+     inkscape:cy="614.27076"
      inkscape:window-width="3840"
      inkscape:window-height="2054"
-     inkscape:window-x="-11"
+     inkscape:window-x="2038"
      inkscape:window-y="-11"
      inkscape:window-maximized="1"
-     inkscape:current-layer="layer1" />
+     inkscape:current-layer="g11294" />
   <defs
      id="defs151">
     <linearGradient
@@ -70,11 +72,11 @@
          id="stop12760" />
       <stop
          style="stop-color:#353592;stop-opacity:1;"
-         offset="0.46000001"
+         offset="0.39577982"
          id="stop13889" />
       <stop
          style="stop-color:#bfbfcf;stop-opacity:1;"
-         offset="0.46000001"
+         offset="0.39577982"
          id="stop13887" />
       <stop
          style="stop-color:#aeaec2;stop-opacity:1;"
@@ -263,21 +265,19 @@
       </g>
       <text
          xml:space="preserve"
-         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:38.8056px;font-family:Tahoma;-inkscape-font-specification:'Tahoma, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;display:inline;opacity:1;fill:url(#linearGradient13885);fill-opacity:1;stroke:#242456;stroke-width:0.20224001;stroke-dasharray:none;stroke-opacity:1"
+         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:38.8056px;font-family:Tahoma;-inkscape-font-specification:'Tahoma, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;display:inline;opacity:1;fill:url(#linearGradient13885);fill-opacity:1;stroke:#242456;stroke-width:0.20224;stroke-dasharray:none;stroke-opacity:1"
          x="15.906295"
          y="220.40425"
          id="text267"
          clip-path="url(#clipPath15255)"
-         transform="matrix(1.308264,0,0,1.308264,34.784245,16.828586)"
+         transform="matrix(1.308264,0,0,1.308264,38.274407,20.877271)"
          inkscape:label="title"><tspan
            id="tspan265"
-           style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:38.8056px;font-family:Tahoma;-inkscape-font-specification:'Tahoma, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;fill:url(#linearGradient13885);fill-opacity:1;stroke:#242456;stroke-width:0.20224001;stroke-dasharray:none;stroke-opacity:1"
+           style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:38.8056px;font-family:Tahoma;-inkscape-font-specification:'Tahoma, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;fill:url(#linearGradient13885);fill-opacity:1;stroke:#242456;stroke-width:0.20224;stroke-dasharray:none;stroke-opacity:1"
            x="15.906295"
            y="220.40425"><tspan
-             style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:38.8056px;font-family:Tahoma;-inkscape-font-specification:'Tahoma, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;fill:url(#linearGradient13885);fill-opacity:1;stroke:#242456;stroke-width:0.20224001;stroke-dasharray:none;stroke-opacity:1"
-             id="tspan1593">Fast</tspan><tspan
-             style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:38.8056px;font-family:Tahoma;-inkscape-font-specification:'Tahoma, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;fill:url(#linearGradient13885);fill-opacity:1;stroke:#242456;stroke-width:0.20224001;stroke-dasharray:none;stroke-opacity:1"
-             id="tspan1489">Chain</tspan></tspan></text>
+   style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:38.8056px;font-family:Tahoma;-inkscape-font-specification:'Tahoma, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;fill:url(#linearGradient13885);fill-opacity:1;stroke:#242456;stroke-width:0.20224;stroke-dasharray:none;stroke-opacity:1"
+   id="tspan1593">Fun</tspan>Chain</tspan></text>
     </g>
   </g>
   <metadata
