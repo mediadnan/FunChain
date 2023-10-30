@@ -34,9 +34,9 @@ rst_epilog = '\n'.join(f"""
 html_theme = 'furo'
 html_title = f"{project} {version}"
 html_short_title = f"{project} docs"
-html_logo = "_static/favicon/favicon.svg"
-html_static_path = ['_static']
-html_favicon = "_static/favicon/favicon.svg"
+html_logo = "../_static/logo/logo.png"
+html_static_path = ['../_static']
+html_favicon = "../_static/favicon/favicon.svg"
 html_theme_options = {
     "sidebar_hide_name": True,
     "navigation_with_keys": True,
