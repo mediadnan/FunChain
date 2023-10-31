@@ -51,7 +51,12 @@ pip install funchain
 :maxdepth: 2
 
 user_guide/getting_started.md
-
+user_guide/chains.md
+user_guide/models.md
+user_guide/optional.md
+user_guide/required.md
+user_guide/async_support.md
+user_guide/static.md
 ```
 
 ```{toctree}

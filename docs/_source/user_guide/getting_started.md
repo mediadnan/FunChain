@@ -79,3 +79,8 @@ TypeError("unsupported operand type(s) for +: 'NoneType' and 'int'")
 ``reporter.failures`` is a list of reported failures, in this case we only have 1,
 the error was reported with the label ``'calculate.increment'`` that reveals its location,
 and the input that caused it, which is ``None``.
+
+```{important}
+It is **highly recommended** to pass reporters to `funchain` chains and nodes,
+especially in production, otherwise the errors will be permanently silenced.
+```
