@@ -427,8 +427,6 @@ def _build(obj: Any = ..., /, name: str = None) -> BaseNode:
         return _build_node_dict(obj, name)
     elif isinstance(obj, list):
         return _build_node_list(obj, name)
-    elif obj is ...:
-        return PASS
     return static(obj)
 
 
