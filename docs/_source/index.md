@@ -1,5 +1,5 @@
 # <img id="logo" src="_static/logo/banner.png" alt="FunChain Logo" />
-<div style="text-align: center; font-style: italic; font-weight: bold;">Chain functions easily and safely</div>
+<div style="text-align: center; font-weight: bold;">Chain functions easily and safely</div>
 
 ## Overview 📜
 
@@ -47,7 +47,16 @@ pip install funchain
 
 ## Content 📂
 ```{toctree}
+:caption: User Guide 📖
 :maxdepth: 2
 
 user_guide/getting_started.md
+
+```
+
+```{toctree}
+:caption: Reference 🔎
+:maxdepth: 2
+
+reference.md
 ```
