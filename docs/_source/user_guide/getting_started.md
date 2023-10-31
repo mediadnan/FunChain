@@ -35,27 +35,17 @@ it again; So if we try it we will get this
 13
 >>> calculate(8)    # ((8 + 1) * 2) + 1
 19
->>> calculate(-2)   # ((-2 + 1) * 2) + 1
--1
 ````
 
 This same functionality can be achieved simply by writing
 ````python
 calculate = lambda num: increment(double(increment(num)))
 ````
-Or
-````python
-def calculate(num: int) -> int:
-    num = increment(num)
-    num = double(num)
-    return increment(num)
-````
 However, there some key differences about this approach and the 
 one with ``chain()``, and one of them is containing errors inside the function.
 
 ````pycon
->>> calculate = lambda num: increment(double(increment(num)))
->>> calculate(None)
+>>> increment(double(increment(None)))
 Traceback (most recent call last):
     ...
 TypeError: unsupported operand type(s) for +: 'NoneType' and 'int'
@@ -63,32 +53,29 @@ TypeError: unsupported operand type(s) for +: 'NoneType' and 'int'
 >>> calculate(None)  # None
 
 ````
-This **doesn't** mean that errors are completely ignored, but they can be retrieved
-and collected if a <a href="https://failures.readthedocs.io/en/latest/api_ref.html#failures.Reporter" target="_blank">Reporter [⮩]</a>
+The chain object didn't raise the exception and returned ``None`` as alternative result,
+but this **doesn't** mean that errors get completely ignored,
+they can be retrieved if a <a href="https://failures.readthedocs.io/en/latest/api_ref.html#failures.Reporter" target="_blank">Reporter [⮩]</a>
+object is passed after the input argument, that reporter can be later reviewed and properly handled.
 
-{emphasize-lines="9,13"}
-````python
-from funchain import chain, Reporter
+## Reporting failures
+To gather execution failures from a chain, we will pass a ``Reporter`` object to ``calculate``
 
-def increment(num: int) -> int:
-    return num + 1
+{emphasize-lines="4"}
+````pycon
+>>> from failures import Reporter
+>>> # or (from funchain import Reporter) same...
+>>> reporter = Reporter("calculate")
+>>> calculate(None, reporter)
 
-def double(num: int) -> int:
-    return num * 2
-
-calculate = chain(increment, double, increment, name="calculate")
-
-if __name__ == "__main__":
-    reporter = Reporter("my_pipeline")
-    result = calculate(None, reporter)
-    print(f"Result: {result!r}", f"Failures: {reporter.failures[0]}", sep="\n")
+>>> failure = reporter.failures[0]
+>>> failure.source
+'calculate.increment'
+>>> failure.error
+TypeError("unsupported operand type(s) for +: 'NoneType' and 'int'")
+>>> failure.details
+{'input': None}
 ````
-
-``reporter.failures`` is a list of reported failures registered throughout the
-input processing, here our reporter reported one detailed failure
-
-``Failure(source='my_pipeline.calculate.increment', error=TypeError("unsupported operand type(s) for +: 'NoneType' and 'int'"), details={'input': None})``
-
-These failures can be later handled. For more information about handling failures
-check the <a href="https://failures.readthedocs.io" target="_blank"><b>Failures</b> [⮩]</a>
-library.
+``reporter.failures`` is a list of reported failures, in this case we only have 1,
+the error was reported with the label ``'calculate.increment'`` that reveals its location,
+and the input that caused it, which is ``None``.
