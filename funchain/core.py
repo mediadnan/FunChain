@@ -412,7 +412,36 @@ def static(obj, /) -> Node:
 
 
 def chain(*nodes, name: Optional[str] = None) -> BaseNode:
-    """Composes nodes in a sequential chain"""
+    """This function is used to compose functions and create callable\
+    objects depending on the given structure.
+
+    It takes arbitrary positional arguments that represent the chain nodes, \
+    and takes an optional keyword argument **name** to assign a name to the\
+    resulting node.
+
+    The nodes can be one of the following types:
+
+    - A function (simple _leaf_ node)
+    - A tuple of functions or any of the mentioned node types
+    - A dictionary of functions or any of the mentioned node types
+    - A list of functions or any of the mentioned node types
+    - And finally any other type will be considered a static result, \
+    which means that the node will return the same object regardless of\
+    the input.
+
+    If the name is specified, the node (chain, model or function)
+    will be labeled with that name, and will be used in failure
+    reports.
+
+    The resulting object will be a callable object that takes a single\
+    argument and returns result of the processing.
+
+    That object takes and optional second argument a Reporter object \
+    that can be used to report failures.
+
+    However, if the reporter is omitted, the errors will be silently\
+    ignored.
+    """
     return _build(nodes, name)
 
 
