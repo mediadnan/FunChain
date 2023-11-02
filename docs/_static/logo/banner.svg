@@ -11,7 +11,7 @@
    inkscape:export-xdpi="96"
    inkscape:export-ydpi="96"
    inkscape:version="1.2.1 (9c6d41e410, 2022-07-14)"
-   sodipodi:docname="drawing.svg"
+   sodipodi:docname="banner.svg"
    xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
    xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
    xmlns:xlink="http://www.w3.org/1999/xlink"
@@ -37,11 +37,11 @@
      borderlayer="true"
      shape-rendering="auto"
      inkscape:zoom="1.829812"
-     inkscape:cx="533.38813"
-     inkscape:cy="362.87881"
+     inkscape:cx="487.20852"
+     inkscape:cy="363.97182"
      inkscape:window-width="3840"
      inkscape:window-height="2054"
-     inkscape:window-x="-11"
+     inkscape:window-x="2038"
      inkscape:window-y="-11"
      inkscape:window-maximized="1"
      inkscape:current-layer="g11294" />
@@ -51,11 +51,11 @@
        inkscape:collect="always"
        id="linearGradient13354">
       <stop
-         style="stop-color:#353592;stop-opacity:1;"
+         style="stop-color:#4d4dbe;stop-opacity:1;"
          offset="0"
          id="stop13352" />
       <stop
-         style="stop-color:#3838b6;stop-opacity:1;"
+         style="stop-color:#3737b5;stop-opacity:1;"
          offset="1"
          id="stop13350" />
     </linearGradient>
@@ -63,19 +63,23 @@
        inkscape:collect="always"
        id="linearGradient12764">
       <stop
-         style="stop-color:#3838b6;stop-opacity:1;"
+         style="stop-color:#3232a7;stop-opacity:1;"
          offset="0"
          id="stop12760" />
       <stop
-         style="stop-color:#353592;stop-opacity:1;"
-         offset="0.46000001"
+         style="stop-color:#38389b;stop-opacity:1;"
+         offset="0.34990826"
          id="stop13889" />
       <stop
          style="stop-color:#bfbfcf;stop-opacity:1;"
-         offset="0.46000001"
+         offset="0.34990826"
          id="stop13887" />
       <stop
-         style="stop-color:#aeaec2;stop-opacity:1;"
+         style="stop-color:#babaca;stop-opacity:1;"
+         offset="0.90825689"
+         id="stop3295" />
+      <stop
+         style="stop-color:#8f8fab;stop-opacity:1;"
          offset="1"
          id="stop13891" />
     </linearGradient>
@@ -204,7 +208,7 @@
     <linearGradient
        inkscape:collect="always"
        xlink:href="#linearGradient12764"
-       id="linearGradient13885"
+       id="linearGradient3293"
        gradientUnits="userSpaceOnUse"
        x1="18.723174"
        y1="205.95637"
@@ -242,7 +246,7 @@
       </g>
       <text
          xml:space="preserve"
-         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:38.8056px;font-family:Tahoma;-inkscape-font-specification:'Tahoma, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;display:inline;opacity:1;fill:url(#linearGradient13885);fill-opacity:1;stroke:#242456;stroke-width:0.20224;stroke-dasharray:none;stroke-opacity:1"
+         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:38.8056px;font-family:Tahoma;-inkscape-font-specification:'Tahoma, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;display:inline;opacity:1;fill:url(#linearGradient3293);fill-opacity:1;stroke:#242456;stroke-width:0.202559;stroke-dasharray:none;stroke-opacity:1"
          x="15.906295"
          y="220.40425"
          id="text267"
@@ -250,13 +254,11 @@
          transform="matrix(1.308264,0,0,1.308264,65.211141,-184.77863)"
          inkscape:label="title"><tspan
            id="tspan265"
-           style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:38.8056px;font-family:Tahoma;-inkscape-font-specification:'Tahoma, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;fill:url(#linearGradient13885);fill-opacity:1;stroke:#242456;stroke-width:0.20224;stroke-dasharray:none;stroke-opacity:1"
+           style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:38.8056px;font-family:Tahoma;-inkscape-font-specification:'Tahoma, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;fill:url(#linearGradient3293);fill-opacity:1;stroke:#242456;stroke-width:0.202559;stroke-dasharray:none;stroke-opacity:1"
            x="15.906295"
            y="220.40425"><tspan
-             style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:38.8056px;font-family:Tahoma;-inkscape-font-specification:'Tahoma, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;fill:url(#linearGradient13885);fill-opacity:1;stroke:#242456;stroke-width:0.20224;stroke-dasharray:none;stroke-opacity:1"
-             id="tspan1593">Fast</tspan><tspan
-             style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:38.8056px;font-family:Tahoma;-inkscape-font-specification:'Tahoma, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;fill:url(#linearGradient13885);fill-opacity:1;stroke:#242456;stroke-width:0.20224;stroke-dasharray:none;stroke-opacity:1"
-             id="tspan1489">Chain</tspan></tspan></text>
+   style="fill:url(#linearGradient3293);fill-opacity:1;stroke-width:0.202559;stroke-dasharray:none"
+   id="tspan2883">Fun</tspan>Chain</tspan></text>
     </g>
   </g>
   <metadata

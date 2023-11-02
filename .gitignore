@@ -61,3 +61,5 @@ dmypy.json
 .idea/
 
 /.vscode/settings.json
+
+docs/_build
