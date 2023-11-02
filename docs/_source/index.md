@@ -32,9 +32,10 @@ will only be introduced in MAJOR version bumps _(i.e. from ``1.x.x`` to ``2.x.x`
 As long as your app relies on a specific version (i.e. ``1.x.x``), the next MINOR releases will always be
 backward compatible.
 
-However, it's worth mentioning that `funchain` is still in its experimental phase,
+```{note}
+However, it's worth mentioning that `funchain` is still in its **experimental phase**,
 but it's being tested and actively maintained.
-
+```
 Future changes will be documented in the `CHANGELOG.md` file.
 
 (installation)=
