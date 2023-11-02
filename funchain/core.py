@@ -18,7 +18,7 @@ if sys.version_info < (3, 10):
     from typing_extensions import TypeAlias
 else:
     from typing import TypeAlias
-from failures import Reporter
+from failures import Reporter, FailureException
 
 from ._tools import validate_name, is_async, get_function_name
 
@@ -71,10 +71,10 @@ class BaseNode(ABC):
             raise TypeError("reporter must be instance of failures.Reporter")
         return (_async_caller if self.is_async else _caller)(self, arg, reporter)
 
-    def __add__(self, other):
+    def __or__(self, other):
         return chain(self, other)
 
-    def __iadd__(self, other):
+    def __ior__(self, other):
         return chain(other, self)
 
     def __mul__(self, other):
@@ -260,7 +260,7 @@ class NodeChain(NodeGroup):
             arg = res
         return True, arg
 
-    def __add__(self, other):
+    def __or__(self, other):
         return chain(*self._nodes, other)
 
     def __iadd__(self, other):
