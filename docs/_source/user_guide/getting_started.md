@@ -84,3 +84,8 @@ and the input that caused it, which is ``None``.
 It is **highly recommended** to pass reporters to `funchain` chains and nodes,
 especially in production, otherwise the errors will be permanently silenced.
 ```
+
+```{important}
+The functions used as ``funchain`` components should be **pure** functions with a single positional argument,
+the function should not **mutate** the input.
+```
