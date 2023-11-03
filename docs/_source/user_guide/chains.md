@@ -1,6 +1,6 @@
 # Chain types
 
-## Predefined nodes
+## Reusable nodes
 Using ``chain()`` is the most straight forward to compose functions, so if we want to chain functions
 sequentially the syntax is ``chain(fun1, fun2, func3)``, that will be mathematically equivalent to ``fun3(fun2(fun1(x)))``.
 
@@ -21,7 +21,7 @@ def double(num: int) -> int:
 inc = node(increment)
 dbl = node(double)
 
-chain = inc + dbl + dbl
+chain = inc | dbl | dbl
 
 if __name__ == "__main__":
     print("The result of process is : ", chain(5))
@@ -29,7 +29,7 @@ if __name__ == "__main__":
     # Because : ((5 + 1) * 2) * 2 == 24
 ````
 
-Beyond the ability to compose nodes using the ``+`` operator (which is elegant 😍), 
+Beyond the ability to compose nodes using the ``|`` operator (which is elegant 😍), 
 the ``node()`` function offers to rename its functions with a meaningful name that will be used in reports in case of failure;
 
 take ``lambda`` functions as example:
@@ -38,7 +38,7 @@ take ``lambda`` functions as example:
 >>> from funchain import node, Reporter
 >>> inc = node(lambda x: x+1, name="increment")
 >>> dbl = node(lambda x: x*2, name="double")
->>> fun = dbl + inc + dbl
+>>> fun = dbl | inc | dbl
 >>> fun(3)
 14
 >>> reporter = Reporter("err_node_1")
@@ -52,7 +52,34 @@ take ``lambda`` functions as example:
 >>> reporter.failures
 [Failure(source='err_node_2.increment', error=TypeError('can only concatenate list (not "int") to list'), details={'input': [3, 3]})] 
 ````
-If we didn't specify the name, the failure source would be ``err_node_1.lambda``
+If we didn't specify the name, the failure source would be ``err_node_1.lambda``.
+
+```{note}
+By default, the node takes the function's name _(or ``__name__`` to be specific)_
+ as a label to be used in reports.
+
+But if a custom name is provided, it must meet a specific criteria, for more information check the reporter's
+<a href="https://failures.readthedocs.io/en/latest/guide/reporting.html#naming-conventions" target="_blank">naming convension [⮩]</a>.
+```
+
+The node itself can be called without being chained, all type of nodes have the same
+call interface that is ``node(argument: Any, /, reporter: Reporter = None) -> Any``
+
+```pycon
+>>> from funchain import node, Reporter
+>>> add_two = node(lambda x: x+2, name="add_two")
+>>> add_two(5)
+7
+>>> reporter = Reporter("my_operation")
+>>> add_two(None, reporter)
+
+>>> reporter.failures
+[Failure(source='my_operation.add_two', error=TypeError("unsupported operand type(s) for +: 'NoneType' and 'int'"), details={'input': None})]
+```
+
+## Partial arguments
+...TODO
+
 ## Input iteration
 ...TODO
 
