@@ -81,6 +81,12 @@ call interface that is ``node(argument: Any, /, reporter: Reporter = None) -> An
 [Failure(source='my_operation.add_two', error=TypeError("unsupported operand type(s) for +: 'NoneType' and 'int'"), details={'input': None})]
 ```
 
+```{note}
+``chain(fun)`` is identically equivalent to ``node(fun)``, they both return the same type of node,
+
+They both have a slot for _**name**_, ``chain(fun, name="my_function")`` / ``node(fun, name="my_function")``. 
+```
+
 ## Partial arguments
 As previously mentioned, functions that can be chained must have a single input argument, or in general have multiple
 arguments but at most only one required first argument, and at least must take at least one argument.
@@ -168,8 +174,38 @@ is equivalent to ``lambda inp: [fun4(fun3(fun2(elem))) for elem in fun1(inp)]``
 The same behavior can be achieved with pre-compiled nodes like ``node1 * (node2, node3, node4)`` is equivalent to
 ``lambda inp: [node4(node3(node2(elem))) for elem in node1(inp)]``
 
-The use of parenthesis indicates that the group of nodes is a sequence. 
+```{important}
+The use of parenthesis _(or **tuple** of nodes)_ indicates a sequence in ``funchain``.
+```
+
+## Renaming a node
+Every `funchain` node type has a method called ``.rn(name: str)`` that returns a new clone of the node with
+the given name, and it is recommended in production apps to label each operation scoop, so that failures get reported
+with meaningful and clear labels.
+
+````pycon
+>>> from funchain import node, chain, Reporter
+>>> fun = (node(lambda x: x + 2).rn("add_2")
+...        | node(lambda x: 1 / x).rn("inverse")
+...        | node(round).partial(ndigits=4)).rn("process_number")
+>>> fun(9)
+0.0909
+>>> rp = Reporter("my_operation")
+>>> fun(None, rp)
+
+>>> fun(-2, rp)
+
+>>> from pprint import pp
+>>> pp(rp.failures)
+[Failure(source='my_operation.process_number.add_2', error=TypeError("unsupported operand type(s) for +: 'NoneType' and 'int'"), details={'input': None}),
+ Failure(source='my_operation.process_number.inverse', error=ZeroDivisionError('division by zero'), details={'input': 0})]
+````
+
+```{note}
+It is recommended to use ``node(fn, name=...)`` and ``chain(fn, name=...)`` rather than ``node(fn).rn(...)`` 
+and ``chain(fn).rn(...)`` for new nodes, and keep the ``node.rn(...)`` for predefined chains and nodes
+that need to be copied with a new name.
+```
 
 ## Combining chains
 ...TODO
-
