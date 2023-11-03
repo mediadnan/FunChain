@@ -41,8 +41,8 @@ This same functionality can be achieved simply by writing
 ````python
 calculate = lambda num: increment(double(increment(num)))
 ````
-However, there some key differences about this approach and the 
-one with ``chain()``, and one of them is containing errors inside the function.
+However, there are some key differences between this approach and the 
+one with ``chain()``, and one the main differences is containing errors.
 
 ````pycon
 >>> increment(double(increment(None)))
@@ -53,8 +53,26 @@ TypeError: unsupported operand type(s) for +: 'NoneType' and 'int'
 >>> calculate(None)  # None
 
 ````
-The chain object didn't raise the exception and returned ``None`` as alternative result,
-but this **doesn't** mean that errors get completely ignored,
+
+The chain operates internally based on the railway pattern, it isolates each node and breaks the chain in case 
+of failure; The process can be visualised like this:
+
+```{mermaid}
+:align: center
+
+flowchart LR
+    I((input)) --> A
+    A[fun1] -->|ok| B
+    A --> |error| X
+    B[fun2] --> |ok| C[fun3]
+    B --> |error| X
+    C --> E((output))
+    C --> |error| X
+    X((None))
+```
+
+The chain object don't raise an exception, it returns ``None`` as alternative result if any of it nodes fail,
+but this **doesn't** mean that errors are completely ignored,
 they can be retrieved if a <a href="https://failures.readthedocs.io/en/latest/api_ref.html#failures.Reporter" target="_blank">Reporter [⮩]</a>
 object is passed after the input argument, that reporter can be later reviewed and properly handled.
 
