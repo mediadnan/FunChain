@@ -1,4 +1,8 @@
-# Chain types
+# Funchain Nodes
+``funchain`` has several functions to build nodes _(the building blocks of chains)_, those functions compile down
+to a function like object that takes an input value, and optionally a ``Reporter`` object.
+
+In this chapter, we will see some of those functions like ``chain()``, ``node()`` and ``loop()``...
 
 ## Reusable nodes
 Using ``chain()`` is the most straight forward to compose functions, so if we want to chain functions
@@ -78,10 +82,70 @@ call interface that is ``node(argument: Any, /, reporter: Reporter = None) -> An
 ```
 
 ## Partial arguments
-...TODO
+As previously mentioned, functions that can be chained must ave a single input argument, or in general have multiple
+arguments but at most only one required first argument, and at least must take at least one argument.
+
+But if a function takes more than one argument, some of them can be partially applied:
+```pycon
+>>> from funchain import node
+>>> def add(a: int, b: int) -> int:
+...     return a + b
+>>> add_two = node(add).partial(b=2)
+>>> add_five = node(add).partial(b=5)
+>>> op_chain = add_two | add_five | node(add).partial(10) # add 10
+>>> op_chain(4) # 4 + 2 + 5 + 10
+21
+```
+In this case, and while both arguments `a` and `b` are required, it is mandatory to apply `.partial()` method.
+
+```{note}
+The ``.partial()`` only uses the builtin
+ <a href="https://docs.python.org/3/library/functools.html#functools.partial" target="_blank">``functools.partial`` [⮩]</a>
+ under the hood.
+```
 
 ## Input iteration
-...TODO
+Imagine that a function returns a list, tuple or any iterable object, and we want to chain it to the next function to it
+
+````pycon
+>>> from funchain import node
+>>> def get_next_three(a: int) -> tuple[int, int, int]:
+...     return a + 1, a + 2, a + 3
+>>> double = node(lambda x: x*2, name="double")
+>>> process = node(get_next_three) | double
+>>> process(4)
+(5, 6, 7, 5, 6, 7)
+````
+This gets the next three numbers of 4 ``(5, 6, 7)``
+and then double the entire result resulting in ``(5, 6, 7, 5, 6, 7)``
+
+If we need to double each element of that set of numbers instead of doubling the entire tuple, we can achieve this like
+follows
+
+{emphasize-lines="1"}
+````pycon
+>>> process = node(get_next_three) * double
+>>> process(4)
+[10, 12, 14]
+````
+This time `double` gets applied to each item of that sequence instead of the whole tuple as we have seen in the previous
+example.
+
+The `*` operator indicates that the next node will receive an iterable object
+and should be applied to each of its elements.
+
+The same can be achieved with `chain()` and [`loop()`](#funchain.loop) together
+
+````pycon
+>>> from funchain import chain, loop
+>>> def get_next_three(a: int) -> tuple[int, int, int]:
+...     return a + 1, a + 2, a + 3
+>>> def double(a):
+...     return a * 2
+>>> process = chain(get_next_three, loop(double))
+>>> process(4)
+[10, 12, 14]
+````
 
 ## Combining chains
 ...TODO
