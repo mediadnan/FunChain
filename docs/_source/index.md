@@ -52,7 +52,7 @@ pip install funchain
 :maxdepth: 2
 
 user_guide/getting_started.md
-user_guide/chains.md
+user_guide/nodes.md
 user_guide/models.md
 user_guide/optional.md
 user_guide/required.md

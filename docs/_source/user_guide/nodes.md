@@ -206,6 +206,3 @@ It is recommended to use ``node(fn, name=...)`` and ``chain(fn, name=...)`` rath
 and ``chain(fn).rn(...)`` for new nodes, and keep the ``node.rn(...)`` for predefined chains and nodes
 that need to be copied with a new name.
 ```
-
-## Combining chains
-...TODO
