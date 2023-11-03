@@ -1,5 +1,5 @@
 # Funchain Nodes
-``funchain`` has several functions to build nodes _(the building blocks of chains)_, those functions compile down
+``funchain`` has several functions to build nodes _**(the building blocks of chains)**_, those functions compile down
 to a function like object that takes an input value, and optionally a ``Reporter`` object.
 
 In this chapter, we will see some of those functions like ``chain()``, ``node()`` and ``loop()``...
@@ -82,7 +82,7 @@ call interface that is ``node(argument: Any, /, reporter: Reporter = None) -> An
 ```
 
 ## Partial arguments
-As previously mentioned, functions that can be chained must ave a single input argument, or in general have multiple
+As previously mentioned, functions that can be chained must have a single input argument, or in general have multiple
 arguments but at most only one required first argument, and at least must take at least one argument.
 
 But if a function takes more than one argument, some of them can be partially applied:
@@ -146,6 +146,29 @@ The same can be achieved with `chain()` and [`loop()`](#funchain.loop) together
 >>> process(4)
 [10, 12, 14]
 ````
+
+``loop()`` function can take multiple arguments and composes them like ``chain()`` does
+
+```pycon
+>>> from funchain import loop, chain, node
+>>> double = node(lambda x: x * 2)
+>>> # testing a normal chain
+>>> fun1 = chain(double, double, double)
+>>> fun1([2, 3])
+[2, 3, 2, 3, 2, 3, 2, 3, 2, 3, 2, 3, 2, 3, 2, 3]
+>>> # testing an iteration chain
+>>> fun2 = loop(double, double, double)
+>>> fun2([2, 3])
+[16, 24]
+```
+
+This can be used to apply an entire chain to each item of a sequence, like ``chain(fun1, loop(fun2, fun3, fun4))``
+is equivalent to ``lambda inp: [fun4(fun3(fun2(elem))) for elem in fun1(inp)]``
+
+The same behavior can be achieved with pre-compiled nodes like ``node1 * (node2, node3, node4)`` is equivalent to
+``lambda inp: [node4(node3(node2(elem))) for elem in node1(inp)]``
+
+The use of parenthesis indicates that the group of nodes is a sequence. 
 
 ## Combining chains
 ...TODO
