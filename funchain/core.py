@@ -225,6 +225,10 @@ class Loop(WrapperNode):
     """Wrapper node that processes each element of the input through the wrapped node and returns a list of results"""
 
     def proc(self, args: Iterable, /, reporter: Optional[Reporter]) -> Feedback:
+        try:
+            iter(args)
+        except TypeError:
+            return self.node.proc(args, reporter)
         if not args:
             return True, []
         successes: set[bool] = set()
@@ -234,15 +238,19 @@ class Loop(WrapperNode):
             success, res = node.proc(arg, reporter)
             successes.add(success)
             results.append(res)
-        return any(successes), results
+        return (True in successes), results
 
     async def aproc(self, args: Iterable, /, reporter: Optional[Reporter]) -> Feedback:
+        try:
+            iter(args)
+        except TypeError:
+            return await self.node.aproc(args, reporter)
         if not args:
             return True, []
         node = self.node
         jobs = await asyncio.gather(*(asyncio.create_task(node.aproc(arg, reporter)) for arg in args))
         successes, results = zip(*jobs)
-        return any(successes), results
+        return (True in successes), list(results)
 
 
 class NodeGroup(BaseNode, ABC):
@@ -318,8 +326,9 @@ class NodeList(NodeGroup):
                     continue
             successes.add(success)
             results.append(result)
-        success = (not results) or any(successes)
-        return success, results
+        if True in successes:
+            return True, results
+        return False, None
 
     async def aproc(self, arg, /, reporter: Optional[Reporter]) -> Feedback:
         successes: set[bool] = set()
@@ -336,8 +345,9 @@ class NodeList(NodeGroup):
                     continue
             successes.add(success)
             results.append(result)
-        success = (not results) or any(successes)
-        return success, results
+        if True in successes:
+            return True, results
+        return False, None
 
 
 class NodeDict(NodeList):
@@ -359,8 +369,9 @@ class NodeDict(NodeList):
                     continue
             successes.add(success)
             results[branch] = result
-        success = (not results) or any(successes)
-        return success, results
+        if True in successes:
+            return True, results
+        return False, None
 
     async def aproc(self, arg, /, reporter: Optional[Reporter]) -> Feedback:
         successes: set[bool] = set()
@@ -378,8 +389,9 @@ class NodeDict(NodeList):
                     continue
             successes.add(success)
             results[branch] = result
-        success = (not results) or any(successes)
-        return success, results
+        if True in successes:
+            return True, results
+        return False, None
 
 
 def _caller(node: 'BaseNode', arg, reporter: Optional[Reporter]):
