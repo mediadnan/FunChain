@@ -32,6 +32,7 @@ jobs:
       - name: Install Dev Dependencies 📥
         run: |
           python -m pip install --upgrade pip
+          pip install .
           pip install pytest pytest-asyncio pytest-cov mypy mypy-extensions flake8
       - name : Test with Pytest 🧪
         run: pytest --cov funchain/ --cov-report xml --cov-branch --cov-append
@@ -58,6 +59,7 @@ jobs:
       - name: Install Dev Dependencies 📥
         run: |
           python -m pip install --upgrade pip
+          pip install .
           pip install flake8
       - name: Check with flake8 🔎
         run: flake8 funchain
@@ -76,6 +78,7 @@ jobs:
       - name: Install Dev Dependencies 📥
         run: |
           python -m pip install --upgrade pip
+          pip install .
           pip install mypy mypy-extensions
       - name: Check with mypy 🔎
         run: mypy funchain
