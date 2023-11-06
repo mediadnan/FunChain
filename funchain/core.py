@@ -39,11 +39,11 @@ class Severity(Enum):
 
 class BaseNode(ABC):
     """Base class for all FunChain nodes"""
-    __slots__ = ('__severity',)
-    __severity: Severity
+    __slots__ = ('_severity',)
+    _severity: Severity
 
     def __init__(self, *, severity: Severity = Severity.NORMAL) -> None:
-        self.__severity = severity
+        self._severity = severity
 
     @property
     @abstractmethod
@@ -66,13 +66,13 @@ class BaseNode(ABC):
     @property
     def severity(self) -> Severity:
         """Specifies the behavior in case of failure"""
-        return self.__severity
+        return self._severity
 
     @severity.setter
     def severity(self, value: Severity) -> None:
         if not isinstance(value, Severity):
             raise TypeError("severity must be instance of failures.Severity")
-        self.__severity = value
+        self._severity = value
 
     def __call__(self, arg, /, reporter: Reporter = None):
         if not (reporter is None or isinstance(reporter, Reporter)):
@@ -135,12 +135,11 @@ class Node(BaseNode):
     def handle_failure(self, error: Exception, arg, reporter: Optional[Reporter]) -> Feedback:
         """Reports the failure according to the node severity"""
         severity = self.severity
-        if self.severity is Severity.OPTIONAL:
-            return False, None
-        reporter = reporter(self.name)
-        if severity is Severity.REQUIRED:
+        if reporter and (severity is Severity.NORMAL):
+            (reporter or Reporter)(self.name).report(error, input=arg)
+        elif severity is Severity.REQUIRED:
+            reporter = (reporter or Reporter)(self.name)
             raise FailureException(reporter.failure(error, input=arg), reporter)
-        reporter.report(error, input=arg)
         return False, None
 
 
@@ -202,10 +201,10 @@ class SemanticNode(WrapperNode):
         self.name = name
 
     def proc(self, arg, reporter: Optional[Reporter]) -> Feedback:
-        return self.node.proc(arg, reporter and reporter(self.name))
+        return self.node.proc(arg, (reporter or Reporter)(self.name))
 
     async def aproc(self, arg, /, reporter: Optional[Reporter]) -> Feedback:
-        return await self.node.aproc(arg, reporter and reporter(self.name))
+        return await self.node.aproc(arg, (reporter or Reporter)(self.name))
 
     @property
     def name(self) -> str:
@@ -267,9 +266,13 @@ class NodeGroup(BaseNode, ABC):
     def is_async(self) -> bool:
         return self.__is_async
 
-    @BaseNode.severity.setter
+    @property
+    def severity(self) -> Severity:
+        return self._severity
+
+    @severity.setter
     def severity(self, severity: Severity) -> None:
-        super().severity = severity
+        self._severity = severity
         if severity is not Severity.REQUIRED:
             return
         _nodes = []
