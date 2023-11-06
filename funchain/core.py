@@ -103,6 +103,10 @@ class Node(BaseNode):
         self.fun = fun
         self.name = name
 
+    @property
+    def __name__(self) -> str:
+        return self.name
+
     def partial(self, *args, **kwargs) -> Self:
         """Clones the node and partially applies the arguments"""
         func = self.fun
