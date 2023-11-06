@@ -37,3 +37,5 @@ jobs:
           name: codecov-umbrella
           env_vars: OS,PYTHON
           verbose: true
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
