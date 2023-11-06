@@ -18,7 +18,7 @@ if sys.version_info < (3, 10):
     from typing_extensions import TypeAlias
 else:
     from typing import TypeAlias
-from failures import Reporter, FailureException
+from failures import Reporter
 
 from ._tools import validate_name, is_async, get_function_name
 
@@ -42,11 +42,11 @@ class Severity(Enum):
 
 class BaseNode(ABC):
     """Base class for all FunChain nodes"""
-    __slots__ = ('severity',)
-    severity: Severity
+    __slots__ = ('__severity',)
+    __severity: Severity
 
-    def __init__(self) -> None:
-        self.severity = Severity.NORMAL
+    def __init__(self, *, severity: Severity = Severity.NORMAL) -> None:
+        self.__severity = severity
 
     @property
     @abstractmethod
@@ -64,7 +64,18 @@ class BaseNode(ABC):
 
     def rn(self, name: str) -> 'BaseNode':
         """Returns a labeled version of the current node"""
-        return SemanticNode(self, name)
+        return SemanticNode(self, name, severity=self.severity)
+
+    @property
+    def severity(self) -> Severity:
+        """Specifies the behavior in case of failure"""
+        return self.__severity
+
+    @severity.setter
+    def severity(self, value: Severity) -> None:
+        if not isinstance(value, Severity):
+            raise TypeError("severity must be instance of failures.Severity")
+        self.__severity = value
 
     def __call__(self, arg, /, reporter: Reporter = None):
         if not (reporter is None or isinstance(reporter, Reporter)):
@@ -90,8 +101,8 @@ class Node(BaseNode):
     name: str
     is_async = False
 
-    def __init__(self, fun: SingleInputFunction, name: str) -> None:
-        super().__init__()
+    def __init__(self, fun: SingleInputFunction, name: str, *, severity: Severity = Severity.NORMAL) -> None:
+        super().__init__(severity=severity)
         self.fun = fun
         self.name = name
 
@@ -107,7 +118,7 @@ class Node(BaseNode):
     def rn(self, name: str) -> Self:
         """Returns a clone of the current node with the new name"""
         validate_name(name)
-        return self.__class__(self.fun, name)
+        return self.__class__(self.fun, name, severity=self.severity)
 
     def proc(self, arg, reporter: Optional[Reporter]) -> Feedback:
         try:
@@ -160,11 +171,18 @@ class PassiveNode(BaseNode):
 
 class WrapperNode(BaseNode, ABC):
     __slots__ = ('node',)
-    node: BaseNode
 
-    def __init__(self, node: BaseNode, /) -> None:
-        super().__init__()
-        self.node = node
+    def __init__(self, node: BaseNode, /, *, severity: Severity = Severity.NORMAL) -> None:
+        super().__init__(severity=severity)
+        self.node: BaseNode = node
+
+    @property
+    def severity(self) -> Severity:
+        return self.node.severity
+
+    @severity.setter
+    def severity(self, severity: Severity) -> None:
+        self.node.severity = severity
 
     @property
     def is_async(self) -> bool:
@@ -176,8 +194,8 @@ class SemanticNode(WrapperNode):
     __slots__ = ('__name',)
     __name: str
 
-    def __init__(self, node: BaseNode, /, name: str) -> None:
-        super().__init__(node)
+    def __init__(self, node: BaseNode, /, name: str, *, severity: Severity = Severity.NORMAL) -> None:
+        super().__init__(node, severity=severity)
         self.name = name
 
     def proc(self, arg, reporter: Optional[Reporter]) -> Feedback:
@@ -197,7 +215,7 @@ class SemanticNode(WrapperNode):
         self.__name = name
 
     def rn(self, name: str) -> Self:
-        return self.__class__(self.node, name)
+        return self.__class__(self.node, name, severity=self.severity)
 
 
 class Loop(WrapperNode):
@@ -229,8 +247,8 @@ class NodeGroup(BaseNode, ABC):
     _nodes: tuple[BaseNode, ...]
     __is_async: bool
 
-    def __init__(self, nodes: Iterable[BaseNode], /) -> None:
-        super().__init__()
+    def __init__(self, nodes: Iterable[BaseNode], /, *, severity: Severity = Severity.NORMAL) -> None:
+        super().__init__(severity=severity)
         self._nodes = tuple(nodes)
         self.__is_async = any(node.is_async for node in self._nodes)
 
@@ -473,17 +491,21 @@ def _build_node_list(struct: list[Any], /, name: Optional[str] = None) -> BaseNo
     _nodes = tuple(map(_build, struct))
     node: BaseNode = NodeList(_nodes)
     if name:
-        node = node.rn(name)
+        return node.rn(name)
     return node
 
 
 def _build_node_dict(struct: dict[str, Any], /, name: Optional[str] = None) -> BaseNode:
     """Builds a branched node list"""
-    _branches = tuple(map(str, struct.keys()))
-    _nodes = tuple(map(_build, struct.values()))
+    _branches = []
+    _nodes = []
+    for key, value in struct.items():
+        branch_name = str(key)
+        _branches.append(branch_name)
+        _nodes.append(_build(value, branch_name))
     node: BaseNode = NodeDict(_nodes, _branches)
     if name:
-        node = node.rn(name)
+        return node.rn(name)
     return node
 
 
