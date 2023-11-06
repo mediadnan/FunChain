@@ -1,3 +1,4 @@
+import failures
 import pytest
 from typing import Any
 from asyncio import run
@@ -104,8 +105,8 @@ def test_required_node_in_a_chain(reporter):
     """Tests if the required node cause the entire chain to fail in case of failure while reporting"""
     nd = chain(required(increment), double)
     assert nd(3) == 8, "node outputted an unexpected value"
-    assert nd("3", reporter) is None, "node outputted an unexpected value"
-    assert len(reporter.failures) == 1, "node didn't report failure while it should"
+    with pytest.raises(failures.FailureException):
+        nd("3", reporter)
 
 
 def test_optional_node_in_a_node_dict(reporter):
@@ -120,8 +121,8 @@ def test_required_node_in_a_node_dict(reporter):
     """Tests if the required node cause the entire node to fail in case of failure while reporting"""
     nd = chain({"i": required(increment), "d": double})
     assert nd(3) == {'i': 4, 'd': 6}, "node outputted an unexpected value"
-    assert nd("3", reporter) is None, "node outputted an unexpected value"
-    assert len(reporter.failures) == 1, "node didn't report failure while it should"
+    with pytest.raises(failures.FailureException):
+        nd("3", reporter)
 
 
 def test_normal_node_in_a_node_dict(reporter):
@@ -144,8 +145,8 @@ def test_required_node_in_a_node_list(reporter):
     """Tests if the required node cause the entire node to fail in case of failure while reporting"""
     nd = chain([required(increment), double])
     assert nd(3) == [4, 6], "node outputted an unexpected value"
-    assert nd("3", reporter) is None, "node outputted an unexpected value"
-    assert len(reporter.failures) == 1, "node didn't report failure while it should"
+    with pytest.raises(failures.FailureException):
+        nd("3", reporter)
 
 
 def test_normal_node_in_a_node_list(reporter):

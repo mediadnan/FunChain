@@ -2,6 +2,7 @@ import asyncio
 import functools
 import sys
 from abc import ABC, abstractmethod
+from copy import copy
 from enum import Enum
 from typing import (TypeVar,
                     Callable,
@@ -18,7 +19,7 @@ if sys.version_info < (3, 10):
     from typing_extensions import TypeAlias
 else:
     from typing import TypeAlias
-from failures import Reporter
+from failures import Reporter, FailureException
 
 from ._tools import validate_name, is_async, get_function_name
 
@@ -27,10 +28,6 @@ U = TypeVar('U')
 Feedback: TypeAlias = tuple[bool, T]
 SingleInputFunction: TypeAlias = Callable[[T], U]
 SingleInputAsyncFunction: TypeAlias = Callable[[T], Coroutine[None, None, U]]
-
-
-class Failed(Exception):
-    """This error gets raised by a required node that failed; to stop the cascading execution"""
 
 
 class Severity(Enum):
@@ -134,10 +131,12 @@ class Node(BaseNode):
     def handle_failure(self, error: Exception, arg, reporter: Optional[Reporter]) -> Feedback:
         """Reports the failure according to the node severity"""
         severity = self.severity
-        if not (severity is Severity.OPTIONAL or reporter is None):
-            reporter(self.name).report(error, input=arg)
+        if self.severity is Severity.OPTIONAL:
+            return False, None
+        reporter = reporter(self.name)
         if severity is Severity.REQUIRED:
-            raise Failed
+            raise FailureException(reporter.failure(error, input=arg), reporter)
+        reporter(self.name).report(error, input=arg)
         return False, None
 
 
@@ -256,6 +255,21 @@ class NodeGroup(BaseNode, ABC):
     def is_async(self) -> bool:
         return self.__is_async
 
+    @BaseNode.severity.setter
+    def severity(self, severity: Severity) -> None:
+        super().severity = severity
+        if severity is not Severity.REQUIRED:
+            return
+        _nodes = []
+        for node in self._nodes:
+            if node.severity is not Severity.NORMAL:
+                _nodes.append(node)
+                continue
+            node = copy(node)
+            node.severity = Severity.REQUIRED
+            _nodes.append(node)
+        self._nodes = tuple(_nodes)
+
 
 class NodeChain(NodeGroup):
     def proc(self, arg, reporter: Optional[Reporter]) -> Feedback:
@@ -298,8 +312,6 @@ class NodeList(NodeGroup):
             if not success:
                 if node.severity is Severity.OPTIONAL:
                     continue
-                if node.severity is Severity.REQUIRED:
-                    raise Failed
             successes.add(success)
             results.append(result)
         success = (not results) or any(successes)
@@ -318,8 +330,6 @@ class NodeList(NodeGroup):
             if not success:
                 if node.severity is Severity.OPTIONAL:
                     continue
-                if node.severity is Severity.REQUIRED:
-                    raise Failed
             successes.add(success)
             results.append(result)
         success = (not results) or any(successes)
@@ -343,8 +353,6 @@ class NodeDict(NodeList):
             if not success:
                 if node.severity is Severity.OPTIONAL:
                     continue
-                if node.severity is Severity.REQUIRED:
-                    raise Failed
             successes.add(success)
             results[branch] = result
         success = (not results) or any(successes)
@@ -364,8 +372,6 @@ class NodeDict(NodeList):
             if not success:
                 if node.severity is Severity.OPTIONAL:
                     continue
-                if node.severity is Severity.REQUIRED:
-                    raise Failed
             successes.add(success)
             results[branch] = result
         success = (not results) or any(successes)
@@ -373,17 +379,11 @@ class NodeDict(NodeList):
 
 
 def _caller(node: 'BaseNode', arg, reporter: Optional[Reporter]):
-    try:
-        return node.proc(arg, reporter)[1]
-    except Failed:
-        return
+    return node.proc(arg, reporter)[1]
 
 
 async def _async_caller(node: 'BaseNode', arg, reporter: Optional[Reporter]):
-    try:
-        return (await node.aproc(arg, reporter))[1]
-    except Failed:
-        return
+    return (await node.aproc(arg, reporter))[1]
 
 
 PASS = PassiveNode()
