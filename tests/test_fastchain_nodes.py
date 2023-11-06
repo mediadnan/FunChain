@@ -1,7 +1,8 @@
 import failures
 import pytest
-from typing import Any
 from asyncio import run
+
+import funchain
 from funchain import core, chain, loop, BaseNode, optional, required, static, node
 
 
@@ -36,53 +37,127 @@ def add(number: int):  # functional style factory
     return _add
 
 
-test_cases: list[tuple[str, Any, Any]] = [
-    # Testing simple nodes creation and execution
-    ('chain()', 5, 5),
-    ('chain(increment)', 3, 4),
-    ('chain(Add(1))', 3, 4),
-    ('chain(add(1))', 3, 4),
-    ('chain(increment, double)', 3, 8),
-    ('chain(increment) | double', 3, 8),
-    ('chain(increment, increment, increment, increment, increment)', 2, 2 + 5),
-    ('chain(double) * chain(increment)', [3], [4, 4]),
-    ('chain(double) * increment', [3], [4, 4]),
-    ('chain(double, loop(increment))', [3], [4, 4]),
-    ('chain(loop(increment), sum)', [3, 4], 9),
-    ('loop(increment) | sum', [3, 4], 9),
-    ('chain(loop(increment, double), sum)', [3, 4], 18),
-    ('loop(increment, double) | sum', [3, 4], 18),
-    ('chain({"d": double, "i": increment})', 7, {'d': 14, 'i': 8}),
-    ('chain([increment, double])', 7, [8, 14]),
-    ('chain({"d": double, "i": (increment, increment)})', 7, {'d': 14, 'i': 9}),
-    ('chain([double, chain(increment, increment)])', 7, [14, 9]),
+# tests
+@pytest.mark.parametrize(
+    "src, err", [
+        ("node()", TypeError),
+        ("node(None)", TypeError),
+    ]
+    )
+def test_bad_node_chain_structures(src, err):
+    """Tests wrong usage of funchain functions"""
+    with pytest.raises(err):
+        eval(src)
 
-    # Testing async nodes creation and execution
-    ('chain(a_increment)', 3, 4),
+
+@pytest.mark.parametrize("input", [3, None, object(), "2"], ids=lambda x: f'passive({x})')
+def test_empty_chain_passive_node(input, reporter):
+    nd = chain()
+    assert nd(input) is input, "node outputted an unexpected value"
+    assert nd(input, reporter) is input, "node outputted an unexpected value"
+    assert not reporter.failures, "node reported failures while it shouldn't"
+
+
+@pytest.mark.parametrize("fun, inp, out, label", [
+    ("increment", 3, 4, "increment"),
+    ("Add(1)", 3, 4, "Add(1)"),
+    ("add(1)", 3, 4, "add(1)"),
+    ("double", 3, 6, "double"),
+    ("node(increment)", 4, 5, "increment"),
+    ("node(double)", 4, 8, "double"),
+])
+@pytest.mark.parametrize("src", ["node({fun})", "chain({fun})"])
+def test_single_function_node(src, fun, inp, out, label, reporter):
+    nd = eval(src.format(fun=fun))
+    assert isinstance(nd, funchain.core.Node), f"{src} returned an unexpected type"
+    assert nd(inp) == out, "node outputted an unexpected value"
+    assert nd(inp, reporter) == out, "node outputted an unexpected value"
+    assert not reporter.failures, "node reported failures while it shouldn't"
+    assert nd(None, reporter) is None, "node outputted an unexpected value"
+    assert reporter.failures.pop().source == f"test.{label}", "node reported a failure with wrong source tag"
+
+
+@pytest.mark.parametrize("src", ["chain(a_increment)", "node(a_increment)"])
+@pytest.mark.asyncio
+async def test_async_single_function_node(src, reporter):
+    nd = eval(src)
+    assert isinstance(nd, funchain.core.AsyncNode), f"{src} returned an unexpected type"
+    assert (await nd(3)) == 4, "node outputted an unexpected value"
+    assert (await nd(3, reporter)) == 4, "node outputted an unexpected value"
+    assert not reporter.failures, "node reported failures while it shouldn't"
+
+
+@pytest.mark.parametrize("src, inp, out", [
+    ("chain(increment, double)", 3, 8),
+    ("chain(increment) | double", 3, 8),
+    ("chain(increment, increment, increment, increment, increment)", 2, 2 + 5),
+    ("chain(double) * chain(increment)", [3], [4, 4]),
+    ("chain(double) * increment", [3], [4, 4]),
+    ("chain(double, loop(increment))", [3], [4, 4]),
+    ("loop(increment) | sum", [3, 4], 9),
+    ("chain(loop(increment, double), sum)", [3, 4], 18),
+    ("loop(increment, double) | sum", [3, 4], 18),
+])
+def test_sequential_node_chain(src, inp, out, reporter):
+    nd = eval(src)
+    assert not nd.is_async, "The result chain must be sync"
+    assert isinstance(nd, funchain.core.NodeChain), f"{src} returned an unexpected type"
+    assert nd(inp) == out, "node outputted an unexpected value"
+    assert nd(inp, reporter) == out, "node outputted an unexpected value"
+    assert not reporter.failures, "node reported failures while it shouldn't"
+    assert nd(None, reporter) is None, "node outputted an unexpected value"
+
+
+@pytest.mark.parametrize("src, inp, out", [
     ('chain(a_increment, a_increment)', 3, 5),
     ('chain(increment, a_increment)', 3, 5),
     ('chain(increment) | chain(a_increment)', 3, 5),
     ('chain(a_increment) | chain(increment)', 3, 5),
-    ('loop(a_increment)', [3, 4, 5], (4, 5, 6)),
+    ('loop(a_increment) | double', [3, 4, 5], [4, 5, 6, 4, 5, 6]),
     ('chain(loop(a_increment), sum)', [3, 4, 5], 15),
+    ('(chain() * a_increment) | sum', [3, 4, 5], 15),
+])
+@pytest.mark.asyncio
+async def test_async_sequential_node_chain(src, inp, out, reporter):
+    nd = eval(src)
+    assert nd.is_async, "The result chain must be async"
+    assert isinstance(nd, funchain.core.NodeChain), f"{src} returned an unexpected type"
+    assert (await nd(inp)) == out, "node outputted an unexpected value"
+    assert (await nd(inp, reporter)) == out, "node outputted an unexpected value"
+    assert not reporter.failures, "node reported failures while it shouldn't"
+    assert (await nd(None, reporter)) is None, "node outputted an unexpected value"
+    # TODO: Check for failure label
+
+
+@pytest.mark.parametrize("src, inp, out", [
+    ('chain({"d": double, "i": increment})', 7, {'d': 14, 'i': 8}),
+    ('chain([increment, double])', 7, [8, 14]),
+    ('chain({"d": double, "i": (increment, increment)})', 7, {'d': 14, 'i': 9}),
+    ('chain([double, chain(increment, increment)])', 7, [14, 9]),
+])
+def test_node_model(src, inp, out, reporter):
+    nd = eval(src)
+    assert isinstance(nd, (funchain.core.NodeDict, funchain.core.NodeList)), f"{src} returned an unexpected type"
+    assert nd(inp) == out, "node outputted an unexpected value"
+    assert nd(inp, reporter) == out, "node outputted an unexpected value"
+    assert not reporter.failures, "node reported failures while it shouldn't"
+    assert nd(None, reporter) is None, "node outputted an unexpected value"
+
+
+@pytest.mark.parametrize("src, inp, out", [
     ('chain({"ai": a_increment, "i": increment})', 7, {'ai': 8, 'i': 8}),
     ('chain([a_increment, increment])', 7, [8, 8]),
     ('chain({"ai": a_increment, "ai2": a_increment})', 7, {'ai': 8, 'ai2': 8}),
     ('chain([a_increment, a_increment])', 7, [8, 8]),
-]
-
-
-# tests
-@pytest.mark.parametrize('src, inp, out', test_cases, ids=[i[0] for i in test_cases])
-def test_node_chains(src, inp, out, reporter):
-    """Test nodes created with chain() function and with and without reporter"""
+])
+@pytest.mark.asyncio
+async def test_async_node_model(src, inp, out, reporter):
     nd = eval(src)
-    assert isinstance(nd, BaseNode), "chain() returned an unexpected type"
-    res = run(nd(inp)) if nd.is_async else nd(inp)
-    assert res == out, "node without reporter outputted an unexpected value"
-    res = run(nd(inp, reporter)) if nd.is_async else nd(inp, reporter)
-    assert res == out, "node outputted an unexpected value"
+    assert isinstance(nd, (funchain.core.NodeDict, funchain.core.NodeList)), f"{src} returned an unexpected type"
+    assert (await nd(inp)) == out, "node outputted an unexpected value"
+    assert (await nd(inp, reporter)) == out, "node outputted an unexpected value"
     assert not reporter.failures, "node reported failures while it shouldn't"
+    assert (await nd(None, reporter)) is None, "node outputted an unexpected value"
 
 
 def test_optional_node_in_a_chain(reporter):
@@ -169,25 +244,27 @@ def test_static_node():
     assert nd(3) is model, "node outputted an unexpected value"
 
 
-@pytest.mark.parametrize("fun, is_async, given_name, name", [
-    (increment, False, None, "increment"),
-    (increment, False, "inc", "inc"),
-    (a_increment, True, None, "a_increment"),
-    (a_increment, True, "ai", "ai"),
-    (Add(5),  False, None, "Add(5)"),
-    (Add(5),  False, "add_5", "add_5"),
-    (add(5), False, None, "add(5)"),
-    (add(5), False, "add_5", "add_5"),
-    (double, False, None, "double"),
-])
+@pytest.mark.parametrize(
+    "fun, is_async, given_name, name", [
+        (increment, False, None, "increment"),
+        (increment, False, "inc", "inc"),
+        (a_increment, True, None, "a_increment"),
+        (a_increment, True, "ai", "ai"),
+        (Add(5), False, None, "Add(5)"),
+        (Add(5), False, "add_5", "add_5"),
+        (add(5), False, None, "add(5)"),
+        (add(5), False, "add_5", "add_5"),
+        (double, False, None, "double"),
+    ]
+    )
 def test_node_functions(fun, is_async, given_name, name):
     """Tests if the node functions are correctly created"""
     nd = node(fun, given_name)
     assert isinstance(nd, core.Node), "node() returned an unexpected type"
     assert nd.is_async is is_async, "node got a wring is_async value"
-    assert isinstance(nd, core.AsyncNode) is is_async,  "node() returned an unexpected type"
-    assert nd.fun is fun,  "node() returned an unexpected function"
-    assert nd.name == name,  "node() returned an unexpected name"
+    assert isinstance(nd, core.AsyncNode) is is_async, "node() returned an unexpected type"
+    assert nd.fun is fun, "node() returned an unexpected function"
+    assert nd.__name__ == name, "node() returned an unexpected name"
     nd = nd.rn("new_name")
-    assert nd.name == "new_name",   "node() didn't get renamed correctly"
-    assert isinstance(nd, core.Node),  "node() returned an unexpected type"
+    assert nd.__name__ == "new_name", "node() didn't get renamed correctly"
+    assert isinstance(nd, core.Node), "node() returned an unexpected type"
