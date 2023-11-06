@@ -65,6 +65,8 @@ def test_empty_chain_passive_node(input, reporter):
     ("double", 3, 6, "double"),
     ("node(increment)", 4, 5, "increment"),
     ("node(double)", 4, 8, "double"),
+    ("lambda x: x + 1", 4, 5, "lambda"),
+    ("lambda x: x * 2", 4, 8, "lambda"),
 ])
 @pytest.mark.parametrize("src", ["node({fun})", "chain({fun})"])
 def test_single_function_node(src, fun, inp, out, label, reporter):
@@ -75,6 +77,8 @@ def test_single_function_node(src, fun, inp, out, label, reporter):
     assert not reporter.failures, "node reported failures while it shouldn't"
     assert nd(None, reporter) is None, "node outputted an unexpected value"
     assert reporter.failures.pop().source == f"test.{label}", "node reported a failure with wrong source tag"
+    nd = nd.rn("my_function")
+    assert nd.name == "my_function", "node name is not set correctly"
 
 
 @pytest.mark.parametrize("src", ["chain(a_increment)", "node(a_increment)"])
@@ -85,6 +89,8 @@ async def test_async_single_function_node(src, reporter):
     assert (await nd(3)) == 4, "node outputted an unexpected value"
     assert (await nd(3, reporter)) == 4, "node outputted an unexpected value"
     assert not reporter.failures, "node reported failures while it shouldn't"
+    nd = nd.rn("my_function")
+    assert nd.name == "my_function", "node name is not set correctly"
 
 
 @pytest.mark.parametrize("src, inp, out", [
@@ -106,6 +112,8 @@ def test_sequential_node_chain(src, inp, out, reporter):
     assert nd(inp, reporter) == out, "node outputted an unexpected value"
     assert not reporter.failures, "node reported failures while it shouldn't"
     assert nd(None, reporter) is None, "node outputted an unexpected value"
+    new = nd.rn("my_function")
+    assert new.name == "my_function", "node name is not set correctly"  # noqa
 
 
 @pytest.mark.parametrize("src, inp, out", [
@@ -126,6 +134,8 @@ async def test_async_sequential_node_chain(src, inp, out, reporter):
     assert (await nd(inp, reporter)) == out, "node outputted an unexpected value"
     assert not reporter.failures, "node reported failures while it shouldn't"
     assert (await nd(None, reporter)) is None, "node outputted an unexpected value"
+    new = nd.rn("my_function")
+    assert new.name == "my_function", "node name is not set correctly"  # noqa
     # TODO: Check for failure label
 
 
@@ -142,6 +152,8 @@ def test_node_model(src, inp, out, reporter):
     assert nd(inp, reporter) == out, "node outputted an unexpected value"
     assert not reporter.failures, "node reported failures while it shouldn't"
     assert nd(None, reporter) is None, "node outputted an unexpected value"
+    new = nd.rn("my_function")
+    assert new.name == "my_function", "node name is not set correctly"  # noqa
 
 
 @pytest.mark.parametrize("src, inp, out", [
@@ -158,6 +170,8 @@ async def test_async_node_model(src, inp, out, reporter):
     assert (await nd(inp, reporter)) == out, "node outputted an unexpected value"
     assert not reporter.failures, "node reported failures while it shouldn't"
     assert (await nd(None, reporter)) is None, "node outputted an unexpected value"
+    new = nd.rn("my_function")
+    assert new.name == "my_function", "node name is not set correctly"  # noqa
 
 
 def test_optional_node_in_a_chain(reporter):
@@ -242,29 +256,3 @@ def test_static_node():
     assert nd(3) == [4, 6], "node outputted an unexpected value"
     nd = chain(static(model))
     assert nd(3) is model, "node outputted an unexpected value"
-
-
-@pytest.mark.parametrize(
-    "fun, is_async, given_name, name", [
-        (increment, False, None, "increment"),
-        (increment, False, "inc", "inc"),
-        (a_increment, True, None, "a_increment"),
-        (a_increment, True, "ai", "ai"),
-        (Add(5), False, None, "Add(5)"),
-        (Add(5), False, "add_5", "add_5"),
-        (add(5), False, None, "add(5)"),
-        (add(5), False, "add_5", "add_5"),
-        (double, False, None, "double"),
-    ]
-    )
-def test_node_functions(fun, is_async, given_name, name):
-    """Tests if the node functions are correctly created"""
-    nd = node(fun, given_name)
-    assert isinstance(nd, core.Node), "node() returned an unexpected type"
-    assert nd.is_async is is_async, "node got a wring is_async value"
-    assert isinstance(nd, core.AsyncNode) is is_async, "node() returned an unexpected type"
-    assert nd.fun is fun, "node() returned an unexpected function"
-    assert nd.__name__ == name, "node() returned an unexpected name"
-    nd = nd.rn("new_name")
-    assert nd.__name__ == "new_name", "node() didn't get renamed correctly"
-    assert isinstance(nd, core.Node), "node() returned an unexpected type"
