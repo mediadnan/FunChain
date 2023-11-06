@@ -146,7 +146,7 @@ by concatenation _(using_ `+` _operator)_
 
 >>> double = node(lambda x: x * 2, name="double")
 
->>> fun = add_two + double + add_two
+>>> fun = add_two | double | add_two
 
 >>> fun(5)
 16
@@ -166,7 +166,7 @@ we can integrate compile it to a node like this
 
 >>> nd = node(double)
 
->>> fun = nd + nd
+>>> fun = nd | nd
 
 >>> fun(5)
 20
