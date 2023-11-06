@@ -136,7 +136,7 @@ class Node(BaseNode):
         reporter = reporter(self.name)
         if severity is Severity.REQUIRED:
             raise FailureException(reporter.failure(error, input=arg), reporter)
-        reporter(self.name).report(error, input=arg)
+        reporter.report(error, input=arg)
         return False, None
 
 
