@@ -4,6 +4,7 @@
   <div>
     <br/>
     <a href="https://github.com/mediadnan/funchain/actions/workflows/tests.yml"><img src="https://github.com/mediadnan/funchain/actions/workflows/tests.yml/badge.svg" alt="Tests" /></a>
+    <a href="https://codecov.io/gh/mediadnan/FunChain" ><img src="https://codecov.io/gh/mediadnan/FunChain/graph/badge.svg?token=HZWUDTLC3O"/></a>
     <img src="https://img.shields.io/github/license/mediadnan/funchain" alt="License MIT" />
     <a href="https://funchain.readthedocs.io/en/latest/"><img src="https://img.shields.io/readthedocs/funchain" alt="Read the Docs"></a>
     <img src="https://img.shields.io/pypi/pyversions/funchain" alt="Python versions" />
