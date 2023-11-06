@@ -54,6 +54,7 @@ pip install funchain
 user_guide/getting_started.md
 user_guide/nodes.md
 user_guide/models.md
+user_guide/nested_nodes.md
 user_guide/optional.md
 user_guide/required.md
 user_guide/async_support.md

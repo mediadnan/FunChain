@@ -85,7 +85,14 @@ of failure;
 ```
 
 ## List model
-The `list`-model is similar 
+The `list`-model is similar to a `dict`-model in terms of behavior, the only difference is that 
+a list-model returns a list of result instead of a dictionary.
 
-## Nested nodes
-...TODO
+````pycon
+>>> from funchain import chain
+>>> model = chain([lambda x: x - 5, lambda x: x + 5], name="interval")
+>>> model(25)
+[20, 30]
+>>> model(-2)
+[-6, 3]
+````
