@@ -498,6 +498,10 @@ def _build(obj: Any = ..., /, name: str = None) -> BaseNode:
 
 def _build_node(fun: SingleInputFunction, /, name: Optional[str] = None) -> Node:
     """Builds a leaf node from a function"""
+    while isinstance(fun, Node):
+        # In case of nested nodes (Node(Node(...))
+        name = name or fun.name
+        fun = fun.fun
     if name is None:
         name = get_function_name(fun)
     else:
