@@ -6,8 +6,8 @@ on:
       - main
     paths:
       - .github/workflows/tests.yml
-      - funchain/
-      - tests/
+      - funchain/**
+      - tests/**
       - requirements.txt
       - pyproject.toml
   pull_request:
