@@ -26,3 +26,28 @@ to produce another one
 >>> iddi(5)
 25
 ````
+
++ ``chain({'a': function1, 'b': function2})`` produces a model of nodes, the same as ``chain([function1, function2])`` does, 
+those models pass their input to each of their branches and return the result as `dict` or `list`. Models are also nodes, 
+so they can be composed with more nodes or contain complex branches themselves;
+
+```pycon
+>>> model = chain([increment, double])
+>>> model(5)
+[6, 10]
+>>> agg = model | sum
+>>> agg(5)
+16
+>>> model_double = model * double  # doubles each item
+>>> model_double(5)
+[12, 20]
+>>> another_model = chain({
+...     'identical': (),    # () means here an empty chain
+...     'agg': ([increment, double], sum),  # means a chain with two nodes a model and a function
+...     'model_double': model_double    # contains a pre-built model (node in general)
+... })
+{'identical': 5, 'agg': 16, 'model_double': [12, 20]}
+```
+
+The purpose is to demonstrate that all type of nodes share a common interface and can be nested
+as much as we need to achieve the required result.
