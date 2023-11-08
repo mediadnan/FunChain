@@ -23,6 +23,8 @@ html_title = f"{project} Documentation"
 html_short_title = f"{project} docs"
 html_logo = "../_static/logo/logo.png"
 html_static_path = ['../_static']
+html_css_files = ['../_static/custom.css']
+html_js_files = ['../_static/theme_script.js']
 html_favicon = "../_static/favicon/favicon.svg"
 html_theme_options = {
     "sidebar_hide_name": True,
@@ -39,7 +41,6 @@ myst_enable_extensions = ["attrs_block"]
 
 # mermaid config
 mermaid_params = [
-    '--theme', 'dark',
     '--backgroundColor', 'transparent',
     '--width', '600'
 ]
