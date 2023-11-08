@@ -55,11 +55,9 @@ TypeError: unsupported operand type(s) for +: 'NoneType' and 'int'
 ````
 
 The chain operates internally based on the railway pattern, it isolates each node and breaks the chain in case 
-of failure; The process can be visualised like this:
+of failure; The process can be visualized like this:
 
 ```{mermaid}
-:align: center
-
 flowchart LR
     I((input)) --> A
     A[fun1] -->|ok| B
