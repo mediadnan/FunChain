@@ -136,7 +136,7 @@ class Node(BaseNode):
         """Reports the failure according to the node severity"""
         severity = self.severity
         if reporter and (severity is Severity.NORMAL):
-            (reporter or Reporter)(self.name).report(error, input=arg)
+            reporter(self.name).report(error, input=arg)
         elif severity is Severity.REQUIRED:
             reporter = (reporter or Reporter)(self.name)
             raise FailureException(reporter.failure(error, input=arg), reporter)
