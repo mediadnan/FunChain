@@ -74,6 +74,18 @@ class BaseNode(ABC):
             raise TypeError("severity must be instance of failures.Severity")
         self._severity = value
 
+    def optional(self) -> 'BaseNode':
+        """Returns a clone of the current node with the optional flag"""
+        node = copy(self)
+        node.severity = Severity.OPTIONAL
+        return node
+
+    def required(self) -> 'BaseNode':
+        """Returns a clone of the current node with the required flag"""
+        node = copy(self)
+        node.severity = Severity.REQUIRED
+        return node
+
     def __call__(self, arg, /, reporter: Reporter = None):
         if not (reporter is None or isinstance(reporter, Reporter)):
             raise TypeError("reporter must be instance of failures.Reporter")
@@ -416,10 +428,7 @@ async def _async_caller(node: 'BaseNode', arg, reporter: Optional[Reporter]):
     return (await node.aproc(arg, reporter))[1]
 
 
-PASS = PassiveNode()
-
-
-def loop(*nodes) -> BaseNode:
+def loop(*nodes, name: str = None) -> BaseNode:
     """Builds a node that applies to each element of the input"""
     node = _build(nodes, name=name)
     if isinstance(node, PassiveNode):
@@ -427,7 +436,7 @@ def loop(*nodes) -> BaseNode:
     return Loop(node)
 
 
-def optional(*nodes) -> BaseNode:
+def optional(*nodes, name: str = None) -> BaseNode:
     """
     Builds an optional node that will be ignored in case of failures.
 
@@ -446,20 +455,12 @@ def optional(*nodes) -> BaseNode:
     50
 
     """
-    node = _build(nodes)
-    if node is PASS:
-        return node
-    node.severity = Severity.OPTIONAL
-    return node
+    return _build(nodes, name=name).optional()
 
 
-def required(*nodes) -> BaseNode:
+def required(*nodes, name: str = None) -> BaseNode:
     """Builds a node that stops the entire chain in case of failures"""
-    node = _build(nodes)
-    if node is PASS:
-        return node
-    node.severity = Severity.REQUIRED
-    return node
+    return _build(nodes, name=name).required()
 
 
 def static(obj, /) -> Node:
@@ -476,7 +477,7 @@ def static(obj, /) -> Node:
     return _build_node(lambda _: obj, _name)
 
 
-def chain(*nodes, name: Optional[str] = None) -> BaseNode:
+def chain(*nodes, name: str = None) -> BaseNode:
     """This function is used to compose functions and create callable\
     objects depending on the given structure.
 
