@@ -308,13 +308,24 @@ class NodeChain(NodeGroup):
         return True, arg
 
     def __or__(self, other):
+        if self.severity is not Severity.NORMAL:
+            return chain(self, other)
         return chain(*self._nodes, other)
 
-    def __iadd__(self, other):
+    def __ior__(self, other):
+        if self.severity is not Severity.NORMAL:
+            return chain(other, self)
         return chain(other, *self._nodes)
 
     def __mul__(self, other):
+        if self.severity is not Severity.NORMAL:
+            return chain(self, loop(other))
         return chain(*self._nodes, loop(other))
+
+    def __imul__(self, other):
+        if self.severity is not Severity.NORMAL:
+            return chain(loop(other), self)
+        return chain(loop(other), *self._nodes)
 
 
 class NodeList(NodeGroup):
