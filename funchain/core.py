@@ -421,8 +421,8 @@ PASS = PassiveNode()
 
 def loop(*nodes) -> BaseNode:
     """Builds a node that applies to each element of the input"""
-    node = _build(nodes)
-    if node is PASS:
+    node = _build(nodes, name=name)
+    if isinstance(node, PassiveNode):
         return node
     return Loop(node)
 
@@ -563,7 +563,7 @@ def _build_node_dict(struct: dict[str, Any], /, name: Optional[str] = None) -> B
 def _build_chain(nodes: tuple, /, name: Optional[str] = None) -> BaseNode:
     """Builds a sequential chain of nodes"""
     if not nodes:
-        return PASS
+        return PassiveNode()
     if len(nodes) == 1:
         return _build(nodes[0], name)
     _nodes: list[BaseNode] = list(filter(lambda x: not isinstance(x, PassiveNode), map(_build, nodes)))

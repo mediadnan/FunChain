@@ -15,7 +15,6 @@ from .core import (
     static,
     optional,
     required,
-    PASS,
 )
 from failures import Reporter   # shortcut # noqa: F401 # pylint: disable=unused-import
 
