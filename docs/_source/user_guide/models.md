@@ -96,3 +96,8 @@ a list-model returns a list of result instead of a dictionary.
 >>> model(-2)
 [-6, 3]
 ````
+
+````{note}
+A model _(either a `dict` or a `list`)_ fails if all it branches fail, 
+in that case it returns `None` instead of a list or a dict.
+````
