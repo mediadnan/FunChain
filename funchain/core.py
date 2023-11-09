@@ -475,7 +475,7 @@ def chain(*nodes, name: Optional[str] = None) -> BaseNode:
 
     The nodes can be one of the following types:
 
-    - A function (simple _leaf_ node)
+    - A function (simple *leaf* node)
     - A tuple of functions or any of the mentioned node types
     - A dictionary of functions or any of the mentioned node types
     - A list of functions or any of the mentioned node types
