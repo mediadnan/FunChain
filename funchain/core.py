@@ -442,18 +442,6 @@ def optional(*nodes, name: str = None) -> BaseNode:
 
     This is useful for nodes that are expected to fail for some inputs,
     and shouldn't be reported, but either ignored as if they don't exist.
-
-    For example:
-
-    >>> import re
-    >>> from funchain import node, optional
-    >>> get_numbers = node(lambda txt: re.search(r'\d+', txt)) | node(lambda match: match.group())
-    >>> double = optional(get_numbers, int) | node(lambda x: x*2)
-    >>> double("The number is 23")  # goes through (get_numbers -> int)
-    46
-    >>> double(25)  # skips (get_numbers -> int)
-    50
-
     """
     return _build(nodes, name=name).optional()
 
