@@ -26,6 +26,11 @@ into an independent library that could be integrated in other python projects.
 **FunChain** is now based on another standalone library called [Failures](https://pypi.org/project/failures/)
 that only specialises in labeling and reporting nested errors.
 
+> **_NOTE_** This library is still in **experimentation** phase, 
+> if you plan to include it in your production app, make sure
+> to test that use case to avoid any unexpected bugs.
+
+
 ## Installation
 You can include ``FunChain`` into your environment using this command
 
