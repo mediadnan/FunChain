@@ -55,7 +55,7 @@ dependencies = {file = "requirements.txt"}
 
 [project.urls]
 repository = "https://github.com/mediadnan/funchain"
-documentation = "https://funchain.readthedocs.com"
+documentation = "https://funchain.readthedocs.io"
 bugs = "https://github.com/mediadnan/funchain/issues"
 
 [tool.pytest.ini_options]
